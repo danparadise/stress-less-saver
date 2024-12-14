@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { Document } from 'https://cdn.skypack.dev/pdf-lib?dts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +8,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,7 +30,46 @@ serve(async (req) => {
       throw new Error('Failed to fetch PDF from storage');
     }
 
-    // Send to OpenAI for text extraction
+    // Convert PDF to PNG using Canvas
+    console.log('Converting PDF to PNG...');
+    const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+    const pdfDoc = await Document.load(pdfArrayBuffer);
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+    
+    // Create a canvas element
+    const canvas = new OffscreenCanvas(firstPage.getWidth(), firstPage.getHeight());
+    const ctx = canvas.getContext('2d');
+    
+    // Render PDF page to canvas
+    await firstPage.render({
+      canvas: canvas,
+      viewport: firstPage.getViewport({ scale: 1.0 }),
+    });
+
+    // Convert canvas to PNG
+    const pngBlob = await canvas.convertToBlob({ type: 'image/png' });
+    const pngArrayBuffer = await pngBlob.arrayBuffer();
+
+    // Upload PNG to storage
+    const pngPath = `converted/${documentId}.png`;
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('financial_docs')
+      .upload(pngPath, pngArrayBuffer, {
+        contentType: 'image/png',
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    // Get public URL for the uploaded PNG
+    const { data: { publicUrl: pngUrl } } = supabase.storage
+      .from('financial_docs')
+      .getPublicUrl(pngPath);
+
+    // Send PNG to OpenAI for text extraction
     console.log('Sending to OpenAI for text extraction...');
     const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -53,7 +94,7 @@ serve(async (req) => {
               {
                 type: "image_url",
                 image_url: {
-                  url: pdfUrl
+                  url: pngUrl
                 }
               }
             ]
