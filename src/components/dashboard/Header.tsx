@@ -39,7 +39,7 @@ const Header = ({ isDark, toggleDarkMode }: HeaderProps) => {
           className="w-full h-full object-contain"
         />
       </div>
-      <p className="text-black dark:text-sage-300 italic -mt-2">A Wise Way To Get Paid</p>
+      <p className="text-black dark:text-sage-300 italic -mt-6">A Wise Way To Get Paid</p>
     </div>
   );
 };
