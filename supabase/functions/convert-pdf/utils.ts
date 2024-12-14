@@ -1,7 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { PDFDocument } from 'https://cdn.skypack.dev/pdf-lib@1.17.1'
+import * as pdfjs from 'https://cdn.skypack.dev/pdfjs-dist@3.11.174/build/pdf.js'
 import { decode as base64Decode } from "https://deno.land/std@0.182.0/encoding/base64.ts"
-import Canvas from "https://deno.land/x/canvas@v1.4.1/mod.ts"
 import { createWorker } from 'https://esm.sh/tesseract.js@4.1.1'
 
 export const corsHeaders = {
@@ -16,37 +15,51 @@ export const createSupabaseClient = () => {
 }
 
 export const convertPdfToPng = async (pdfArrayBuffer: ArrayBuffer): Promise<Uint8Array[]> => {
-  console.log('Starting enhanced PDF to PNG conversion')
+  console.log('Starting PDF to PNG conversion using PDF.js')
   
   try {
+    // Set up PDF.js worker
+    const workerSrc = 'https://cdn.skypack.dev/pdfjs-dist@3.11.174/build/pdf.worker.js'
+    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
+
     // Load the PDF document
-    const pdfDoc = await PDFDocument.load(pdfArrayBuffer)
-    const pages = pdfDoc.getPages()
-    
-    if (pages.length === 0) {
-      throw new Error('PDF document has no pages')
-    }
+    const loadingTask = pdfjs.getDocument({ data: pdfArrayBuffer })
+    const pdfDoc = await loadingTask.promise
+    console.log(`PDF loaded successfully with ${pdfDoc.numPages} pages`)
 
     const pngPages: Uint8Array[] = []
 
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i]
-      const { width, height } = page.getSize()
+    // Convert each page
+    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+      console.log(`Processing page ${pageNum}`)
+      const page = await pdfDoc.getPage(pageNum)
+      const viewport = page.getViewport({ scale: 1.5 }) // Adjust scale as needed
 
-      // Create a canvas with the PDF dimensions
-      const canvas = new Canvas(width, height)
-      const ctx = canvas.getContext('2d')
+      // Create a virtual canvas
+      const canvas = new OffscreenCanvas(viewport.width, viewport.height)
+      const context = canvas.getContext('2d')
 
-      // Draw the PDF page to canvas
-      const pngData = await canvas.encode('png')
-      console.log(`Page ${i + 1} successfully converted to PNG`)
+      if (!context) {
+        throw new Error('Failed to get canvas context')
+      }
+
+      // Render PDF page to canvas
+      await page.render({
+        canvasContext: context,
+        viewport: viewport
+      }).promise
+
+      // Convert canvas to PNG
+      const blob = await canvas.convertToBlob({ type: 'image/png' })
+      const arrayBuffer = await blob.arrayBuffer()
+      pngPages.push(new Uint8Array(arrayBuffer))
       
-      pngPages.push(pngData)
+      console.log(`Page ${pageNum} converted to PNG successfully`)
     }
 
     return pngPages
   } catch (error) {
-    console.error('Error in enhanced PDF to PNG conversion:', error)
+    console.error('Error in PDF to PNG conversion:', error)
     throw new Error(`Failed to convert PDF to PNG: ${error.message}`)
   }
 }
