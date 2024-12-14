@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { Canvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
 import * as pdfjs from "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/+esm";
 
@@ -9,6 +8,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -18,12 +18,17 @@ serve(async (req) => {
     console.log('Processing document:', documentId, 'PDF URL:', pdfUrl);
 
     // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Download PDF
+    console.log('Downloading PDF from:', pdfUrl);
     const pdfResponse = await fetch(pdfUrl);
     if (!pdfResponse.ok) {
       throw new Error('Failed to fetch PDF');
@@ -31,25 +36,31 @@ serve(async (req) => {
     const pdfData = await pdfResponse.arrayBuffer();
 
     // Load PDF.js
+    console.log('Loading PDF with PDF.js');
     const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
     const page = await pdf.getPage(1); // Get first page
     const viewport = page.getViewport({ scale: 2.0 }); // Scale up for better quality
 
     // Create canvas
+    console.log('Creating canvas for PDF rendering');
     const canvas = new Canvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
     // Render PDF page to canvas
+    console.log('Rendering PDF to canvas');
     await page.render({
       canvasContext: context,
       viewport: viewport
     }).promise;
 
     // Convert canvas to PNG
+    console.log('Converting canvas to PNG');
     const pngData = canvas.toBuffer('image/png');
 
     // Upload PNG to storage
     const pngPath = `converted/${documentId}.png`;
+    console.log('Uploading PNG to storage:', pngPath);
+    
     const { error: uploadError } = await supabase.storage
       .from('financial_docs')
       .upload(pngPath, pngData, {
@@ -66,7 +77,10 @@ serve(async (req) => {
       .from('financial_docs')
       .getPublicUrl(pngPath);
 
+    console.log('PNG uploaded successfully, URL:', pngUrl);
+
     // Call OpenAI API to analyze the image
+    console.log('Calling OpenAI API for text extraction');
     const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -74,18 +88,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4-vision-preview",
         messages: [
           {
             role: "system",
-            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Do not include markdown formatting, code blocks, or any other text."
+            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD)."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a raw JSON object with the specified fields, no markdown or code blocks."
+                text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a raw JSON object with the specified fields."
               },
               {
                 type: "image_url",
@@ -95,7 +109,8 @@ serve(async (req) => {
               }
             ]
           }
-        ]
+        ],
+        max_tokens: 1000
       })
     });
 
@@ -150,11 +165,11 @@ serve(async (req) => {
 
       console.log('Parsed and validated extracted data:', extractedData);
     } catch (e) {
-      console.error('Failed to parse AI response:', e, 'Raw content:', aiResult.choices[0].message.content);
+      console.error('Failed to parse AI response:', e);
       throw new Error(`Failed to parse extracted data: ${e.message}`);
     }
 
-    // Update document status
+    // Update document status and store extracted data
     const { error: updateError } = await supabase
       .from('financial_documents')
       .update({ status: 'completed' })
@@ -162,6 +177,7 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('Error updating document status:', updateError);
+      throw updateError;
     }
 
     // Store the extracted data
