@@ -32,14 +32,14 @@ const Header = ({ isDark, toggleDarkMode }: HeaderProps) => {
           <Moon className="h-5 w-5" />
         )}
       </Button>
-      <div className="w-48 h-48 mb-4">
+      <div className="w-48 h-48">
         <img
           src={isDark ? "/lovable-uploads/d6799270-a533-42b4-b766-bdd5482b3b0d.png" : "/lovable-uploads/c6bfa104-b34d-4f58-88e1-a76291298892.png"}
           alt="PayGuard Logo"
           className="w-full h-full object-contain"
         />
       </div>
-      <p className="text-black dark:text-sage-300 mt-2 italic">A Wise Way To Get Paid</p>
+      <p className="text-black dark:text-sage-300 italic -mt-2">A Wise Way To Get Paid</p>
     </div>
   );
 };
