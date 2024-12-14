@@ -70,7 +70,7 @@
 }
 
 .sidebar-gradient {
-  background: linear-gradient(135deg, #000000 0%, #2D1B4B 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, #D6BCFA 100%);
   backdrop-filter: blur(10px);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -80,19 +80,16 @@
   backdrop-filter: blur(10px);
 }
 
-/* Light mode text colors */
-.glass-card h2,
-.glass-card p,
-.glass-card span {
-  @apply text-black;
+/* Light mode text colors for sidebar */
+.sidebar-gradient h2,
+.sidebar-gradient p,
+.sidebar-gradient span,
+.sidebar-gradient button {
+  @apply text-purple-800;
 }
 
-.glass-card .text-muted-foreground {
-  @apply text-neutral-600;
-}
-
-.glass-card .text-destructive {
-  @apply text-red-600;
+.sidebar-gradient .text-muted-foreground {
+  @apply text-purple-600;
 }
 
 /* Dark mode specific styles */
