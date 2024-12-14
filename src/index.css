@@ -57,6 +57,11 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Add dark mode gradient */
+  .dark body {
+    background: linear-gradient(to bottom right, #1A1F2C, #403E43);
+  }
 }
 
 .glass-card {
