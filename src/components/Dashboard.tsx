@@ -1,32 +1,63 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowUpRight, ArrowDownRight, DollarSign, Wallet, TrendingUp, Search } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, DollarSign, Wallet, TrendingUp, Search, PiggyBank } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 const mockData = {
   balance: 5240.50,
   income: 3200,
   expenses: 1850,
   savings: 450,
+  savingsGoal: 1000,
   transactions: [
     { date: "2024-01", amount: 3200 },
     { date: "2024-02", amount: 3400 },
     { date: "2024-03", amount: 3100 },
     { date: "2024-04", amount: 3600 },
+  ],
+  aiSuggestions: [
+    {
+      id: 1,
+      tip: "Based on your spending patterns, you could save an additional $200 monthly by reducing dining out expenses.",
+      category: "dining"
+    },
+    {
+      id: 2,
+      tip: "Your utility bills are 15% higher than average. Consider energy-efficient alternatives.",
+      category: "utilities"
+    },
+    {
+      id: 3,
+      tip: "You're on track to reach your savings goal by September 2024. Keep it up!",
+      category: "savings"
+    }
   ]
 };
 
 const Dashboard = () => {
+  const { toast } = useToast();
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("Searching:", e.target.value);
+    // Future implementation: Add search functionality
+  };
+
+  const calculateSavingsProgress = () => {
+    return (mockData.savings / mockData.savingsGoal) * 100;
+  };
+
   return (
     <div className="min-h-screen bg-background p-6 animate-fadeIn">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold text-neutral-800">Financial Overview</h1>
+          <h1 className="text-4xl font-bold text-sage-800">Financial Overview</h1>
           <div className="relative w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search transactions..."
               className="pl-8 bg-white/50 backdrop-blur-sm"
+              onChange={handleSearch}
             />
           </div>
         </div>
@@ -81,9 +112,18 @@ const Dashboard = () => {
                 </h2>
               </div>
               <div className="h-8 w-8 rounded-full bg-sage-100 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-sage-500" />
+                <PiggyBank className="h-4 w-4 text-sage-500" />
               </div>
             </div>
+            <div className="mt-4 h-2 bg-sage-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-sage-500 transition-all duration-500 ease-in-out"
+                style={{ width: `${calculateSavingsProgress()}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {calculateSavingsProgress()}% of monthly goal
+            </p>
           </Card>
         </div>
 
@@ -112,21 +152,18 @@ const Dashboard = () => {
           <Card className="p-6 glass-card">
             <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
             <div className="space-y-4">
-              <div className="p-4 bg-sage-50 rounded-lg">
-                <p className="text-sm text-sage-700">
-                  Based on your spending patterns, you could save an additional $200 monthly by reducing dining out expenses.
-                </p>
-              </div>
-              <div className="p-4 bg-sage-50 rounded-lg">
-                <p className="text-sm text-sage-700">
-                  Your utility bills are 15% higher than average. Consider energy-efficient alternatives.
-                </p>
-              </div>
-              <div className="p-4 bg-sage-50 rounded-lg">
-                <p className="text-sm text-sage-700">
-                  You're on track to reach your savings goal by September 2024.
-                </p>
-              </div>
+              {mockData.aiSuggestions.map((suggestion) => (
+                <div 
+                  key={suggestion.id}
+                  className="p-4 bg-sage-50 rounded-lg hover:bg-sage-100 transition-colors cursor-pointer"
+                  onClick={() => toast({
+                    title: "AI Insight",
+                    description: suggestion.tip,
+                  })}
+                >
+                  <p className="text-sm text-sage-700">{suggestion.tip}</p>
+                </div>
+              ))}
             </div>
           </Card>
         </div>
