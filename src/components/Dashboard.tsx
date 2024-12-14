@@ -61,14 +61,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 animate-fadeIn">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <Header isDark={isDark} toggleDarkMode={toggleDarkMode} />
-        
-        <main className="pt-4">
+    <div className="min-h-screen bg-background">
+      <Header isDark={isDark} toggleDarkMode={toggleDarkMode} />
+      
+      <main className="max-w-[1400px] mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-purple-800 dark:text-white mb-2">
+            Welcome back!
+          </h1>
+          <p className="text-neutral-600 dark:text-neutral-300">
+            Take a look at your financial overview
+          </p>
+        </div>
+
+        <div className="space-y-8">
           <SearchBar onSearch={handleSearch} />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsCard
               title="Current Balance"
               value={`$${mockData.balance.toLocaleString()}`}
@@ -103,12 +112,12 @@ const Dashboard = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <IncomeChart data={mockData.transactions} />
             <AiInsights suggestions={mockData.aiSuggestions} />
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

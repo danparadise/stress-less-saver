@@ -8,12 +8,11 @@ interface SearchBarProps {
 const SearchBar = ({ onSearch }: SearchBarProps) => {
   return (
     <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-bold text-black dark:text-white">Financial Overview</h2>
       <div className="relative w-64">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search transactions..."
-          className="pl-8 bg-white/50 backdrop-blur-sm"
+          className="pl-8 bg-white/50 backdrop-blur-sm border-neutral-200 dark:border-neutral-700"
           onChange={onSearch}
         />
       </div>
