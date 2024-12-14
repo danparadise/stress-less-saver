@@ -30,8 +30,7 @@ const PaystubData = () => {
       if (error) throw error;
       return data;
     },
-    // Add refetch interval to periodically check for updates
-    refetchInterval: 5000, // Refetch every 5 seconds while conversion is in progress
+    refetchInterval: 5000,
   });
 
   if (isLoading) {
@@ -53,6 +52,26 @@ const PaystubData = () => {
     );
   }
 
+  // Filter out duplicates based on pay period
+  const uniquePaystubs = paystubs.reduce((acc, current) => {
+    const payPeriodKey = current.pay_period_start && current.pay_period_end
+      ? `${current.pay_period_start}-${current.pay_period_end}`
+      : null;
+    
+    if (!payPeriodKey) return [...acc, current];
+
+    const exists = acc.find(item => 
+      item.pay_period_start === current.pay_period_start && 
+      item.pay_period_end === current.pay_period_end
+    );
+
+    if (!exists) {
+      return [...acc, current];
+    }
+
+    return acc;
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -71,7 +90,7 @@ const PaystubData = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paystubs.map((paystub) => (
+            {uniquePaystubs.map((paystub) => (
               <TableRow key={paystub.id}>
                 <TableCell>{paystub.financial_documents.file_name}</TableCell>
                 <TableCell>
