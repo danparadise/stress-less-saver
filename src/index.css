@@ -69,6 +69,22 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Light mode text colors */
+.glass-card h2,
+.glass-card p,
+.glass-card span {
+  @apply text-black;
+}
+
+.glass-card .text-muted-foreground {
+  @apply text-neutral-600;
+}
+
+.glass-card .text-destructive {
+  @apply text-red-600;
+}
+
+/* Dark mode specific styles */
 .dark .glass-card {
   @apply bg-white;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);

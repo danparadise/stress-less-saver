@@ -83,12 +83,12 @@ const Dashboard = () => {
               <Moon className="h-5 w-5" />
             )}
           </Button>
-          <h1 className="text-4xl font-bold text-sage-800 dark:text-white">PayGuard</h1>
-          <p className="text-sage-600 dark:text-sage-300 mt-2 italic">A Wise Way To Get Paid</p>
+          <h1 className="text-4xl font-bold text-black dark:text-white">PayGuard</h1>
+          <p className="text-black dark:text-sage-300 mt-2 italic">A Wise Way To Get Paid</p>
         </div>
 
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-sage-800 dark:text-white">Financial Overview</h2>
+          <h2 className="text-2xl font-bold text-black dark:text-white">Financial Overview</h2>
           <div className="relative w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
