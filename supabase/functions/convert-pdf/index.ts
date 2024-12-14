@@ -76,7 +76,7 @@ serve(async (req) => {
     const extractedData = parseExtractedData(aiResponse);
     console.log('Data parsed successfully');
 
-    // Update document status
+    // First update document status
     console.log('Updating document status');
     const { error: updateError } = await supabase
       .from('financial_documents')
@@ -87,8 +87,8 @@ serve(async (req) => {
       throw new Error(`Error updating document status: ${updateError.message}`);
     }
 
-    // Store the extracted data
-    console.log('Storing extracted data');
+    // Then insert the extracted data
+    console.log('Storing extracted data in paystub_data table');
     const { error: insertError } = await supabase
       .from('paystub_data')
       .insert({
@@ -101,6 +101,7 @@ serve(async (req) => {
       });
 
     if (insertError) {
+      console.error('Error inserting data:', insertError);
       throw new Error(`Error inserting extracted data: ${insertError.message}`);
     }
 
