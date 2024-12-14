@@ -42,7 +42,6 @@ const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // Check system preference on mount
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setIsDark(true);
       document.documentElement.classList.add('dark');
@@ -60,7 +59,6 @@ const Dashboard = () => {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("Searching:", e.target.value);
-    // Future implementation: Add search functionality
   };
 
   const calculateSavingsProgress = () => {
@@ -83,6 +81,13 @@ const Dashboard = () => {
               <Moon className="h-5 w-5" />
             )}
           </Button>
+          <div className="w-32 h-32 mb-4">
+            <img
+              src={isDark ? "/lovable-uploads/d6799270-a533-42b4-b766-bdd5482b3b0d.png" : "/lovable-uploads/c6bfa104-b34d-4f58-88e1-a76291298892.png"}
+              alt="PayGuard Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
           <h1 className="text-4xl font-bold text-black dark:text-white">PayGuard</h1>
           <p className="text-black dark:text-sage-300 mt-2 italic">A Wise Way To Get Paid</p>
         </div>
