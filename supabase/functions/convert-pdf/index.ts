@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { serve } from "./deps.ts";
+import { createClient } from "./deps.ts";
 import { corsHeaders, createErrorResponse } from "./config.ts";
 import { convertPdfToPng } from "./pdfConverter.ts";
 import { extractDataFromImage } from "./openaiService.ts";
