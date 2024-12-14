@@ -2,6 +2,3 @@ project_id = "dfwiszjyvkfmpejsqvbf"
 
 [functions.convert-pdf]
 verify_jwt = false
-
-[functions.extract-paystub-text]
-verify_jwt = false
