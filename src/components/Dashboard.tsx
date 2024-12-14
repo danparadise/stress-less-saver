@@ -5,6 +5,7 @@ import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import DocumentUpload from "./dashboard/DocumentUpload";
+import PaystubData from "./dashboard/PaystubData";
 
 const mockData = {
   balance: 5240.50,
@@ -116,6 +117,8 @@ const Dashboard = () => {
             </div>
             <DocumentUpload />
           </div>
+
+          <PaystubData />
 
           <AiInsights suggestions={mockData.aiSuggestions} />
         </div>
