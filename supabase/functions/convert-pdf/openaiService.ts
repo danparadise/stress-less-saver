@@ -7,18 +7,42 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model: "gpt-4-vision-preview",
       messages: [
         {
           role: "system",
-          content: "You are a paystub data extractor. Your task is to extract pay information and convert it to numeric values suitable for database storage. For gross_pay and net_pay: 1) Remove any currency symbols ($), 2) Remove any commas, 3) Convert to a plain number (e.g., $1,234.56 should become 1234.56). Format dates as YYYY-MM-DD. Your response must ALWAYS be a valid JSON object with these exact fields: gross_pay (number), net_pay (number), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). If you cannot extract a value, use null. Never include explanations or additional text."
+          content: `You are a paystub data extractor. Extract the following information from paystubs:
+          - Gross pay (before deductions)
+          - Net pay (take-home amount)
+          - Pay period start date
+          - Pay period end date
+          
+          Format rules:
+          1. For monetary values (gross_pay and net_pay):
+             - Remove any currency symbols ($)
+             - Remove any commas
+             - Convert to plain numbers (e.g., $1,234.56 → 1234.56)
+          2. For dates:
+             - Format as YYYY-MM-DD
+          3. Response format:
+             - Return ONLY a valid JSON object
+             - Use these exact field names: gross_pay, net_pay, pay_period_start, pay_period_end
+             - Use null for any values you cannot extract
+          
+          Example response:
+          {
+            "gross_pay": 1234.56,
+            "net_pay": 987.65,
+            "pay_period_start": "2024-01-01",
+            "pay_period_end": "2024-01-15"
+          }`
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the following from this paystub image and return ONLY a JSON object. For gross_pay and net_pay: remove $ and commas, convert to plain numbers (e.g., $1,234.56 → 1234.56). Format dates as YYYY-MM-DD. Return null for any values you cannot extract with certainty."
+              text: "Extract the paystub information following the format rules specified above. Return ONLY a JSON object."
             },
             {
               type: "image_url",
