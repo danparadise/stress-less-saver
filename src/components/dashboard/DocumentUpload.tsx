@@ -53,7 +53,8 @@ const DocumentUpload = () => {
 
     setIsUploading(true);
     try {
-      const result = await uploadDocument(file, documentType, date);
+      const initialStatus = file.type === "application/pdf" ? "pending_conversion" : "pending";
+      const result = await uploadDocument(file, documentType, date, initialStatus);
 
       toast({
         title: "Success",

@@ -4,7 +4,8 @@ import { format } from "date-fns";
 export const uploadDocument = async (
   file: File,
   documentType: string,
-  date: Date
+  date: Date,
+  status: 'pending' | 'pending_conversion' = 'pending'
 ) => {
   // Get the current user
   const { data: { user } } = await supabase.auth.getUser();
@@ -33,7 +34,7 @@ export const uploadDocument = async (
       file_name: file.name,
       month_year: format(date, "yyyy-MM-dd"),
       user_id: user.id,
-      status: file.type === "application/pdf" ? "pending_conversion" : "pending"
+      status: status
     })
     .select()
     .single();
