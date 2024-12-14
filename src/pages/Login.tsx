@@ -52,9 +52,6 @@ const Login = () => {
                 },
               },
             }}
-            onError={(error) => {
-              toast.error(error.message);
-            }}
           />
         </div>
         <div className="text-center text-sm text-muted-foreground">
