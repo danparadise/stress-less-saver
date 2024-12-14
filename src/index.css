@@ -92,6 +92,18 @@
   @apply text-purple-600;
 }
 
+/* Dark mode specific text colors */
+.dark .sidebar-gradient h2,
+.dark .sidebar-gradient p,
+.dark .sidebar-gradient span,
+.dark .sidebar-gradient button {
+  @apply text-purple-100;
+}
+
+.dark .sidebar-gradient .text-muted-foreground {
+  @apply text-purple-300;
+}
+
 /* Dark mode specific styles */
 .dark .glass-card {
   @apply bg-white;
