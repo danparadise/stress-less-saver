@@ -50,8 +50,12 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background p-6 animate-fadeIn">
       <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex flex-col items-center mb-8">
+          <h1 className="text-4xl font-bold text-sage-800">PayGuard</h1>
+          <p className="text-sage-600 mt-2 italic">A wise way to get paid</p>
+        </div>
         <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold text-sage-800">Financial Overview</h1>
+          <h2 className="text-2xl font-bold text-sage-800">Financial Overview</h2>
           <div className="relative w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
