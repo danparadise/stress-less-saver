@@ -55,14 +55,14 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Do not include markdown formatting, code blocks, or any other text."
+            content: "You are a paystub data extractor. Your task is to extract pay information and convert it to numeric values suitable for database storage. For gross_pay and net_pay: 1) Remove any currency symbols ($), 2) Remove any commas, 3) Convert to a plain number (e.g., $1,234.56 should become 1234.56). Format dates as YYYY-MM-DD. Your response must ALWAYS be a valid JSON object with these exact fields: gross_pay (number), net_pay (number), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). If you cannot extract a value, use null. Never include explanations or additional text."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a raw JSON object with the specified fields, no markdown or code blocks."
+                text: "Extract the following from this paystub image and return ONLY a JSON object. For gross_pay and net_pay: remove $ and commas, convert to plain numbers (e.g., $1,234.56 → 1234.56). Format dates as YYYY-MM-DD. Return null for any values you cannot extract with certainty."
               },
               {
                 type: "image_url",
@@ -72,7 +72,8 @@ serve(async (req) => {
               }
             ]
           }
-        ]
+        ],
+        max_tokens: 1000
       })
     })
 
@@ -110,8 +111,25 @@ serve(async (req) => {
       }
 
       // Convert string numbers to actual numbers
-      extractedData.gross_pay = Number(String(extractedData.gross_pay).replace(/[^0-9.-]+/g, ''))
-      extractedData.net_pay = Number(String(extractedData.net_pay).replace(/[^0-9.-]+/g, ''))
+      if (extractedData.gross_pay !== null) {
+        const grossPay = Number(String(extractedData.gross_pay).replace(/[^0-9.-]+/g, ''))
+        if (isNaN(grossPay)) {
+          console.warn('Invalid gross_pay value, setting to null')
+          extractedData.gross_pay = null
+        } else {
+          extractedData.gross_pay = grossPay
+        }
+      }
+      
+      if (extractedData.net_pay !== null) {
+        const netPay = Number(String(extractedData.net_pay).replace(/[^0-9.-]+/g, ''))
+        if (isNaN(netPay)) {
+          console.warn('Invalid net_pay value, setting to null')
+          extractedData.net_pay = null
+        } else {
+          extractedData.net_pay = netPay
+        }
+      }
 
       // Validate dates
       const validateDate = (date: string) => {
@@ -122,8 +140,12 @@ serve(async (req) => {
         return date
       }
       
-      extractedData.pay_period_start = validateDate(extractedData.pay_period_start)
-      extractedData.pay_period_end = validateDate(extractedData.pay_period_end)
+      if (extractedData.pay_period_start) {
+        extractedData.pay_period_start = validateDate(extractedData.pay_period_start)
+      }
+      if (extractedData.pay_period_end) {
+        extractedData.pay_period_end = validateDate(extractedData.pay_period_end)
+      }
 
       console.log('Parsed and validated extracted data:', extractedData)
     } catch (e) {
