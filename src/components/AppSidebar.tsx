@@ -11,6 +11,9 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { useTheme } from "@/components/ThemeProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const menuItems = [
   { title: "Overview", icon: Activity },
@@ -22,6 +25,17 @@ const menuItems = [
 
 const AppSidebar = () => {
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Error logging out");
+    }
+  };
 
   return (
     <Sidebar variant="inset" className="sidebar-gradient">
@@ -78,7 +92,10 @@ const AppSidebar = () => {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton className="text-red-500 hover:text-red-600">
+            <SidebarMenuButton 
+              onClick={handleLogout}
+              className="text-red-500 hover:text-red-600"
+            >
               <LogOut className="h-4 w-4" />
               <span>Log out</span>
             </SidebarMenuButton>
