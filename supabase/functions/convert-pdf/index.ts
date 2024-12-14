@@ -1,10 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { 
-  corsHeaders, 
-  createSupabaseClient,
-  extractPaystubData, 
-  parseExtractedData 
-} from './utils.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 console.log("Convert PDF Edge Function starting...")
 
@@ -30,7 +30,10 @@ serve(async (req) => {
       throw new Error('Missing required parameters: documentId or pdfUrl')
     }
 
-    const supabase = createSupabaseClient()
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
     // Get the document details
     const { data: document, error: fetchError } = await supabase
@@ -51,102 +54,90 @@ serve(async (req) => {
       throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`)
     }
 
-    // Convert PDF to image using a third-party service
+    const pdfCoApiKey = Deno.env.get('PDF_CO_API_KEY')
+    if (!pdfCoApiKey) {
+      throw new Error('PDF_CO_API_KEY is not set')
+    }
+
+    // Convert PDF to image using PDF.co API
+    console.log('Converting PDF to image using PDF.co API')
     const imageResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
       method: 'POST',
       headers: {
-        'x-api-key': Deno.env.get('PDF_CO_API_KEY') || '',
+        'x-api-key': pdfCoApiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         url: pdfUrl,
-        async: false
+        async: false,
+        inline: false,
+        profiles: ["default"]
       })
-    });
+    })
 
     if (!imageResponse.ok) {
-      throw new Error('Failed to convert PDF to image');
+      const errorText = await imageResponse.text()
+      console.error('PDF.co API error:', errorText)
+      throw new Error(`PDF.co API error: ${errorText}`)
     }
 
-    const conversionResult = await imageResponse.json();
+    const conversionResult = await imageResponse.json()
+    console.log('PDF.co conversion result:', conversionResult)
     
     if (!conversionResult.url) {
-      throw new Error('No image URL in conversion response');
+      throw new Error('No image URL in conversion response')
     }
 
     // Download the converted image
-    const imageData = await fetch(conversionResult.url);
-    const imageBuffer = await imageData.arrayBuffer();
+    console.log('Downloading converted image from:', conversionResult.url)
+    const imageData = await fetch(conversionResult.url)
+    if (!imageData.ok) {
+      throw new Error('Failed to download converted image')
+    }
+    
+    const imageBuffer = await imageData.arrayBuffer()
 
     // Upload the PNG
-    const pngFileName = document.file_name.replace('.pdf', '.png');
-    const pngPath = document.file_path.replace('.pdf', '.png');
+    const pngFileName = document.file_name.replace('.pdf', '.png')
+    const pngPath = document.file_path.replace('.pdf', '.png')
 
-    console.log('Uploading converted PNG:', pngPath);
+    console.log('Uploading converted PNG:', pngPath)
     const { error: uploadError } = await supabase.storage
       .from('financial_docs')
       .upload(pngPath, imageBuffer, {
         contentType: 'image/png',
         upsert: true
-      });
+      })
 
     if (uploadError) {
-      console.error('Error uploading PNG:', uploadError);
-      throw uploadError;
+      console.error('Error uploading PNG:', uploadError)
+      throw uploadError
     }
 
-    // Get the public URL for OpenAI analysis
+    // Get the public URL for analysis
     const { data: { publicUrl } } = supabase.storage
       .from('financial_docs')
-      .getPublicUrl(pngPath);
+      .getPublicUrl(pngPath)
 
-    console.log('Generated public URL for analysis:', publicUrl);
-
-    // Extract data using OpenAI
-    const aiResult = await extractPaystubData(publicUrl);
-    console.log('OpenAI API Response:', JSON.stringify(aiResult));
-
-    if (!aiResult.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from OpenAI');
-    }
-
-    // Parse the extracted data
-    const extractedData = parseExtractedData(aiResult.choices[0].message.content);
+    console.log('Generated public URL for analysis:', publicUrl)
 
     // Update document status
-    console.log('Updating document status to completed');
+    console.log('Updating document status to completed')
     const { error: updateError } = await supabase
       .from('financial_documents')
       .update({ status: 'completed' })
-      .eq('id', documentId);
+      .eq('id', documentId)
 
     if (updateError) {
-      console.error('Error updating document status:', updateError);
-      throw updateError;
+      console.error('Error updating document status:', updateError)
+      throw updateError
     }
 
-    // Store the extracted data
-    console.log('Storing extracted paystub data');
-    const { error: insertError } = await supabase
-      .from('paystub_data')
-      .insert({
-        document_id: documentId,
-        gross_pay: extractedData.gross_pay,
-        net_pay: extractedData.net_pay,
-        pay_period_start: extractedData.pay_period_start,
-        pay_period_end: extractedData.pay_period_end,
-        extracted_data: extractedData
-      });
-
-    if (insertError) {
-      throw insertError;
-    }
-
-    console.log('Successfully processed PDF document');
+    console.log('Successfully processed PDF document')
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        data: extractedData 
+        success: true,
+        imageUrl: publicUrl
       }), 
       { 
         headers: { 
@@ -154,9 +145,9 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         }
       }
-    );
+    )
   } catch (error) {
-    console.error('Error in convert-pdf:', error);
+    console.error('Error in convert-pdf:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message,
@@ -169,6 +160,6 @@ serve(async (req) => {
         }, 
         status: 500 
       }
-    );
+    )
   }
-});
+})
