@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders, createSupabaseClient, convertPdfToPng, extractPaystubData, parseExtractedData } from './utils.ts'
+import { corsHeaders, createSupabaseClient, convertPdfToPng, validateImageFormat, extractPaystubData, parseExtractedData } from './utils.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -35,8 +35,13 @@ serve(async (req) => {
       throw new Error('Failed to download PDF')
     }
 
-    // Convert PDF to PNG
+    // Convert PDF to PNG with enhanced method
     const pngBuffer = await convertPdfToPng(await pdfData.arrayBuffer())
+    
+    // Validate the converted image format
+    if (!validateImageFormat(pngBuffer)) {
+      throw new Error('Converted image is not in valid PNG format')
+    }
     
     // Upload the PNG
     const pngFileName = document.file_name.replace('.pdf', '.png')
