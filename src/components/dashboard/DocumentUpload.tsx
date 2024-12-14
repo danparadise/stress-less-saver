@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,23 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { uploadDocument } from "@/utils/documentUpload";
+import DocumentTypeSelect from "./DocumentTypeSelect";
+import MonthPicker from "./MonthPicker";
 
 const DocumentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -52,32 +39,7 @@ const DocumentUpload = () => {
 
     setIsUploading(true);
     try {
-      // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${documentType}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("financial_docs")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { error: dbError } = await supabase.from("financial_documents").insert({
-        document_type: documentType,
-        file_path: filePath,
-        file_name: file.name,
-        month_year: format(date, "yyyy-MM-dd"),
-        user_id: user.id
-      });
-
-      if (dbError) throw dbError;
+      await uploadDocument(file, documentType, date);
 
       toast({
         title: "Success",
@@ -92,7 +54,6 @@ const DocumentUpload = () => {
       if (document.querySelector<HTMLInputElement>('input[type="file"]')) {
         document.querySelector<HTMLInputElement>('input[type="file"]')!.value = '';
       }
-
     } catch (error: any) {
       toast({
         title: "Error",
@@ -113,42 +74,8 @@ const DocumentUpload = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Select value={documentType} onValueChange={setDocumentType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select document type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="paystub">Paystub</SelectItem>
-              <SelectItem value="bank_statement">Bank Statement</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "MMMM yyyy") : "Select month"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                disabled={(date) => date > new Date()}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
+        <DocumentTypeSelect value={documentType} onValueChange={setDocumentType} />
+        <MonthPicker date={date} onSelect={setDate} />
 
         <div className="space-y-2">
           <Input
