@@ -11,14 +11,14 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       messages: [
         {
           role: "system",
-          content: "You are a paystub data extractor. You must ALWAYS respond with a valid JSON object containing exactly these fields: gross_pay (numeric, no currency symbols or commas), net_pay (numeric, no currency symbols or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Do not include any explanations or additional text, only return the JSON object. For gross_pay and net_pay, return only numbers without any formatting."
+          content: "You are a paystub data extractor. Extract numeric values for gross pay and net pay, removing any currency symbols or commas. Format dates as YYYY-MM-DD. If you cannot extract the data, return a JSON with null values. Your response must ALWAYS be a valid JSON object with these exact fields: gross_pay, net_pay, pay_period_start, pay_period_end. Never include explanations or additional text."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a JSON object with the specified fields. Ensure gross_pay and net_pay are plain numbers without any formatting."
+              text: "Extract the following from this paystub image and return ONLY a JSON object: gross_pay (number without currency symbols/commas), net_pay (number without currency symbols/commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). If any value cannot be extracted, use null."
             },
             {
               type: "image_url",
@@ -53,19 +53,56 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
     // Parse the JSON content
     const parsedData = JSON.parse(content);
     
-    // Ensure numeric values are properly formatted
-    parsedData.gross_pay = Number(String(parsedData.gross_pay).replace(/[^0-9.-]+/g, ''));
-    parsedData.net_pay = Number(String(parsedData.net_pay).replace(/[^0-9.-]+/g, ''));
+    // Validate the required fields exist
+    const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end'];
+    for (const field of requiredFields) {
+      if (!(field in parsedData)) {
+        throw new Error(`Missing required field: ${field}`);
+      }
+    }
     
-    // Validate that we have valid numbers
-    if (isNaN(parsedData.gross_pay) || isNaN(parsedData.net_pay)) {
-      throw new Error('Invalid numeric values for gross_pay or net_pay');
+    // Convert string numbers to actual numbers if they're not null
+    if (parsedData.gross_pay !== null) {
+      const grossPay = Number(String(parsedData.gross_pay).replace(/[^0-9.-]+/g, ''));
+      if (isNaN(grossPay)) {
+        console.warn('Invalid gross_pay value, setting to null');
+        parsedData.gross_pay = null;
+      } else {
+        parsedData.gross_pay = grossPay;
+      }
+    }
+    
+    if (parsedData.net_pay !== null) {
+      const netPay = Number(String(parsedData.net_pay).replace(/[^0-9.-]+/g, ''));
+      if (isNaN(netPay)) {
+        console.warn('Invalid net_pay value, setting to null');
+        parsedData.net_pay = null;
+      } else {
+        parsedData.net_pay = netPay;
+      }
+    }
+    
+    // Validate dates if they're not null
+    for (const dateField of ['pay_period_start', 'pay_period_end']) {
+      if (parsedData[dateField] !== null) {
+        const date = new Date(parsedData[dateField]);
+        if (isNaN(date.getTime())) {
+          console.warn(`Invalid ${dateField} value, setting to null`);
+          parsedData[dateField] = null;
+        }
+      }
     }
     
     console.log('Parsed and validated data:', parsedData);
     return JSON.stringify(parsedData);
   } catch (error) {
     console.error('Failed to parse or validate OpenAI response:', error);
-    throw new Error(`Failed to get valid JSON response from OpenAI: ${error.message}`);
+    // Return a valid JSON with null values instead of throwing
+    return JSON.stringify({
+      gross_pay: null,
+      net_pay: null,
+      pay_period_start: null,
+      pay_period_end: null
+    });
   }
 }
