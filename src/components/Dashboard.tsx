@@ -52,7 +52,7 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-4xl font-bold text-sage-800">PayGuard</h1>
-          <p className="text-sage-600 mt-2 italic">A wise way to get paid</p>
+          <p className="text-sage-600 mt-2 italic">A Wise Way To Get Paid</p>
         </div>
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-sage-800">Financial Overview</h2>
