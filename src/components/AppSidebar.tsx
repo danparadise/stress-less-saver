@@ -21,21 +21,16 @@ const menuItems = [
 
 const AppSidebar = () => {
   return (
-    <Sidebar variant="inset" className="border-r border-border/40">
+    <Sidebar variant="inset" className="sidebar-gradient">
       <SidebarContent>
         <div className="p-6">
-          <img
-            src="/lovable-uploads/c6bfa104-b34d-4f58-88e1-a76291298892.png"
-            alt="Logo"
-            className="h-8 w-auto mb-8"
-          />
           <div className="mb-4">
             <div className="flex items-center space-x-3 mb-3">
               <div className="h-10 w-10 rounded-full bg-sage-100 flex items-center justify-center">
                 <span className="text-sage-700 font-medium">JD</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">John Doe</span>
+                <span className="text-sm font-medium text-purple-800 dark:text-white">John Doe</span>
                 <span className="text-xs text-muted-foreground">Pro Member</span>
               </div>
             </div>
