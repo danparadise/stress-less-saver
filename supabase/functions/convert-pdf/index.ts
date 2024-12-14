@@ -25,7 +25,7 @@ serve(async (req) => {
     // Get the document details
     const { data: document, error: fetchError } = await supabase
       .from('financial_documents')
-      .select('file_path, file_name')
+      .select('file_path, file_name, document_type')
       .eq('id', documentId)
       .single()
 
@@ -91,6 +91,118 @@ serve(async (req) => {
         .eq('id', documentId)
       
       throw uploadError
+    }
+
+    // If it's a paystub, call OpenAI to extract data
+    if (document.document_type === 'paystub') {
+      const { data: { publicUrl } } = supabase.storage
+        .from('financial_docs')
+        .getPublicUrl(pngPath)
+
+      // Call OpenAI API to analyze the image
+      const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Do not include markdown formatting, code blocks, or any other text."
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a raw JSON object with the specified fields, no markdown or code blocks."
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: publicUrl
+                  }
+                }
+              ]
+            }
+          ]
+        })
+      })
+
+      if (!openAiResponse.ok) {
+        const errorData = await openAiResponse.text()
+        console.error('OpenAI API error:', errorData)
+        throw new Error(`OpenAI API error: ${errorData}`)
+      }
+
+      const aiResult = await openAiResponse.json()
+      console.log('OpenAI API Response:', JSON.stringify(aiResult))
+
+      if (!aiResult.choices?.[0]?.message?.content) {
+        throw new Error('Invalid response format from OpenAI')
+      }
+
+      // Parse the AI response
+      let extractedData
+      try {
+        const content = aiResult.choices[0].message.content.trim()
+        console.log('Raw content from OpenAI:', content)
+        
+        // Remove any markdown formatting if present
+        const jsonContent = content.replace(/```json\n|\n```|```/g, '').trim()
+        console.log('Cleaned content for parsing:', jsonContent)
+        
+        extractedData = JSON.parse(jsonContent)
+        
+        // Validate the required fields
+        const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end']
+        const missingFields = requiredFields.filter(field => !(field in extractedData))
+        
+        if (missingFields.length > 0) {
+          throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
+        }
+
+        // Convert string numbers to actual numbers
+        extractedData.gross_pay = Number(String(extractedData.gross_pay).replace(/[^0-9.-]+/g, ''))
+        extractedData.net_pay = Number(String(extractedData.net_pay).replace(/[^0-9.-]+/g, ''))
+
+        // Validate dates
+        const validateDate = (date: string) => {
+          const parsed = new Date(date)
+          if (isNaN(parsed.getTime())) {
+            throw new Error(`Invalid date format: ${date}`)
+          }
+          return date
+        }
+        
+        extractedData.pay_period_start = validateDate(extractedData.pay_period_start)
+        extractedData.pay_period_end = validateDate(extractedData.pay_period_end)
+
+        // Insert the extracted data
+        const { error: insertError } = await supabase
+          .from('paystub_data')
+          .insert({
+            document_id: documentId,
+            gross_pay: extractedData.gross_pay,
+            net_pay: extractedData.net_pay,
+            pay_period_start: extractedData.pay_period_start,
+            pay_period_end: extractedData.pay_period_end,
+            extracted_data: extractedData
+          })
+
+        if (insertError) {
+          console.error('Error inserting paystub data:', insertError)
+          throw insertError
+        }
+
+        console.log('Successfully inserted paystub data')
+      } catch (e) {
+        console.error('Failed to parse AI response:', e)
+        throw new Error(`Failed to parse extracted data: ${e.message}`)
+      }
     }
 
     // Update the document record with the new PNG file info and completed status
