@@ -76,7 +76,7 @@ serve(async (req) => {
     const extractedData = parseExtractedData(aiResponse);
     console.log('Data parsed successfully');
 
-    // Update document status and store extracted data
+    // Update document status
     console.log('Updating document status');
     const { error: updateError } = await supabase
       .from('financial_documents')
