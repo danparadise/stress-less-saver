@@ -19,10 +19,10 @@ import { useRef } from "react";
 import { uploadDocument } from "@/utils/documentUpload";
 
 const menuItems = [
+  { title: "Dashboard", icon: Grid, path: "/" },
   { title: "Overview", icon: Activity, path: "/" },
   { title: "Analytics", icon: BarChart2, path: "/" },
   { title: "Paystubs", icon: FileText, path: "/paystubs" },
-  { title: "Dashboard", icon: Grid, path: "/" },
   { title: "Database", icon: Database, path: "/" },
   { title: "Settings", icon: Settings, path: "/" },
 ];
