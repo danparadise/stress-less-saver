@@ -18,12 +18,16 @@ export const uploadDocument = async (
   const fileName = `${crypto.randomUUID()}.${fileExt}`;
   const filePath = `${documentType}/${fileName}`;
 
+  console.log('Starting file upload to storage:', filePath);
+
   // Upload file to storage
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from("financial_docs")
     .upload(filePath, file);
 
   if (uploadError) throw uploadError;
+
+  console.log('File uploaded successfully, creating document record');
 
   // Insert document record
   const { data: docData, error: dbError } = await supabase
@@ -41,42 +45,58 @@ export const uploadDocument = async (
 
   if (dbError) throw dbError;
 
+  console.log('Document record created:', docData.id);
+
   // If it's a PDF, trigger conversion
   if (file.type === "application/pdf") {
+    console.log('PDF detected, initiating conversion');
+    
     const { data: { publicUrl } } = supabase.storage
       .from("financial_docs")
       .getPublicUrl(filePath);
 
-    const { error: convertError } = await supabase.functions
-      .invoke('convert-pdf', {
-        body: {
-          documentId: docData.id,
-          pdfUrl: publicUrl
-        }
-      });
+    try {
+      const { error: convertError } = await supabase.functions
+        .invoke('convert-pdf', {
+          body: {
+            documentId: docData.id,
+            pdfUrl: publicUrl
+          }
+        });
 
-    if (convertError) {
-      console.error('Error converting PDF:', convertError);
-      // Don't throw the error - we still want to complete the upload
+      if (convertError) {
+        console.error('Error converting PDF:', convertError);
+        throw convertError;
+      }
+    } catch (error) {
+      console.error('Failed to invoke convert-pdf function:', error);
+      throw new Error(`Failed to process PDF: ${error.message}`);
     }
   }
   // If it's a paystub, trigger text extraction
   else if (documentType === 'paystub') {
+    console.log('Paystub detected, initiating text extraction');
+    
     const { data: { publicUrl } } = supabase.storage
       .from("financial_docs")
       .getPublicUrl(filePath);
 
-    const { error: extractError } = await supabase.functions
-      .invoke('extract-paystub-text', {
-        body: {
-          documentId: docData.id,
-          imageUrl: publicUrl
-        }
-      });
+    try {
+      const { error: extractError } = await supabase.functions
+        .invoke('extract-paystub-text', {
+          body: {
+            documentId: docData.id,
+            imageUrl: publicUrl
+          }
+        });
 
-    if (extractError) {
-      console.error('Error extracting text:', extractError);
-      // Don't throw the error - we still want to complete the upload
+      if (extractError) {
+        console.error('Error extracting text:', extractError);
+        throw extractError;
+      }
+    } catch (error) {
+      console.error('Failed to invoke extract-paystub-text function:', error);
+      throw new Error(`Failed to process paystub: ${error.message}`);
     }
   }
 
