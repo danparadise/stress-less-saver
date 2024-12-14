@@ -5,10 +5,14 @@ import { useToast } from "@/components/ui/use-toast";
 import PaystubTable from "../paystubs/PaystubTable";
 import PaystubEmpty from "../paystubs/PaystubEmpty";
 import PaystubLoading from "../paystubs/PaystubLoading";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
 const PaystubData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [payPeriodFilter, setPayPeriodFilter] = useState<string>("all");
+  const [grossPayFilter, setGrossPayFilter] = useState<string>("all");
 
   const { data: paystubs, isLoading } = useQuery({
     queryKey: ["paystub-data"],
@@ -102,14 +106,86 @@ const PaystubData = () => {
     return acc;
   }, []);
 
+  // Apply filters
+  const filteredPaystubs = uniquePaystubs.filter(paystub => {
+    let passesPayPeriodFilter = true;
+    let passesGrossPayFilter = true;
+
+    // Pay Period Filter
+    if (payPeriodFilter !== "all") {
+      const today = new Date();
+      const startDate = new Date(paystub.pay_period_start);
+      
+      switch (payPeriodFilter) {
+        case "last30":
+          const thirtyDaysAgo = new Date(today.setDate(today.getDate() - 30));
+          passesPayPeriodFilter = startDate >= thirtyDaysAgo;
+          break;
+        case "last90":
+          const ninetyDaysAgo = new Date(today.setDate(today.getDate() - 90));
+          passesPayPeriodFilter = startDate >= ninetyDaysAgo;
+          break;
+        case "thisYear":
+          passesPayPeriodFilter = startDate.getFullYear() === new Date().getFullYear();
+          break;
+      }
+    }
+
+    // Gross Pay Filter
+    if (grossPayFilter !== "all" && paystub.gross_pay) {
+      const grossPay = Number(paystub.gross_pay);
+      switch (grossPayFilter) {
+        case "lessThan1000":
+          passesGrossPayFilter = grossPay < 1000;
+          break;
+        case "1000to3000":
+          passesGrossPayFilter = grossPay >= 1000 && grossPay <= 3000;
+          break;
+        case "moreThan3000":
+          passesGrossPayFilter = grossPay > 3000;
+          break;
+      }
+    }
+
+    return passesPayPeriodFilter && passesGrossPayFilter;
+  });
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Extracted Paystub Data</CardTitle>
+        <div className="flex gap-4 mt-4">
+          <div className="w-48">
+            <Select value={payPeriodFilter} onValueChange={setPayPeriodFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by Pay Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="last30">Last 30 Days</SelectItem>
+                <SelectItem value="last90">Last 90 Days</SelectItem>
+                <SelectItem value="thisYear">This Year</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-48">
+            <Select value={grossPayFilter} onValueChange={setGrossPayFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by Gross Pay" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Amounts</SelectItem>
+                <SelectItem value="lessThan1000">Less than $1,000</SelectItem>
+                <SelectItem value="1000to3000">$1,000 - $3,000</SelectItem>
+                <SelectItem value="moreThan3000">More than $3,000</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <PaystubTable 
-          paystubs={uniquePaystubs} 
+          paystubs={filteredPaystubs} 
           onDelete={(id) => deleteMutation.mutate(id)}
           isDeleting={deleteMutation.isPending}
         />
