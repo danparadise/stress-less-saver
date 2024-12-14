@@ -20,7 +20,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const supabase = createClient(supabaseUrl!, supabaseKey!)
 
-    // Get the document details to check if it's an image or PDF
+    // Get the document details
     const { data: document } = await supabase
       .from('financial_documents')
       .select('file_path, file_name')
@@ -55,14 +55,14 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format with the following fields: gross_pay (numeric), net_pay (numeric), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Return ONLY the JSON object, no other text."
+            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Include ONLY these fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Return ONLY the JSON object with these exact field names, no other text or fields."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Please analyze this paystub image and extract the gross pay, net pay, and pay period dates. Return ONLY a JSON object."
+                text: "Please analyze this paystub image and extract the gross pay, net pay, and pay period dates. Return ONLY a JSON object with the specified fields."
               },
               {
                 type: "image_url",
@@ -89,20 +89,41 @@ serve(async (req) => {
       throw new Error('Invalid response format from OpenAI')
     }
 
-    // Parse the AI response
+    // Parse the AI response with better error handling
     let extractedData
     try {
       const content = aiResult.choices[0].message.content.trim()
+      console.log('Attempting to parse content:', content)
       extractedData = JSON.parse(content)
-      console.log('Parsed extracted data:', extractedData)
-    } catch (e) {
-      console.error('Failed to parse AI response:', e)
-      throw new Error('Failed to parse extracted data from AI response')
-    }
+      
+      // Validate the required fields
+      const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end']
+      const missingFields = requiredFields.filter(field => !(field in extractedData))
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
+      }
 
-    // Validate extracted data
-    if (!extractedData.gross_pay && !extractedData.net_pay) {
-      throw new Error('No pay information could be extracted from the document')
+      // Convert string numbers to actual numbers
+      extractedData.gross_pay = Number(String(extractedData.gross_pay).replace(/[^0-9.-]+/g, ''))
+      extractedData.net_pay = Number(String(extractedData.net_pay).replace(/[^0-9.-]+/g, ''))
+
+      // Validate dates
+      const validateDate = (date: string) => {
+        const parsed = new Date(date)
+        if (isNaN(parsed.getTime())) {
+          throw new Error(`Invalid date format: ${date}`)
+        }
+        return date
+      }
+      
+      extractedData.pay_period_start = validateDate(extractedData.pay_period_start)
+      extractedData.pay_period_end = validateDate(extractedData.pay_period_end)
+
+      console.log('Parsed and validated extracted data:', extractedData)
+    } catch (e) {
+      console.error('Failed to parse AI response:', e, 'Content:', aiResult.choices[0].message.content)
+      throw new Error(`Failed to parse extracted data: ${e.message}`)
     }
 
     // Update document status
