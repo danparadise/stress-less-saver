@@ -48,7 +48,6 @@ const convertToImage = async (apiKey: string, uploadedFileUrl: string) => {
     },
     body: JSON.stringify({
       url: uploadedFileUrl,
-      pages: '1-1',
       async: false
     })
   });
@@ -66,11 +65,11 @@ const convertToImage = async (apiKey: string, uploadedFileUrl: string) => {
     throw new Error('No PNG URLs returned from PDF.co');
   }
 
-  console.log('PDF converted to PNG successfully');
-  return data.urls[0]; // Get the first page's URL
+  console.log(`PDF converted to ${data.urls.length} PNG pages successfully`);
+  return data.urls; // Return all page URLs
 };
 
-export const convertPdfToPng = async (pdfData: ArrayBuffer): Promise<Uint8Array> => {
+export const convertPdfToPng = async (pdfData: ArrayBuffer): Promise<Uint8Array[]> => {
   const apiKey = Deno.env.get('PDF_CO_API_KEY');
   if (!apiKey) {
     throw new Error('PDF_CO_API_KEY is not set');
@@ -87,19 +86,24 @@ export const convertPdfToPng = async (pdfData: ArrayBuffer): Promise<Uint8Array>
     await uploadToPdfCo(presignedUrl, pdfData);
 
     // Convert PDF to PNG
-    const pngUrl = await convertToImage(apiKey, uploadedFileUrl);
+    const pngUrls = await convertToImage(apiKey, uploadedFileUrl);
 
-    // Download the PNG
-    console.log('Downloading converted PNG');
-    const pngResponse = await fetch(pngUrl);
-    if (!pngResponse.ok) {
-      throw new Error('Failed to download converted PNG');
-    }
-
-    const pngArrayBuffer = await pngResponse.arrayBuffer();
-    console.log('PNG downloaded successfully');
+    // Download all PNGs
+    console.log('Downloading converted PNGs');
+    const pngArrayBuffers: Uint8Array[] = [];
     
-    return new Uint8Array(pngArrayBuffer);
+    for (let i = 0; i < pngUrls.length; i++) {
+      console.log(`Downloading PNG page ${i + 1}`);
+      const pngResponse = await fetch(pngUrls[i]);
+      if (!pngResponse.ok) {
+        throw new Error(`Failed to download converted PNG page ${i + 1}`);
+      }
+      const pngArrayBuffer = await pngResponse.arrayBuffer();
+      pngArrayBuffers.push(new Uint8Array(pngArrayBuffer));
+    }
+    
+    console.log(`Successfully downloaded ${pngArrayBuffers.length} PNG pages`);
+    return pngArrayBuffers;
   } catch (error) {
     console.error('PDF conversion failed:', error);
     throw error;

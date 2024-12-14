@@ -43,40 +43,63 @@ serve(async (req) => {
 
     // Convert PDF to PNG
     console.log('Starting PDF to PNG conversion');
-    const pngData = await convertPdfToPng(pdfData);
+    const pngDataArray = await convertPdfToPng(pdfData);
     console.log('PDF converted to PNG successfully');
 
-    // Upload PNG to storage
-    const pngPath = `converted/${documentId}.png`;
-    console.log('Uploading PNG to storage:', pngPath);
-    
-    const { error: uploadError } = await supabase.storage
-      .from('financial_docs')
-      .upload(pngPath, pngData, {
-        contentType: 'image/png',
-        upsert: true
-      });
+    // Upload all PNG pages to storage
+    const uploadedPngUrls = [];
+    for (let i = 0; i < pngDataArray.length; i++) {
+      const pngPath = `converted/${documentId}_page${i + 1}.png`;
+      console.log('Uploading PNG to storage:', pngPath);
+      
+      const { error: uploadError } = await supabase.storage
+        .from('financial_docs')
+        .upload(pngPath, pngDataArray[i], {
+          contentType: 'image/png',
+          upsert: true
+        });
 
-    if (uploadError) {
-      throw new Error(`Failed to upload PNG: ${uploadError.message}`);
+      if (uploadError) {
+        throw new Error(`Failed to upload PNG page ${i + 1}: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('financial_docs')
+        .getPublicUrl(pngPath);
+      
+      uploadedPngUrls.push(publicUrl);
     }
 
-    // Get public URL for the uploaded PNG
-    const { data: { publicUrl: pngUrl } } = supabase.storage
-      .from('financial_docs')
-      .getPublicUrl(pngPath);
+    console.log('All PNG pages uploaded successfully');
 
-    console.log('PNG uploaded successfully, URL:', pngUrl);
+    // Extract data from all pages
+    let bestResult = null;
+    let highestConfidence = 0;
 
-    // Extract data from the PNG using OpenAI
-    console.log('Starting text extraction from PNG');
-    const aiResponse = await extractDataFromImage(pngUrl);
-    console.log('Text extraction completed');
-    
-    const extractedData = parseExtractedData(aiResponse);
-    console.log('Data parsed successfully');
+    for (let i = 0; i < uploadedPngUrls.length; i++) {
+      console.log(`Processing text extraction from page ${i + 1}`);
+      try {
+        const aiResponse = await extractDataFromImage(uploadedPngUrls[i]);
+        const extractedData = parseExtractedData(aiResponse);
+        
+        // Simple confidence score based on number of non-null values
+        const confidence = Object.values(extractedData).filter(v => v !== null).length;
+        
+        if (confidence > highestConfidence) {
+          highestConfidence = confidence;
+          bestResult = extractedData;
+        }
+      } catch (error) {
+        console.warn(`Failed to extract data from page ${i + 1}:`, error);
+        continue;
+      }
+    }
 
-    // First update document status
+    if (!bestResult) {
+      throw new Error('Failed to extract data from any page');
+    }
+
+    // Update document status
     console.log('Updating document status');
     const { error: updateError } = await supabase
       .from('financial_documents')
@@ -87,17 +110,17 @@ serve(async (req) => {
       throw new Error(`Error updating document status: ${updateError.message}`);
     }
 
-    // Then insert the extracted data
+    // Insert the extracted data
     console.log('Storing extracted data in paystub_data table');
     const { error: insertError } = await supabase
       .from('paystub_data')
       .insert({
         document_id: documentId,
-        gross_pay: extractedData.gross_pay,
-        net_pay: extractedData.net_pay,
-        pay_period_start: extractedData.pay_period_start,
-        pay_period_end: extractedData.pay_period_end,
-        extracted_data: extractedData
+        gross_pay: bestResult.gross_pay,
+        net_pay: bestResult.net_pay,
+        pay_period_start: bestResult.pay_period_start,
+        pay_period_end: bestResult.pay_period_end,
+        extracted_data: bestResult
       });
 
     if (insertError) {
@@ -107,7 +130,7 @@ serve(async (req) => {
 
     console.log('Process completed successfully');
     return new Response(
-      JSON.stringify({ success: true, data: extractedData }),
+      JSON.stringify({ success: true, data: bestResult }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
