@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Paystubs from "./pages/Paystubs";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,21 @@ const App = () => (
                       <AppSidebar />
                       <main className="flex-1">
                         <Index />
+                      </main>
+                    </div>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/paystubs"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full">
+                      <AppSidebar />
+                      <main className="flex-1">
+                        <Paystubs />
                       </main>
                     </div>
                   </SidebarProvider>

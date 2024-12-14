@@ -4,8 +4,6 @@ import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
-import DocumentUpload from "./dashboard/DocumentUpload";
-import PaystubData from "./dashboard/PaystubData";
 
 const mockData = {
   balance: 5240.50,
@@ -115,12 +113,10 @@ const Dashboard = () => {
             <div className="lg:col-span-2">
               <IncomeChart data={mockData.transactions} />
             </div>
-            <DocumentUpload />
+            <div className="lg:col-span-1">
+              <AiInsights suggestions={mockData.aiSuggestions} />
+            </div>
           </div>
-
-          <PaystubData />
-
-          <AiInsights suggestions={mockData.aiSuggestions} />
         </div>
       </main>
     </div>
