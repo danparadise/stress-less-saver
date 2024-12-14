@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ArrowDownRight, Wallet, PiggyBank } from "lucide-react";
-import Header from "./dashboard/Header";
 import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
@@ -62,8 +61,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header isDark={isDark} toggleDarkMode={toggleDarkMode} />
-      
       <main className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-purple-800 dark:text-white mb-2">
