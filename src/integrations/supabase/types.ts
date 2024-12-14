@@ -45,6 +45,47 @@ export type Database = {
         }
         Relationships: []
       }
+      paystub_data: {
+        Row: {
+          created_at: string
+          document_id: string
+          extracted_data: Json | null
+          gross_pay: number | null
+          id: string
+          net_pay: number | null
+          pay_period_end: string | null
+          pay_period_start: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          extracted_data?: Json | null
+          gross_pay?: number | null
+          id?: string
+          net_pay?: number | null
+          pay_period_end?: string | null
+          pay_period_start?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          extracted_data?: Json | null
+          gross_pay?: number | null
+          id?: string
+          net_pay?: number | null
+          pay_period_end?: string | null
+          pay_period_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paystub_data_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "financial_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
