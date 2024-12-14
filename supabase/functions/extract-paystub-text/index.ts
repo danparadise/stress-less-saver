@@ -55,14 +55,14 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Include ONLY these fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Return ONLY the JSON object with these exact field names, no other text or fields."
+            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Do not include markdown formatting, code blocks, or any other text."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Please analyze this paystub image and extract the gross pay, net pay, and pay period dates. Return ONLY a JSON object with the specified fields."
+                text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a raw JSON object with the specified fields, no markdown or code blocks."
               },
               {
                 type: "image_url",
@@ -93,8 +93,13 @@ serve(async (req) => {
     let extractedData
     try {
       const content = aiResult.choices[0].message.content.trim()
-      console.log('Attempting to parse content:', content)
-      extractedData = JSON.parse(content)
+      console.log('Raw content from OpenAI:', content)
+      
+      // Remove any markdown formatting if present
+      const jsonContent = content.replace(/```json\n|\n```|```/g, '').trim()
+      console.log('Cleaned content for parsing:', jsonContent)
+      
+      extractedData = JSON.parse(jsonContent)
       
       // Validate the required fields
       const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end']
@@ -122,7 +127,7 @@ serve(async (req) => {
 
       console.log('Parsed and validated extracted data:', extractedData)
     } catch (e) {
-      console.error('Failed to parse AI response:', e, 'Content:', aiResult.choices[0].message.content)
+      console.error('Failed to parse AI response:', e, 'Raw content:', aiResult.choices[0].message.content)
       throw new Error(`Failed to parse extracted data: ${e.message}`)
     }
 
