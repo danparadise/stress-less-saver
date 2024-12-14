@@ -26,7 +26,7 @@ serve(async (req) => {
 
   try {
     const { documentId, pdfUrl } = await req.json()
-    console.log('Processing PDF document:', documentId)
+    console.log('Processing PDF document:', documentId, 'URL:', pdfUrl)
 
     if (!documentId || !pdfUrl) {
       throw new Error('Missing required parameters: documentId or pdfUrl')
@@ -48,19 +48,15 @@ serve(async (req) => {
 
     // Download the PDF file
     console.log('Downloading PDF from:', document.file_path)
-    const { data: pdfData, error: downloadError } = await supabase
-      .storage
-      .from('financial_docs')
-      .download(document.file_path)
-
-    if (downloadError || !pdfData) {
-      console.error('Error downloading PDF:', downloadError)
-      throw new Error('Failed to download PDF')
+    const pdfResponse = await fetch(pdfUrl)
+    if (!pdfResponse.ok) {
+      throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`)
     }
+    const pdfBuffer = await pdfResponse.arrayBuffer()
 
     // Convert PDF to PNG pages
     console.log('Converting PDF to PNG pages')
-    const pngPages = await convertPdfToPng(await pdfData.arrayBuffer())
+    const pngPages = await convertPdfToPng(pdfBuffer)
     console.log(`Converted ${pngPages.length} pages to PNG`)
 
     let extractedText = ''
