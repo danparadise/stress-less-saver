@@ -38,12 +38,7 @@ serve(async (req) => {
         url: pdfUrl,
         async: false,
         inline: false,
-        profiles: [{
-          resolution: 300,
-          colorspace: "rgb",
-          alpha: false,
-          compression: "png"
-        }]
+        profiles: "png300"  // Using a predefined profile string instead of an object
       }),
     })
 
