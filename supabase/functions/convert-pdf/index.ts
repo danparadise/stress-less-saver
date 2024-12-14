@@ -14,7 +14,14 @@ serve(async (req) => {
   try {
     console.log('Starting PDF conversion process');
     const { documentId, pdfUrl } = await req.json();
-    console.log('Processing document:', documentId, 'PDF URL:', pdfUrl);
+    
+    if (!documentId || !pdfUrl) {
+      console.error('Missing required parameters:', { documentId, pdfUrl });
+      throw new Error('Missing required parameters: documentId and pdfUrl are required');
+    }
+
+    console.log('Processing document:', documentId);
+    console.log('PDF URL:', pdfUrl);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -27,9 +34,11 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Download PDF
-    console.log('Downloading PDF from:', pdfUrl);
-    const pdfResponse = await fetch(pdfUrl);
+    // Download PDF - ensure URL is properly formatted
+    const formattedPdfUrl = new URL(pdfUrl).toString();
+    console.log('Downloading PDF from:', formattedPdfUrl);
+    
+    const pdfResponse = await fetch(formattedPdfUrl);
     if (!pdfResponse.ok) {
       console.error('Failed to fetch PDF:', pdfResponse.status, pdfResponse.statusText);
       throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
@@ -73,9 +82,9 @@ serve(async (req) => {
     console.log('Text extraction completed');
     
     const extractedData = parseExtractedData(aiResponse);
-    console.log('Data parsed successfully');
+    console.log('Data parsed successfully:', extractedData);
 
-    // Update document status and store extracted data
+    // Update document status
     console.log('Updating document status');
     const { error: updateError } = await supabase
       .from('financial_documents')
