@@ -14,6 +14,8 @@ import { uploadDocument } from "@/utils/documentUpload";
 import DocumentTypeSelect from "./DocumentTypeSelect";
 import MonthPicker from "./MonthPicker";
 
+const SUPPORTED_FORMATS = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+
 const DocumentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<string>("");
@@ -23,7 +25,19 @@ const DocumentUpload = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      
+      if (!SUPPORTED_FORMATS.includes(selectedFile.type)) {
+        toast({
+          title: "Invalid File Format",
+          description: "Please upload an image file (PNG, JPEG, GIF, or WebP)",
+          variant: "destructive",
+        });
+        e.target.value = '';
+        return;
+      }
+      
+      setFile(selectedFile);
     }
   };
 
@@ -70,7 +84,7 @@ const DocumentUpload = () => {
       <CardHeader>
         <CardTitle>Upload Documents</CardTitle>
         <CardDescription>
-          Upload your paystubs and bank statements securely
+          Upload your paystub images securely (PNG, JPEG, GIF, or WebP formats)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -80,7 +94,7 @@ const DocumentUpload = () => {
         <div className="space-y-2">
           <Input
             type="file"
-            accept=".pdf,.png,.jpg,.jpeg"
+            accept="image/png,image/jpeg,image/gif,image/webp"
             onChange={handleFileChange}
           />
         </div>
