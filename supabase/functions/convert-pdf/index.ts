@@ -23,28 +23,34 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl!, supabaseKey!)
 
     // Get the document details
-    const { data: document } = await supabase
+    const { data: document, error: fetchError } = await supabase
       .from('financial_documents')
       .select('file_path, file_name')
       .eq('id', documentId)
       .single()
 
-    if (!document) {
+    if (fetchError || !document) {
+      console.error('Error fetching document:', fetchError)
       throw new Error('Document not found')
     }
 
     // Generate a signed URL that will be valid for 60 seconds
-    const { data: { signedUrl } } = await supabase
+    const { data: { signedUrl }, error: signedUrlError } = await supabase
       .storage
       .from('financial_docs')
       .createSignedUrl(document.file_path, 60)
 
-    if (!signedUrl) {
+    if (signedUrlError || !signedUrl) {
+      console.error('Error generating signed URL:', signedUrlError)
       throw new Error('Failed to generate signed URL')
     }
 
     // Fetch the PDF file
     const pdfResponse = await fetch(signedUrl)
+    if (!pdfResponse.ok) {
+      throw new Error('Failed to fetch PDF file')
+    }
+    
     const pdfArrayBuffer = await pdfResponse.arrayBuffer()
     
     // Load the PDF document
@@ -55,16 +61,12 @@ serve(async (req) => {
       throw new Error('PDF document has no pages')
     }
 
-    // We'll convert only the first page
-    const firstPage = pages[0]
-    const { width, height } = firstPage.getSize()
-
     // Create a new PDF with just the first page
     const singlePagePdf = await PDFDocument.create()
     const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [0])
     singlePagePdf.addPage(copiedPage)
 
-    // Convert to PNG using PDF.js (this is a simplified version)
+    // Convert to PNG
     const pngBytes = await singlePagePdf.saveAsBase64()
     const pngBuffer = base64Decode(pngBytes)
 
@@ -80,20 +82,29 @@ serve(async (req) => {
       })
 
     if (uploadError) {
+      console.error('Error uploading PNG:', uploadError)
+      
+      // Update document status to error
+      await supabase
+        .from('financial_documents')
+        .update({ status: 'error' })
+        .eq('id', documentId)
+      
       throw uploadError
     }
 
-    // Update the document record
+    // Update the document record with the new PNG file info and completed status
     const { error: updateError } = await supabase
       .from('financial_documents')
       .update({
         file_path: pngPath,
         file_name: pngFileName,
-        status: 'converted'
+        status: 'completed'
       })
       .eq('id', documentId)
 
     if (updateError) {
+      console.error('Error updating document record:', updateError)
       throw updateError
     }
 
@@ -107,10 +118,11 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error in convert-pdf:', error)
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.toString()
+        details: error
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
