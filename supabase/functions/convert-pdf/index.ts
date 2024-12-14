@@ -15,12 +15,22 @@ serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log("Handling CORS preflight request")
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { 
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Max-Age': '86400',
+      }
+    })
   }
 
   try {
     const { documentId, pdfUrl } = await req.json()
     console.log('Processing PDF document:', documentId)
+
+    if (!documentId || !pdfUrl) {
+      throw new Error('Missing required parameters: documentId or pdfUrl')
+    }
 
     const supabase = createSupabaseClient()
 
@@ -37,6 +47,7 @@ serve(async (req) => {
     }
 
     // Download the PDF file
+    console.log('Downloading PDF from:', document.file_path)
     const { data: pdfData, error: downloadError } = await supabase
       .storage
       .from('financial_docs')
@@ -48,6 +59,7 @@ serve(async (req) => {
     }
 
     // Convert PDF to PNG pages
+    console.log('Converting PDF to PNG pages')
     const pngPages = await convertPdfToPng(await pdfData.arrayBuffer())
     console.log(`Converted ${pngPages.length} pages to PNG`)
 
@@ -66,6 +78,7 @@ serve(async (req) => {
       const pngFileName = document.file_name.replace('.pdf', `_page${i + 1}.png`)
       const pngPath = document.file_path.replace('.pdf', `_page${i + 1}.png`)
 
+      console.log(`Uploading PNG page ${i + 1} to:`, pngPath)
       const { error: uploadError } = await supabase.storage
         .from('financial_docs')
         .upload(pngPath, pngBuffer, {
@@ -105,6 +118,7 @@ serve(async (req) => {
     const extractedData = parseExtractedData(aiResult.choices[0].message.content)
 
     // Update document status
+    console.log('Updating document status to completed')
     const { error: updateError } = await supabase
       .from('financial_documents')
       .update({ status: 'completed' })
@@ -116,6 +130,7 @@ serve(async (req) => {
     }
 
     // Store the extracted data
+    console.log('Storing extracted paystub data')
     const { error: insertError } = await supabase
       .from('paystub_data')
       .insert({
@@ -131,9 +146,15 @@ serve(async (req) => {
       throw insertError
     }
 
+    console.log('Successfully processed PDF document')
     return new Response(
       JSON.stringify({ success: true, data: extractedData }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        } 
+      }
     )
   } catch (error) {
     console.error('Error in convert-pdf:', error)
@@ -143,7 +164,10 @@ serve(async (req) => {
         details: error.toString()
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        }, 
         status: 500 
       }
     )
