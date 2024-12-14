@@ -37,13 +37,19 @@ serve(async (req) => {
       body: JSON.stringify({
         url: pdfUrl,
         async: false,
-        profiles: 'web',
+        inline: false,
+        profiles: [{
+          resolution: 300,
+          colorspace: "rgb",
+          alpha: false,
+          compression: "png"
+        }]
       }),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('PDF.co API error:', errorText)
+      console.error('PDF.co API error response:', errorText)
       throw new Error(`PDF.co API error: ${response.status} ${errorText}`)
     }
 
@@ -68,7 +74,7 @@ serve(async (req) => {
     )
 
     // Upload the converted image to Supabase Storage
-    const fileName = `${documentId}.png`
+    const fileName = `converted/${documentId}.png`
     const { error: uploadError } = await supabase.storage
       .from('financial_docs')
       .upload(fileName, await imageResponse.blob(), {
