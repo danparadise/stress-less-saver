@@ -55,9 +55,11 @@ const DocumentUpload = () => {
 
     setIsUploading(true);
     try {
+      console.log('Starting upload process for:', file.name);
       const initialStatus = file.type === "application/pdf" ? "pending_conversion" : "pending";
       const result = await uploadDocument(file, documentType, date, initialStatus);
 
+      console.log('Upload completed successfully:', result);
       toast({
         title: "Success",
         description: file.type === "application/pdf" 
@@ -77,6 +79,7 @@ const DocumentUpload = () => {
         document.querySelector<HTMLInputElement>('input[type="file"]')!.value = '';
       }
     } catch (error: any) {
+      console.error('Upload error:', error);
       toast({
         title: "Error",
         description: error.message,

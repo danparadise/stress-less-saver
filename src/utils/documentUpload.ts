@@ -25,7 +25,10 @@ export const uploadDocument = async (
     .from("financial_docs")
     .upload(filePath, file);
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    console.error('Storage upload error:', uploadError);
+    throw uploadError;
+  }
 
   console.log('File uploaded successfully, creating document record');
 
@@ -43,7 +46,10 @@ export const uploadDocument = async (
     .select()
     .single();
 
-  if (dbError) throw dbError;
+  if (dbError) {
+    console.error('Database insert error:', dbError);
+    throw dbError;
+  }
 
   console.log('Document record created:', docData.id);
 
@@ -56,7 +62,12 @@ export const uploadDocument = async (
       .getPublicUrl(filePath);
 
     try {
-      const { error: convertError } = await supabase.functions
+      console.log('Calling convert-pdf function with:', {
+        documentId: docData.id,
+        pdfUrl: publicUrl
+      });
+
+      const { data, error: convertError } = await supabase.functions
         .invoke('convert-pdf', {
           body: {
             documentId: docData.id,
@@ -66,10 +77,22 @@ export const uploadDocument = async (
 
       if (convertError) {
         console.error('Error converting PDF:', convertError);
-        throw convertError;
+        // Update document status to failed
+        await supabase
+          .from("financial_documents")
+          .update({ status: 'failed' })
+          .eq('id', docData.id);
+        throw new Error(`Failed to convert PDF: ${convertError.message}`);
       }
+
+      console.log('PDF conversion response:', data);
     } catch (error) {
       console.error('Failed to invoke convert-pdf function:', error);
+      // Update document status to failed
+      await supabase
+        .from("financial_documents")
+        .update({ status: 'failed' })
+        .eq('id', docData.id);
       throw new Error(`Failed to process PDF: ${error.message}`);
     }
   }
@@ -82,7 +105,12 @@ export const uploadDocument = async (
       .getPublicUrl(filePath);
 
     try {
-      const { error: extractError } = await supabase.functions
+      console.log('Calling extract-paystub-text function with:', {
+        documentId: docData.id,
+        imageUrl: publicUrl
+      });
+
+      const { data, error: extractError } = await supabase.functions
         .invoke('extract-paystub-text', {
           body: {
             documentId: docData.id,
@@ -92,10 +120,22 @@ export const uploadDocument = async (
 
       if (extractError) {
         console.error('Error extracting text:', extractError);
+        // Update document status to failed
+        await supabase
+          .from("financial_documents")
+          .update({ status: 'failed' })
+          .eq('id', docData.id);
         throw extractError;
       }
+
+      console.log('Text extraction response:', data);
     } catch (error) {
       console.error('Failed to invoke extract-paystub-text function:', error);
+      // Update document status to failed
+      await supabase
+        .from("financial_documents")
+        .update({ status: 'failed' })
+        .eq('id', docData.id);
       throw new Error(`Failed to process paystub: ${error.message}`);
     }
   }
