@@ -52,6 +52,13 @@ const DocumentUpload = () => {
 
     setIsUploading(true);
     try {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
       const fileExt = file.name.split(".").pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${documentType}/${fileName}`;
@@ -67,6 +74,7 @@ const DocumentUpload = () => {
         file_path: filePath,
         file_name: file.name,
         month_year: format(date, "yyyy-MM-dd"),
+        user_id: user.id
       });
 
       if (dbError) throw dbError;
