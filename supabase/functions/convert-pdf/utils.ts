@@ -1,7 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import * as pdfjs from 'https://cdn.skypack.dev/pdfjs-dist@3.11.174/build/pdf.js'
-import { decode as base64Decode } from "https://deno.land/std@0.182.0/encoding/base64.ts"
-import { createWorker } from 'https://esm.sh/tesseract.js@4.1.1'
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,88 +12,6 @@ export const createSupabaseClient = () => {
     throw new Error('Missing Supabase environment variables')
   }
   return createClient(supabaseUrl, supabaseKey)
-}
-
-export const convertPdfToPng = async (pdfArrayBuffer: ArrayBuffer): Promise<Uint8Array[]> => {
-  console.log('Starting PDF to PNG conversion using PDF.js')
-  
-  try {
-    // Set up PDF.js worker
-    const workerSrc = 'https://cdn.skypack.dev/pdfjs-dist@3.11.174/build/pdf.worker.js'
-    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc
-
-    // Load the PDF document
-    const loadingTask = pdfjs.getDocument({ data: pdfArrayBuffer })
-    const pdfDoc = await loadingTask.promise
-    console.log(`PDF loaded successfully with ${pdfDoc.numPages} pages`)
-
-    const pngPages: Uint8Array[] = []
-
-    // Convert each page
-    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-      console.log(`Processing page ${pageNum}`)
-      const page = await pdfDoc.getPage(pageNum)
-      const viewport = page.getViewport({ scale: 1.5 }) // Adjust scale as needed
-
-      // Create a virtual canvas
-      const canvas = new OffscreenCanvas(viewport.width, viewport.height)
-      const context = canvas.getContext('2d')
-
-      if (!context) {
-        throw new Error('Failed to get canvas context')
-      }
-
-      // Render PDF page to canvas
-      await page.render({
-        canvasContext: context,
-        viewport: viewport
-      }).promise
-
-      // Convert canvas to PNG
-      const blob = await canvas.convertToBlob({ type: 'image/png' })
-      const arrayBuffer = await blob.arrayBuffer()
-      pngPages.push(new Uint8Array(arrayBuffer))
-      
-      console.log(`Page ${pageNum} converted to PNG successfully`)
-    }
-
-    return pngPages
-  } catch (error) {
-    console.error('Error in PDF to PNG conversion:', error)
-    throw new Error(`Failed to convert PDF to PNG: ${error.message}`)
-  }
-}
-
-export const performOCR = async (imageBuffer: Uint8Array): Promise<string> => {
-  try {
-    console.log('Starting OCR process')
-    const worker = await createWorker('eng')
-    
-    // Convert Uint8Array to base64
-    const base64Image = btoa(String.fromCharCode(...imageBuffer))
-    
-    const { data: { text } } = await worker.recognize(`data:image/png;base64,${base64Image}`)
-    await worker.terminate()
-    
-    console.log('OCR completed successfully')
-    return text
-  } catch (error) {
-    console.error('Error in OCR process:', error)
-    throw new Error(`Failed to perform OCR: ${error.message}`)
-  }
-}
-
-export const validateImageFormat = (imageBuffer: Uint8Array): boolean => {
-  // Check PNG signature
-  const pngSignature = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
-  if (imageBuffer.length < pngSignature.length) return false
-  
-  for (let i = 0; i < pngSignature.length; i++) {
-    if (imageBuffer[i] !== pngSignature[i]) return false
-  }
-  
-  console.log('Image format validated as PNG')
-  return true
 }
 
 export const extractPaystubData = async (imageUrl: string) => {

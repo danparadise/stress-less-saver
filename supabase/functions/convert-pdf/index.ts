@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { 
   corsHeaders, 
-  createSupabaseClient, 
-  convertPdfToPng, 
-  performOCR,
-  validateImageFormat, 
+  createSupabaseClient,
   extractPaystubData, 
   parseExtractedData 
 } from './utils.ts'
@@ -53,81 +50,83 @@ serve(async (req) => {
     if (!pdfResponse.ok) {
       throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`)
     }
-    const pdfBuffer = await pdfResponse.arrayBuffer()
 
-    // Convert PDF to PNG pages
-    console.log('Converting PDF to PNG pages')
-    const pngPages = await convertPdfToPng(pdfBuffer)
-    console.log(`Converted ${pngPages.length} pages to PNG`)
+    // Convert PDF to image using a third-party service
+    const imageResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
+      method: 'POST',
+      headers: {
+        'x-api-key': Deno.env.get('PDF_CO_API_KEY') || '',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: pdfUrl,
+        async: false
+      })
+    });
 
-    let extractedText = ''
-    
-    // Perform OCR on each page
-    for (let i = 0; i < pngPages.length; i++) {
-      const pngBuffer = pngPages[i]
-      
-      // Validate the converted image format
-      if (!validateImageFormat(pngBuffer)) {
-        throw new Error(`Page ${i + 1} is not in valid PNG format`)
-      }
-      
-      // Upload the PNG
-      const pngFileName = document.file_name.replace('.pdf', `_page${i + 1}.png`)
-      const pngPath = document.file_path.replace('.pdf', `_page${i + 1}.png`)
-
-      console.log(`Uploading PNG page ${i + 1} to:`, pngPath)
-      const { error: uploadError } = await supabase.storage
-        .from('financial_docs')
-        .upload(pngPath, pngBuffer, {
-          contentType: 'image/png',
-          upsert: true
-        })
-
-      if (uploadError) {
-        console.error(`Error uploading PNG page ${i + 1}:`, uploadError)
-        throw uploadError
-      }
-
-      // Perform OCR on the page
-      const pageText = await performOCR(pngBuffer)
-      extractedText += pageText + '\n'
+    if (!imageResponse.ok) {
+      throw new Error('Failed to convert PDF to image');
     }
 
-    console.log('Extracted text from all pages:', extractedText)
+    const conversionResult = await imageResponse.json();
+    
+    if (!conversionResult.url) {
+      throw new Error('No image URL in conversion response');
+    }
 
-    // Get the public URL for the first PNG (we'll use this for OpenAI analysis)
-    const pngPath = document.file_path.replace('.pdf', '_page1.png')
+    // Download the converted image
+    const imageData = await fetch(conversionResult.url);
+    const imageBuffer = await imageData.arrayBuffer();
+
+    // Upload the PNG
+    const pngFileName = document.file_name.replace('.pdf', '.png');
+    const pngPath = document.file_path.replace('.pdf', '.png');
+
+    console.log('Uploading converted PNG:', pngPath);
+    const { error: uploadError } = await supabase.storage
+      .from('financial_docs')
+      .upload(pngPath, imageBuffer, {
+        contentType: 'image/png',
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error('Error uploading PNG:', uploadError);
+      throw uploadError;
+    }
+
+    // Get the public URL for OpenAI analysis
     const { data: { publicUrl } } = supabase.storage
       .from('financial_docs')
-      .getPublicUrl(pngPath)
+      .getPublicUrl(pngPath);
 
-    console.log('Generated public URL for first page:', publicUrl)
+    console.log('Generated public URL for analysis:', publicUrl);
 
     // Extract data using OpenAI
-    const aiResult = await extractPaystubData(publicUrl)
-    console.log('OpenAI API Response:', JSON.stringify(aiResult))
+    const aiResult = await extractPaystubData(publicUrl);
+    console.log('OpenAI API Response:', JSON.stringify(aiResult));
 
     if (!aiResult.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from OpenAI')
+      throw new Error('Invalid response format from OpenAI');
     }
 
     // Parse the extracted data
-    const extractedData = parseExtractedData(aiResult.choices[0].message.content)
+    const extractedData = parseExtractedData(aiResult.choices[0].message.content);
 
     // Update document status
-    console.log('Updating document status to completed')
+    console.log('Updating document status to completed');
     const { error: updateError } = await supabase
       .from('financial_documents')
       .update({ status: 'completed' })
-      .eq('id', documentId)
+      .eq('id', documentId);
 
     if (updateError) {
-      console.error('Error updating document status:', updateError)
-      throw updateError
+      console.error('Error updating document status:', updateError);
+      throw updateError;
     }
 
     // Store the extracted data
-    console.log('Storing extracted paystub data')
+    console.log('Storing extracted paystub data');
     const { error: insertError } = await supabase
       .from('paystub_data')
       .insert({
@@ -137,13 +136,13 @@ serve(async (req) => {
         pay_period_start: extractedData.pay_period_start,
         pay_period_end: extractedData.pay_period_end,
         extracted_data: extractedData
-      })
+      });
 
     if (insertError) {
-      throw insertError
+      throw insertError;
     }
 
-    console.log('Successfully processed PDF document')
+    console.log('Successfully processed PDF document');
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -155,9 +154,9 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         }
       }
-    )
+    );
   } catch (error) {
-    console.error('Error in convert-pdf:', error)
+    console.error('Error in convert-pdf:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
@@ -170,6 +169,6 @@ serve(async (req) => {
         }, 
         status: 500 
       }
-    )
+    );
   }
-})
+});
