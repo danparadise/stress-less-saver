@@ -83,12 +83,12 @@ const Dashboard = () => {
               <Moon className="h-5 w-5" />
             )}
           </Button>
-          <h1 className="text-4xl font-bold text-sage-800 dark:text-sage-200">PayGuard</h1>
-          <p className="text-sage-600 dark:text-sage-400 mt-2 italic">A Wise Way To Get Paid</p>
+          <h1 className="text-4xl font-bold text-sage-800 dark:text-white">PayGuard</h1>
+          <p className="text-sage-600 dark:text-sage-300 mt-2 italic">A Wise Way To Get Paid</p>
         </div>
 
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-sage-800">Financial Overview</h2>
+          <h2 className="text-2xl font-bold text-sage-800 dark:text-white">Financial Overview</h2>
           <div className="relative w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -103,8 +103,8 @@ const Dashboard = () => {
           <Card className="p-6 glass-card animate-fadeIn hover:translate-y-[-4px] transition-transform duration-200">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Current Balance</p>
-                <h2 className="text-2xl font-bold">${mockData.balance.toLocaleString()}</h2>
+                <p className="text-sm font-medium text-purple-600">Current Balance</p>
+                <h2 className="text-2xl font-bold text-purple-800">${mockData.balance.toLocaleString()}</h2>
               </div>
               <div className="h-8 w-8 rounded-full bg-sage-100 flex items-center justify-center">
                 <Wallet className="h-4 w-4 text-sage-500" />
@@ -115,7 +115,7 @@ const Dashboard = () => {
           <Card className="p-6 glass-card animate-fadeIn [animation-delay:200ms] hover:translate-y-[-4px] transition-transform duration-200">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Monthly Income</p>
+                <p className="text-sm font-medium text-purple-600">Monthly Income</p>
                 <h2 className="text-2xl font-bold text-sage-500">
                   +${mockData.income.toLocaleString()}
                 </h2>
@@ -129,7 +129,7 @@ const Dashboard = () => {
           <Card className="p-6 glass-card animate-fadeIn [animation-delay:400ms] hover:translate-y-[-4px] transition-transform duration-200">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Monthly Expenses</p>
+                <p className="text-sm font-medium text-purple-600">Monthly Expenses</p>
                 <h2 className="text-2xl font-bold text-destructive">
                   -${mockData.expenses.toLocaleString()}
                 </h2>
@@ -143,7 +143,7 @@ const Dashboard = () => {
           <Card className="p-6 glass-card animate-fadeIn [animation-delay:600ms] hover:translate-y-[-4px] transition-transform duration-200">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Monthly Savings</p>
+                <p className="text-sm font-medium text-purple-600">Monthly Savings</p>
                 <h2 className="text-2xl font-bold text-sage-500">
                   +${mockData.savings.toLocaleString()}
                 </h2>
@@ -166,13 +166,13 @@ const Dashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="col-span-2 p-6 glass-card">
-            <h3 className="text-lg font-semibold mb-4">Income Trend</h3>
+            <h3 className="text-lg font-semibold text-purple-800 mb-4">Income Trend</h3>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={mockData.transactions}>
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
+                  <XAxis dataKey="date" stroke="#1E1533" />
+                  <YAxis stroke="#1E1533" />
                   <Tooltip />
                   <Line
                     type="monotone"
@@ -187,7 +187,7 @@ const Dashboard = () => {
           </Card>
 
           <Card className="p-6 glass-card">
-            <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
+            <h3 className="text-lg font-semibold text-purple-800 mb-4">AI Insights</h3>
             <div className="space-y-4">
               {mockData.aiSuggestions.map((suggestion) => (
                 <div 
@@ -198,7 +198,7 @@ const Dashboard = () => {
                     description: suggestion.tip,
                   })}
                 >
-                  <p className="text-sm text-sage-700">{suggestion.tip}</p>
+                  <p className="text-sm text-purple-700">{suggestion.tip}</p>
                 </div>
               ))}
             </div>
