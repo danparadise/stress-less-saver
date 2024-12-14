@@ -13,12 +13,35 @@ serve(async (req) => {
 
   try {
     const { documentId, imageUrl } = await req.json()
-    console.log('Processing document:', documentId, 'Image URL:', imageUrl)
+    console.log('Processing document:', documentId)
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const supabase = createClient(supabaseUrl!, supabaseKey!)
+
+    // Get the document details to check if it's an image or PDF
+    const { data: document } = await supabase
+      .from('financial_documents')
+      .select('file_path, file_name')
+      .eq('id', documentId)
+      .single()
+
+    if (!document) {
+      throw new Error('Document not found')
+    }
+
+    // Generate a signed URL that will be valid for 60 seconds
+    const { data: { signedUrl } } = await supabase
+      .storage
+      .from('financial_docs')
+      .createSignedUrl(document.file_path, 60)
+
+    if (!signedUrl) {
+      throw new Error('Failed to generate signed URL')
+    }
+
+    console.log('Generated signed URL for document')
 
     // Call OpenAI API to analyze the image
     const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -44,7 +67,7 @@ serve(async (req) => {
               {
                 type: "image_url",
                 image_url: {
-                  url: imageUrl
+                  url: signedUrl
                 }
               }
             ]
