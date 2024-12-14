@@ -14,7 +14,7 @@ import { uploadDocument } from "@/utils/documentUpload";
 import DocumentTypeSelect from "./DocumentTypeSelect";
 import MonthPicker from "./MonthPicker";
 
-const SUPPORTED_FORMATS = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+const SUPPORTED_FORMATS = ["image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf"];
 
 const DocumentUpload = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -30,7 +30,7 @@ const DocumentUpload = () => {
       if (!SUPPORTED_FORMATS.includes(selectedFile.type)) {
         toast({
           title: "Invalid File Format",
-          description: "Please upload an image file (PNG, JPEG, GIF, or WebP)",
+          description: "Please upload an image file (PNG, JPEG, GIF, WebP) or a PDF file",
           variant: "destructive",
         });
         e.target.value = '';
@@ -53,11 +53,13 @@ const DocumentUpload = () => {
 
     setIsUploading(true);
     try {
-      await uploadDocument(file, documentType, date);
+      const result = await uploadDocument(file, documentType, date);
 
       toast({
         title: "Success",
-        description: "Document uploaded successfully",
+        description: file.type === "application/pdf" 
+          ? "PDF uploaded and conversion started. This may take a moment."
+          : "Document uploaded successfully",
       });
 
       // Reset form
@@ -84,7 +86,7 @@ const DocumentUpload = () => {
       <CardHeader>
         <CardTitle>Upload Documents</CardTitle>
         <CardDescription>
-          Upload your paystub images securely (PNG, JPEG, GIF, or WebP formats)
+          Upload your paystub images or PDFs securely (PNG, JPEG, GIF, WebP, or PDF formats)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -94,7 +96,7 @@ const DocumentUpload = () => {
         <div className="space-y-2">
           <Input
             type="file"
-            accept="image/png,image/jpeg,image/gif,image/webp"
+            accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"
             onChange={handleFileChange}
           />
         </div>

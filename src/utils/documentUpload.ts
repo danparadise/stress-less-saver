@@ -32,21 +32,39 @@ export const uploadDocument = async (
       file_path: filePath,
       file_name: file.name,
       month_year: format(date, "yyyy-MM-dd"),
-      user_id: user.id
+      user_id: user.id,
+      status: file.type === "application/pdf" ? "pending_conversion" : "pending"
     })
     .select()
     .single();
 
   if (dbError) throw dbError;
 
-  // If it's a paystub, trigger text extraction
-  if (documentType === 'paystub') {
-    // Get public URL for the uploaded file
+  // If it's a PDF, trigger conversion
+  if (file.type === "application/pdf") {
     const { data: { publicUrl } } = supabase.storage
       .from("financial_docs")
       .getPublicUrl(filePath);
 
-    // Call the extract-paystub-text function
+    const { error: convertError } = await supabase.functions
+      .invoke('convert-pdf', {
+        body: {
+          documentId: docData.id,
+          pdfUrl: publicUrl
+        }
+      });
+
+    if (convertError) {
+      console.error('Error converting PDF:', convertError);
+      // Don't throw the error - we still want to complete the upload
+    }
+  }
+  // If it's a paystub, trigger text extraction
+  else if (documentType === 'paystub') {
+    const { data: { publicUrl } } = supabase.storage
+      .from("financial_docs")
+      .getPublicUrl(filePath);
+
     const { error: extractError } = await supabase.functions
       .invoke('extract-paystub-text', {
         body: {
