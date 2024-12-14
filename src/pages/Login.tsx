@@ -3,6 +3,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -43,7 +44,24 @@ const Login = () => {
             }}
             theme="default"
             providers={[]}
+            localization={{
+              variables: {
+                sign_up: {
+                  password_label: 'Password (minimum 6 characters)',
+                  password_input_placeholder: 'Enter a secure password',
+                },
+              },
+            }}
+            onError={(error) => {
+              toast.error(error.message);
+            }}
           />
+        </div>
+        <div className="text-center text-sm text-muted-foreground">
+          <p>Password requirements:</p>
+          <ul className="list-disc list-inside mt-1">
+            <li>Minimum 6 characters</li>
+          </ul>
         </div>
       </div>
     </div>
