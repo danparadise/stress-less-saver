@@ -14,7 +14,7 @@ export async function convertPdfToPng(pdfData: ArrayBuffer): Promise<Uint8Array>
     console.log('PDF loading task created');
     
     const pdf = await loadingTask.promise;
-    console.log('PDF document loaded');
+    console.log('PDF document loaded, total pages:', pdf.numPages);
     
     const page = await pdf.getPage(1); // Get first page
     console.log('First page retrieved');
@@ -29,14 +29,29 @@ export async function convertPdfToPng(pdfData: ArrayBuffer): Promise<Uint8Array>
 
     // Render PDF page to canvas
     console.log('Rendering PDF to canvas');
-    await page.render({
+    const renderContext = {
       canvasContext: context,
       viewport: viewport
-    }).promise;
+    };
+
+    try {
+      await page.render(renderContext).promise;
+      console.log('PDF rendered to canvas successfully');
+    } catch (renderError) {
+      console.error('Error rendering PDF to canvas:', renderError);
+      throw new Error(`Failed to render PDF: ${renderError.message}`);
+    }
 
     // Convert canvas to PNG
     console.log('Converting canvas to PNG');
-    return canvas.toBuffer('image/png');
+    try {
+      const pngData = canvas.toBuffer('image/png');
+      console.log('Canvas converted to PNG successfully');
+      return pngData;
+    } catch (conversionError) {
+      console.error('Error converting canvas to PNG:', conversionError);
+      throw new Error(`Failed to convert canvas to PNG: ${conversionError.message}`);
+    }
   } catch (error) {
     console.error('Error in PDF conversion:', error);
     throw error;

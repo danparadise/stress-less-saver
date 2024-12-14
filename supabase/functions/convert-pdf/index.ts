@@ -12,6 +12,7 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting PDF conversion process');
     const { documentId, pdfUrl } = await req.json();
     console.log('Processing document:', documentId, 'PDF URL:', pdfUrl);
 
@@ -20,6 +21,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase environment variables');
       throw new Error('Missing Supabase environment variables');
     }
 
@@ -29,12 +31,18 @@ serve(async (req) => {
     console.log('Downloading PDF from:', pdfUrl);
     const pdfResponse = await fetch(pdfUrl);
     if (!pdfResponse.ok) {
-      throw new Error('Failed to fetch PDF');
+      console.error('Failed to fetch PDF:', pdfResponse.status, pdfResponse.statusText);
+      throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
     }
+    
+    console.log('PDF downloaded successfully, converting to ArrayBuffer');
     const pdfData = await pdfResponse.arrayBuffer();
+    console.log('PDF data size:', pdfData.byteLength, 'bytes');
 
     // Convert PDF to PNG
+    console.log('Starting PDF to PNG conversion');
     const pngData = await convertPdfToPng(pdfData);
+    console.log('PDF converted to PNG successfully');
 
     // Upload PNG to storage
     const pngPath = `converted/${documentId}.png`;
@@ -48,6 +56,7 @@ serve(async (req) => {
       });
 
     if (uploadError) {
+      console.error('Failed to upload PNG:', uploadError);
       throw new Error(`Failed to upload PNG: ${uploadError.message}`);
     }
 
@@ -59,10 +68,15 @@ serve(async (req) => {
     console.log('PNG uploaded successfully, URL:', pngUrl);
 
     // Extract data from the PNG using OpenAI
+    console.log('Starting text extraction from PNG');
     const aiResponse = await extractDataFromImage(pngUrl);
+    console.log('Text extraction completed');
+    
     const extractedData = parseExtractedData(aiResponse);
+    console.log('Data parsed successfully');
 
     // Update document status and store extracted data
+    console.log('Updating document status');
     const { error: updateError } = await supabase
       .from('financial_documents')
       .update({ status: 'completed' })
@@ -74,6 +88,7 @@ serve(async (req) => {
     }
 
     // Store the extracted data
+    console.log('Storing extracted data');
     const { error: insertError } = await supabase
       .from('paystub_data')
       .insert({
@@ -86,14 +101,17 @@ serve(async (req) => {
       });
 
     if (insertError) {
+      console.error('Error inserting extracted data:', insertError);
       throw insertError;
     }
 
+    console.log('Process completed successfully');
     return new Response(
       JSON.stringify({ success: true, data: extractedData }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('Error in PDF conversion process:', error);
     return createErrorResponse(error);
   }
 });
