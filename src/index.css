@@ -64,11 +64,17 @@
 }
 
 @keyframes silverBreathing {
-  0%, 100% {
+  0% {
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.95) 100%);
+    background-position: 0% 50%;
   }
   50% {
     background: linear-gradient(135deg, rgba(40, 40, 40, 0.85) 0%, rgba(60, 60, 60, 0.95) 100%);
+    background-position: 100% 50%;
+  }
+  100% {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.95) 100%);
+    background-position: 0% 50%;
   }
 }
 
@@ -79,13 +85,15 @@
 }
 
 .sidebar-gradient {
-  animation: silverBreathing 4s ease-in-out infinite;
+  animation: silverBreathing 8s ease-in-out infinite;
+  background-size: 200% 200%;
   backdrop-filter: blur(10px);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dark .sidebar-gradient {
-  animation: silverBreathing 4s ease-in-out infinite;
+  animation: silverBreathing 8s ease-in-out infinite;
+  background-size: 200% 200%;
   backdrop-filter: blur(10px);
 }
 
