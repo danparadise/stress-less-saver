@@ -7,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -25,39 +24,73 @@ serve(async (req) => {
       throw new Error('PDF.co API key not configured')
     }
 
-    // Call PDF.co API to convert PDF to PNG
-    console.log('Calling PDF.co API for conversion...')
-    const apiUrl = `https://api.pdf.co/v1/pdf/convert/to/png`
-    const response = await fetch(apiUrl, {
+    // Step 1: Get presigned URL for upload
+    console.log('Getting presigned URL from PDF.co...')
+    const presignedResponse = await fetch(`https://api.pdf.co/v1/file/upload/get-presigned-url?contenttype=application/pdf&name=${documentId}.pdf`, {
+      headers: {
+        'x-api-key': pdfCoApiKey
+      }
+    })
+
+    if (!presignedResponse.ok) {
+      const errorText = await presignedResponse.text()
+      console.error('PDF.co presigned URL error:', errorText)
+      throw new Error(`Failed to get presigned URL: ${errorText}`)
+    }
+
+    const { presignedUrl, url: uploadedFileUrl } = await presignedResponse.json()
+    console.log('Got presigned URL, uploading file...')
+
+    // Step 2: Upload PDF to PDF.co
+    const pdfResponse = await fetch(pdfUrl)
+    if (!pdfResponse.ok) {
+      throw new Error('Failed to fetch PDF from storage')
+    }
+    const pdfBlob = await pdfResponse.blob()
+
+    const uploadResponse = await fetch(presignedUrl, {
+      method: 'PUT',
+      body: pdfBlob,
+      headers: {
+        'Content-Type': 'application/pdf'
+      }
+    })
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload PDF to PDF.co')
+    }
+
+    console.log('File uploaded successfully, starting conversion...')
+
+    // Step 3: Convert PDF to PNG
+    const convertResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
       method: 'POST',
       headers: {
         'x-api-key': pdfCoApiKey,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        url: pdfUrl,
-        async: false,
-        inline: false,
-        profiles: "document"  // Using the document profile for PDF to image conversion
-      }),
+        url: uploadedFileUrl,
+        async: false
+      })
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('PDF.co API error response:', errorText)
-      throw new Error(`PDF.co API error: ${response.status} ${errorText}`)
+    if (!convertResponse.ok) {
+      const errorText = await convertResponse.text()
+      console.error('PDF.co conversion error:', errorText)
+      throw new Error(`PDF.co conversion error: ${errorText}`)
     }
 
-    const result = await response.json()
-    console.log('PDF.co conversion result:', result)
+    const result = await convertResponse.json()
+    console.log('Conversion result:', result)
 
-    if (!result.url) {
+    if (!result.urls?.[0]) {
       throw new Error('No converted image URL received from PDF.co')
     }
 
-    // Download the converted image
+    // Download the first converted image (assuming single-page documents for now)
     console.log('Downloading converted image...')
-    const imageResponse = await fetch(result.url)
+    const imageResponse = await fetch(result.urls[0])
     if (!imageResponse.ok) {
       throw new Error('Failed to download converted image')
     }
