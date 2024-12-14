@@ -38,7 +38,7 @@ serve(async (req) => {
         url: pdfUrl,
         async: false,
         inline: false,
-        profiles: "png300"  // Using a predefined profile string instead of an object
+        profiles: "image300"  // Using a standard image profile with 300 DPI
       }),
     })
 
