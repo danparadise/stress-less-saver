@@ -14,6 +14,11 @@ serve(async (req) => {
   try {
     console.log('Starting PDF conversion process');
     const { documentId, pdfUrl } = await req.json();
+    
+    if (!documentId || !pdfUrl) {
+      throw new Error('Missing required parameters: documentId or pdfUrl');
+    }
+    
     console.log('Processing document:', documentId, 'PDF URL:', pdfUrl);
 
     // Initialize Supabase client
@@ -21,7 +26,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase environment variables');
       throw new Error('Missing Supabase environment variables');
     }
 
@@ -31,13 +35,11 @@ serve(async (req) => {
     console.log('Downloading PDF from:', pdfUrl);
     const pdfResponse = await fetch(pdfUrl);
     if (!pdfResponse.ok) {
-      console.error('Failed to fetch PDF:', pdfResponse.status, pdfResponse.statusText);
       throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
     }
     
-    console.log('PDF downloaded successfully, converting to ArrayBuffer');
     const pdfData = await pdfResponse.arrayBuffer();
-    console.log('PDF data size:', pdfData.byteLength, 'bytes');
+    console.log('PDF downloaded successfully, size:', pdfData.byteLength, 'bytes');
 
     // Convert PDF to PNG
     console.log('Starting PDF to PNG conversion');
@@ -56,7 +58,6 @@ serve(async (req) => {
       });
 
     if (uploadError) {
-      console.error('Failed to upload PNG:', uploadError);
       throw new Error(`Failed to upload PNG: ${uploadError.message}`);
     }
 
@@ -83,8 +84,7 @@ serve(async (req) => {
       .eq('id', documentId);
 
     if (updateError) {
-      console.error('Error updating document status:', updateError);
-      throw updateError;
+      throw new Error(`Error updating document status: ${updateError.message}`);
     }
 
     // Store the extracted data
@@ -101,8 +101,7 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error('Error inserting extracted data:', insertError);
-      throw insertError;
+      throw new Error(`Error inserting extracted data: ${insertError.message}`);
     }
 
     console.log('Process completed successfully');
