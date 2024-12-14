@@ -65,17 +65,35 @@
 
 @keyframes silverBreathing {
   0% {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(40, 40, 40, 0.85) 50%, rgba(60, 60, 60, 0.85) 100%);
+    background: linear-gradient(135deg, 
+      rgba(0, 0, 0, 0.95) 0%, 
+      rgba(0, 0, 0, 0.95) 45%, 
+      rgba(40, 40, 40, 0.75) 50%, 
+      rgba(60, 60, 60, 0.75) 55%, 
+      rgba(0, 0, 0, 0.95) 60%
+    );
     background-size: 300% 100%;
     background-position: 0% 50%;
   }
   50% {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(40, 40, 40, 0.85) 50%, rgba(60, 60, 60, 0.85) 100%);
+    background: linear-gradient(135deg, 
+      rgba(0, 0, 0, 0.95) 0%, 
+      rgba(0, 0, 0, 0.95) 45%, 
+      rgba(40, 40, 40, 0.75) 50%, 
+      rgba(60, 60, 60, 0.75) 55%, 
+      rgba(0, 0, 0, 0.95) 60%
+    );
     background-size: 300% 100%;
     background-position: 100% 50%;
   }
   100% {
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.95) 50%, rgba(40, 40, 40, 0.85) 50%, rgba(60, 60, 60, 0.85) 100%);
+    background: linear-gradient(135deg, 
+      rgba(0, 0, 0, 0.95) 0%, 
+      rgba(0, 0, 0, 0.95) 45%, 
+      rgba(40, 40, 40, 0.75) 50%, 
+      rgba(60, 60, 60, 0.75) 55%, 
+      rgba(0, 0, 0, 0.95) 60%
+    );
     background-size: 300% 100%;
     background-position: 0% 50%;
   }
