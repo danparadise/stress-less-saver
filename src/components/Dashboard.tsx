@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowUpRight, ArrowDownRight, DollarSign, Wallet, TrendingUp, Search, PiggyBank } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, DollarSign, Wallet, TrendingUp, Search, PiggyBank, Moon, Sun } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 
 const mockData = {
   balance: 5240.50,
@@ -37,6 +39,24 @@ const mockData = {
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Check system preference on mount
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setIsDark(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    setIsDark(!isDark);
+    document.documentElement.classList.toggle('dark');
+    toast({
+      title: isDark ? "Light mode activated" : "Dark mode activated",
+      duration: 2000,
+    });
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("Searching:", e.target.value);
@@ -50,10 +70,23 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background p-6 animate-fadeIn">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex flex-col items-center mb-8">
-          <h1 className="text-4xl font-bold text-sage-800">PayGuard</h1>
-          <p className="text-sage-600 mt-2 italic">A Wise Way To Get Paid</p>
+        <div className="flex flex-col items-center mb-8 relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 top-0"
+            onClick={toggleDarkMode}
+          >
+            {isDark ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+          <h1 className="text-4xl font-bold text-sage-800 dark:text-sage-200">PayGuard</h1>
+          <p className="text-sage-600 dark:text-sage-400 mt-2 italic">A Wise Way To Get Paid</p>
         </div>
+
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-sage-800">Financial Overview</h2>
           <div className="relative w-64">
