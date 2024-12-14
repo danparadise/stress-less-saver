@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -10,8 +10,14 @@ import {
 } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const PaystubData = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: paystubs, isLoading } = useQuery({
     queryKey: ["paystub-data"],
     queryFn: async () => {
@@ -32,6 +38,32 @@ const PaystubData = () => {
     },
     refetchInterval: 5000,
   });
+
+  const handleDelete = async (paystubId: string) => {
+    try {
+      const { error } = await supabase
+        .from("paystub_data")
+        .delete()
+        .eq("id", paystubId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Paystub data deleted successfully",
+      });
+
+      // Invalidate the query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+    } catch (error) {
+      console.error("Error deleting paystub:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete paystub data",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return <div>Loading paystub data...</div>;
@@ -87,6 +119,7 @@ const PaystubData = () => {
               <TableHead>Gross Pay</TableHead>
               <TableHead>Net Pay</TableHead>
               <TableHead>Pay Period</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -121,6 +154,16 @@ const PaystubData = () => {
                         "MMM d"
                       )} - ${format(new Date(paystub.pay_period_end), "MMM d, yyyy")}`
                     : "N/A"}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(paystub.id)}
+                    className="text-destructive hover:text-destructive/90"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
