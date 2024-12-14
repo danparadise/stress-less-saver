@@ -9,8 +9,12 @@ import {
   parseExtractedData 
 } from './utils.ts'
 
+console.log("Convert PDF Edge Function starting...")
+
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log("Handling CORS preflight request")
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -108,6 +112,7 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('Error updating document status:', updateError)
+      throw updateError
     }
 
     // Store the extracted data

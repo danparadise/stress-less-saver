@@ -17,7 +17,7 @@ export type Database = {
           id: string
           month_year: string
           notes: string | null
-          status: string | null
+          status: Database["public"]["Enums"]["document_status"] | null
           upload_date: string | null
           user_id: string
         }
@@ -28,7 +28,7 @@ export type Database = {
           id?: string
           month_year: string
           notes?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["document_status"] | null
           upload_date?: string | null
           user_id: string
         }
@@ -39,7 +39,7 @@ export type Database = {
           id?: string
           month_year?: string
           notes?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["document_status"] | null
           upload_date?: string | null
           user_id?: string
         }
@@ -118,7 +118,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      document_status: "pending" | "pending_conversion" | "completed" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
