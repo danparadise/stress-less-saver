@@ -62,49 +62,52 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background p-6 animate-fadeIn">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         <Header isDark={isDark} toggleDarkMode={toggleDarkMode} />
-        <SearchBar onSearch={handleSearch} />
+        
+        <main className="pt-4">
+          <SearchBar onSearch={handleSearch} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatsCard
-            title="Current Balance"
-            value={`$${mockData.balance.toLocaleString()}`}
-            icon={Wallet}
-            iconBgColor="bg-sage-100"
-            iconColor="text-sage-500"
-          />
-          <StatsCard
-            title="Monthly Income"
-            value={`+$${mockData.income.toLocaleString()}`}
-            icon={ArrowUpRight}
-            iconBgColor="bg-sage-100"
-            iconColor="text-sage-500"
-            valueColor="text-sage-500"
-          />
-          <StatsCard
-            title="Monthly Expenses"
-            value={`-$${mockData.expenses.toLocaleString()}`}
-            icon={ArrowDownRight}
-            iconBgColor="bg-destructive/10"
-            iconColor="text-destructive"
-            valueColor="text-destructive"
-          />
-          <StatsCard
-            title="Monthly Savings"
-            value={`+$${mockData.savings.toLocaleString()}`}
-            icon={PiggyBank}
-            iconBgColor="bg-sage-100"
-            iconColor="text-sage-500"
-            valueColor="text-sage-500"
-            progress={calculateSavingsProgress()}
-          />
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
+            <StatsCard
+              title="Current Balance"
+              value={`$${mockData.balance.toLocaleString()}`}
+              icon={Wallet}
+              iconBgColor="bg-sage-100"
+              iconColor="text-sage-500"
+            />
+            <StatsCard
+              title="Monthly Income"
+              value={`+$${mockData.income.toLocaleString()}`}
+              icon={ArrowUpRight}
+              iconBgColor="bg-sage-100"
+              iconColor="text-sage-500"
+              valueColor="text-sage-500"
+            />
+            <StatsCard
+              title="Monthly Expenses"
+              value={`-$${mockData.expenses.toLocaleString()}`}
+              icon={ArrowDownRight}
+              iconBgColor="bg-destructive/10"
+              iconColor="text-destructive"
+              valueColor="text-destructive"
+            />
+            <StatsCard
+              title="Monthly Savings"
+              value={`+$${mockData.savings.toLocaleString()}`}
+              icon={PiggyBank}
+              iconBgColor="bg-sage-100"
+              iconColor="text-sage-500"
+              valueColor="text-sage-500"
+              progress={calculateSavingsProgress()}
+            />
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <IncomeChart data={mockData.transactions} />
-          <AiInsights suggestions={mockData.aiSuggestions} />
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            <IncomeChart data={mockData.transactions} />
+            <AiInsights suggestions={mockData.aiSuggestions} />
+          </div>
+        </main>
       </div>
     </div>
   );
