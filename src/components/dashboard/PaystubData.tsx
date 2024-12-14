@@ -92,8 +92,21 @@ const PaystubData = () => {
     return new Date(b.pay_period_start).getTime() - new Date(a.pay_period_start).getTime();
   });
 
+  // Remove duplicates based on pay period dates and file name
+  const uniquePaystubs = sortedPaystubs.reduce((acc, current) => {
+    const key = `${current.pay_period_start}-${current.pay_period_end}-${current.financial_documents.file_name}`;
+    const exists = acc.find(item => 
+      `${item.pay_period_start}-${item.pay_period_end}-${item.financial_documents.file_name}` === key
+    );
+    
+    if (!exists) {
+      acc.push(current);
+    }
+    return acc;
+  }, [] as typeof sortedPaystubs);
+
   // Filter paystubs based on gross pay range
-  const filteredPaystubs = sortedPaystubs.filter(paystub => {
+  const filteredPaystubs = uniquePaystubs.filter(paystub => {
     if (!paystub.gross_pay) return true;
     
     const grossPay = Number(paystub.gross_pay);
