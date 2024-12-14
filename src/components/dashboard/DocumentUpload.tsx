@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { uploadDocument } from "@/utils/documentUpload";
 import DocumentTypeSelect from "./DocumentTypeSelect";
 import MonthPicker from "./MonthPicker";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SUPPORTED_FORMATS = ["image/png", "image/jpeg", "image/gif", "image/webp", "application/pdf"];
 
@@ -22,6 +23,7 @@ const DocumentUpload = () => {
   const [date, setDate] = useState<Date>();
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -62,6 +64,9 @@ const DocumentUpload = () => {
           ? "PDF uploaded and conversion started. This may take a moment."
           : "Document uploaded successfully",
       });
+
+      // Invalidate the paystub-data query to trigger a refresh
+      queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
 
       // Reset form
       setFile(null);

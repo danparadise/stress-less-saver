@@ -30,6 +30,8 @@ const PaystubData = () => {
       if (error) throw error;
       return data;
     },
+    // Add refetch interval to periodically check for updates
+    refetchInterval: 5000, // Refetch every 5 seconds while conversion is in progress
   });
 
   if (isLoading) {
