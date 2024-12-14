@@ -25,6 +25,7 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body
     const { documentId, pdfUrl } = await req.json()
     console.log('Processing PDF document:', documentId, 'URL:', pdfUrl)
 
@@ -47,7 +48,7 @@ serve(async (req) => {
     }
 
     // Download the PDF file
-    console.log('Downloading PDF from:', document.file_path)
+    console.log('Downloading PDF from URL:', pdfUrl)
     const pdfResponse = await fetch(pdfUrl)
     if (!pdfResponse.ok) {
       throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`)
@@ -144,12 +145,15 @@ serve(async (req) => {
 
     console.log('Successfully processed PDF document')
     return new Response(
-      JSON.stringify({ success: true, data: extractedData }),
+      JSON.stringify({ 
+        success: true, 
+        data: extractedData 
+      }), 
       { 
         headers: { 
-          ...corsHeaders, 
+          ...corsHeaders,
           'Content-Type': 'application/json'
-        } 
+        }
       }
     )
   } catch (error) {
@@ -161,7 +165,7 @@ serve(async (req) => {
       }),
       { 
         headers: { 
-          ...corsHeaders, 
+          ...corsHeaders,
           'Content-Type': 'application/json'
         }, 
         status: 500 
