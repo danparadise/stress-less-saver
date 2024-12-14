@@ -11,14 +11,14 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       messages: [
         {
           role: "system",
-          content: "You are a paystub data extractor. Extract numeric values for gross pay and net pay, removing any currency symbols or commas. Format dates as YYYY-MM-DD. If you cannot extract the data, return a JSON with null values. Your response must ALWAYS be a valid JSON object with these exact fields: gross_pay, net_pay, pay_period_start, pay_period_end. Never include explanations or additional text."
+          content: "You are a paystub data extractor. Your task is to extract pay information and convert it to numeric values suitable for database storage. For gross_pay and net_pay: 1) Remove any currency symbols ($), 2) Remove any commas, 3) Convert to a plain number (e.g., $1,234.56 should become 1234.56). Format dates as YYYY-MM-DD. Your response must ALWAYS be a valid JSON object with these exact fields: gross_pay (number), net_pay (number), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). If you cannot extract a value, use null. Never include explanations or additional text."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the following from this paystub image and return ONLY a JSON object: gross_pay (number without currency symbols/commas), net_pay (number without currency symbols/commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). If any value cannot be extracted, use null."
+              text: "Extract the following from this paystub image and return ONLY a JSON object. For gross_pay and net_pay: remove $ and commas, convert to plain numbers (e.g., $1,234.56 → 1234.56). Format dates as YYYY-MM-DD. Return null for any values you cannot extract with certainty."
             },
             {
               type: "image_url",
@@ -50,8 +50,11 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
     const content = aiResult.choices[0].message.content.trim();
     console.log('Raw content from OpenAI:', content);
     
-    // Parse the JSON content
-    const parsedData = JSON.parse(content);
+    // Remove any markdown formatting if present
+    const jsonContent = content.replace(/```json\n|\n```|```/g, '').trim();
+    console.log('Cleaned content for parsing:', jsonContent);
+    
+    const parsedData = JSON.parse(jsonContent);
     
     // Validate the required fields exist
     const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end'];
