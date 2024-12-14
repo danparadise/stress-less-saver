@@ -1,10 +1,19 @@
 import { createCanvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
-import { getDocument } from "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.mjs";
+import { getDocument } from "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/es5/build/pdf.js";
+
+// Required for PDF.js to work in Deno environment
+const GlobalWorkerOptions = {
+  workerSrc: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/es5/build/pdf.worker.js"
+};
 
 export async function convertPdfToPng(pdfData: ArrayBuffer): Promise<Uint8Array> {
   console.log('Loading PDF with PDF.js');
   
   try {
+    // Initialize PDF.js with the worker
+    console.log('Setting up PDF.js worker');
+    (globalThis as any).pdfjsLib = { GlobalWorkerOptions };
+    
     // Initialize PDF.js
     const loadingTask = getDocument({ data: pdfData });
     console.log('PDF loading task created');
