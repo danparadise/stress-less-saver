@@ -13,6 +13,7 @@ serve(async (req) => {
 
   try {
     const { documentId, imageUrl } = await req.json()
+    console.log('Processing document:', documentId, 'Image URL:', imageUrl)
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -20,7 +21,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl!, supabaseKey!)
 
     // Call OpenAI API to analyze the image
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
@@ -31,14 +32,14 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a paystub analyzer. Extract key information from paystubs, focusing on gross pay, net pay, and pay period dates. Return the data in a structured format."
+            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format with the following fields: gross_pay (numeric), net_pay (numeric), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Return ONLY the JSON object, no other text."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Please analyze this paystub image and extract the following information: gross pay, net pay, pay period start date, and pay period end date. Return the data in a JSON format."
+                text: "Please analyze this paystub image and extract the gross pay, net pay, and pay period dates. Return ONLY a JSON object."
               },
               {
                 type: "image_url",
@@ -50,17 +51,43 @@ serve(async (req) => {
       })
     })
 
-    const aiResult = await response.json()
-    console.log('AI Response:', aiResult)
+    if (!openAiResponse.ok) {
+      const errorData = await openAiResponse.text()
+      console.error('OpenAI API error:', errorData)
+      throw new Error(`OpenAI API error: ${errorData}`)
+    }
+
+    const aiResult = await openAiResponse.json()
+    console.log('OpenAI API Response:', JSON.stringify(aiResult))
+
+    if (!aiResult.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from OpenAI')
+    }
 
     // Parse the AI response
-    const content = aiResult.choices[0].message.content
     let extractedData
     try {
+      const content = aiResult.choices[0].message.content.trim()
       extractedData = JSON.parse(content)
+      console.log('Parsed extracted data:', extractedData)
     } catch (e) {
       console.error('Failed to parse AI response:', e)
-      extractedData = { rawContent: content }
+      throw new Error('Failed to parse extracted data from AI response')
+    }
+
+    // Validate extracted data
+    if (!extractedData.gross_pay && !extractedData.net_pay) {
+      throw new Error('No pay information could be extracted from the document')
+    }
+
+    // Update document status
+    const { error: updateError } = await supabase
+      .from('financial_documents')
+      .update({ status: 'completed' })
+      .eq('id', documentId)
+
+    if (updateError) {
+      console.error('Error updating document status:', updateError)
     }
 
     // Store the extracted data
@@ -86,8 +113,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in extract-paystub-text:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString()
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      }
     )
   }
 })
