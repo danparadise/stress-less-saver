@@ -1,4 +1,4 @@
-import { Canvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
+import { createCanvas } from "https://deno.land/x/canvas@v1.4.1/mod.ts";
 import * as pdfjs from "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/+esm";
 
 export async function convertPdfToPng(pdfData: ArrayBuffer): Promise<Uint8Array> {
@@ -9,7 +9,7 @@ export async function convertPdfToPng(pdfData: ArrayBuffer): Promise<Uint8Array>
 
   // Create canvas
   console.log('Creating canvas for PDF rendering');
-  const canvas = new Canvas(viewport.width, viewport.height);
+  const canvas = createCanvas(viewport.width, viewport.height);
   const context = canvas.getContext('2d');
 
   // Render PDF page to canvas
