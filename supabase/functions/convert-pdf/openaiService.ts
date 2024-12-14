@@ -11,14 +11,14 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       messages: [
         {
           role: "system",
-          content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD)."
+          content: "You are a paystub data extractor. You must ALWAYS respond with a valid JSON object containing exactly these fields: gross_pay (numeric), net_pay (numeric), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Do not include any explanations or additional text, only return the JSON object."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a raw JSON object with the specified fields."
+              text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a JSON object with the specified fields."
             },
             {
               type: "image_url",
@@ -46,5 +46,13 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
     throw new Error('Invalid response format from OpenAI');
   }
 
-  return aiResult.choices[0].message.content;
+  // Add additional validation to ensure we get valid JSON
+  try {
+    const content = aiResult.choices[0].message.content.trim();
+    console.log('Raw content from OpenAI:', content);
+    return content;
+  } catch (error) {
+    console.error('Failed to parse OpenAI response:', error);
+    throw new Error('Failed to get valid JSON response from OpenAI');
+  }
 }
