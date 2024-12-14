@@ -1,4 +1,4 @@
-import { Settings, BarChart2, Activity, Grid, Database, LogOut } from "lucide-react";
+import { Settings, BarChart2, Activity, Grid, Database, LogOut, Moon, Sun } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar";
+import { useTheme } from "@/components/ThemeProvider";
 
 const menuItems = [
   { title: "Overview", icon: Activity },
@@ -20,6 +21,8 @@ const menuItems = [
 ];
 
 const AppSidebar = () => {
+  const { theme, setTheme } = useTheme();
+
   return (
     <Sidebar variant="inset" className="sidebar-gradient">
       <SidebarContent>
@@ -54,8 +57,26 @@ const AppSidebar = () => {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="text-purple-800 dark:text-white hover:text-purple-600 dark:hover:text-purple-300"
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="h-4 w-4" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton className="text-red-500 hover:text-red-600">
               <LogOut className="h-4 w-4" />
