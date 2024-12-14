@@ -1,5 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders, createSupabaseClient, convertPdfToPng, validateImageFormat, extractPaystubData, parseExtractedData } from './utils.ts'
+import { 
+  corsHeaders, 
+  createSupabaseClient, 
+  convertPdfToPng, 
+  performOCR,
+  validateImageFormat, 
+  extractPaystubData, 
+  parseExtractedData 
+} from './utils.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -7,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { documentId } = await req.json()
+    const { documentId, pdfUrl } = await req.json()
     console.log('Processing PDF document:', documentId)
 
     const supabase = createSupabaseClient()
@@ -35,36 +43,51 @@ serve(async (req) => {
       throw new Error('Failed to download PDF')
     }
 
-    // Convert PDF to PNG with enhanced method
-    const pngBuffer = await convertPdfToPng(await pdfData.arrayBuffer())
+    // Convert PDF to PNG pages
+    const pngPages = await convertPdfToPng(await pdfData.arrayBuffer())
+    console.log(`Converted ${pngPages.length} pages to PNG`)
+
+    let extractedText = ''
     
-    // Validate the converted image format
-    if (!validateImageFormat(pngBuffer)) {
-      throw new Error('Converted image is not in valid PNG format')
+    // Perform OCR on each page
+    for (let i = 0; i < pngPages.length; i++) {
+      const pngBuffer = pngPages[i]
+      
+      // Validate the converted image format
+      if (!validateImageFormat(pngBuffer)) {
+        throw new Error(`Page ${i + 1} is not in valid PNG format`)
+      }
+      
+      // Upload the PNG
+      const pngFileName = document.file_name.replace('.pdf', `_page${i + 1}.png`)
+      const pngPath = document.file_path.replace('.pdf', `_page${i + 1}.png`)
+
+      const { error: uploadError } = await supabase.storage
+        .from('financial_docs')
+        .upload(pngPath, pngBuffer, {
+          contentType: 'image/png',
+          upsert: true
+        })
+
+      if (uploadError) {
+        console.error(`Error uploading PNG page ${i + 1}:`, uploadError)
+        throw uploadError
+      }
+
+      // Perform OCR on the page
+      const pageText = await performOCR(pngBuffer)
+      extractedText += pageText + '\n'
     }
-    
-    // Upload the PNG
-    const pngFileName = document.file_name.replace('.pdf', '.png')
-    const pngPath = document.file_path.replace('.pdf', '.png')
 
-    const { error: uploadError } = await supabase.storage
-      .from('financial_docs')
-      .upload(pngPath, pngBuffer, {
-        contentType: 'image/png',
-        upsert: true
-      })
+    console.log('Extracted text from all pages:', extractedText)
 
-    if (uploadError) {
-      console.error('Error uploading PNG:', uploadError)
-      throw uploadError
-    }
-
-    // Get the public URL for the PNG
+    // Get the public URL for the first PNG (we'll use this for OpenAI analysis)
+    const pngPath = document.file_path.replace('.pdf', '_page1.png')
     const { data: { publicUrl } } = supabase.storage
       .from('financial_docs')
       .getPublicUrl(pngPath)
 
-    console.log('Generated public URL for image:', publicUrl)
+    console.log('Generated public URL for first page:', publicUrl)
 
     // Extract data using OpenAI
     const aiResult = await extractPaystubData(publicUrl)

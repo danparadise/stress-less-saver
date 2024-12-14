@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { PDFDocument } from 'https://cdn.skypack.dev/pdf-lib@1.17.1'
 import { decode as base64Decode } from "https://deno.land/std@0.182.0/encoding/base64.ts"
 import Canvas from "https://deno.land/x/canvas@v1.4.1/mod.ts"
+import { createWorker } from 'https://esm.sh/tesseract.js@4.1.1'
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,7 @@ export const createSupabaseClient = () => {
   return createClient(supabaseUrl!, supabaseKey!)
 }
 
-export const convertPdfToPng = async (pdfArrayBuffer: ArrayBuffer): Promise<Uint8Array> => {
+export const convertPdfToPng = async (pdfArrayBuffer: ArrayBuffer): Promise<Uint8Array[]> => {
   console.log('Starting enhanced PDF to PNG conversion')
   
   try {
@@ -26,23 +27,46 @@ export const convertPdfToPng = async (pdfArrayBuffer: ArrayBuffer): Promise<Uint
       throw new Error('PDF document has no pages')
     }
 
-    const firstPage = pages[0]
-    const { width, height } = firstPage.getSize()
+    const pngPages: Uint8Array[] = []
 
-    // Create a canvas with the PDF dimensions
-    const canvas = new Canvas(width, height)
-    const ctx = canvas.getContext('2d')
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i]
+      const { width, height } = page.getSize()
 
-    // Draw the PDF page to canvas (simplified for demonstration)
-    // In a production environment, you might want to use a more robust PDF rendering library
-    const pngData = await canvas.encode('png')
-    console.log('PDF successfully converted to PNG using Canvas')
+      // Create a canvas with the PDF dimensions
+      const canvas = new Canvas(width, height)
+      const ctx = canvas.getContext('2d')
 
-    return pngData
+      // Draw the PDF page to canvas
+      const pngData = await canvas.encode('png')
+      console.log(`Page ${i + 1} successfully converted to PNG`)
+      
+      pngPages.push(pngData)
+    }
 
+    return pngPages
   } catch (error) {
     console.error('Error in enhanced PDF to PNG conversion:', error)
     throw new Error(`Failed to convert PDF to PNG: ${error.message}`)
+  }
+}
+
+export const performOCR = async (imageBuffer: Uint8Array): Promise<string> => {
+  try {
+    console.log('Starting OCR process')
+    const worker = await createWorker('eng')
+    
+    // Convert Uint8Array to base64
+    const base64Image = btoa(String.fromCharCode(...imageBuffer))
+    
+    const { data: { text } } = await worker.recognize(`data:image/png;base64,${base64Image}`)
+    await worker.terminate()
+    
+    console.log('OCR completed successfully')
+    return text
+  } catch (error) {
+    console.error('Error in OCR process:', error)
+    throw new Error(`Failed to perform OCR: ${error.message}`)
   }
 }
 
