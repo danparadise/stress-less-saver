@@ -17,33 +17,24 @@ interface PaystubTableProps {
   isDeleting: boolean;
 }
 
-type SortField = "date" | "grossPay";
-
 const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [sortField, setSortField] = useState<SortField>("date");
   const [sortedData, setSortedData] = useState(paystubs);
 
-  const handleSort = (field: SortField) => {
-    const newOrder = field === sortField ? (sortOrder === "asc" ? "desc" : "asc") : "desc";
+  const handleSortByDate = () => {
+    const newOrder = sortOrder === "asc" ? "desc" : "asc";
     
     const sorted = [...sortedData].sort((a, b) => {
-      if (field === "date") {
-        if (!a.pay_period_start || !b.pay_period_start) return 0;
-        const dateA = new Date(a.pay_period_start).getTime();
-        const dateB = new Date(b.pay_period_start).getTime();
-        return newOrder === "asc" ? dateA - dateB : dateB - dateA;
-      } else {
-        if (!a.gross_pay || !b.gross_pay) return 0;
-        const grossPayA = Number(a.gross_pay);
-        const grossPayB = Number(b.gross_pay);
-        return newOrder === "asc" ? grossPayA - grossPayB : grossPayB - grossPayA;
-      }
+      if (!a.pay_period_start || !b.pay_period_start) return 0;
+      
+      const dateA = new Date(a.pay_period_start).getTime();
+      const dateB = new Date(b.pay_period_start).getTime();
+      
+      return newOrder === "asc" ? dateA - dateB : dateB - dateA;
     });
 
     setSortedData(sorted);
     setSortOrder(newOrder);
-    setSortField(field);
   };
 
   return (
@@ -55,31 +46,17 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
             <TableHead>Upload Date</TableHead>
             <TableHead>Status</TableHead>
             <TableHead 
-              onClick={() => handleSort("date")}
+              onClick={handleSortByDate}
               className="cursor-pointer hover:bg-muted/70 transition-colors flex items-center gap-2"
             >
               Pay Period
-              {sortField === "date" && (
-                sortOrder === "asc" ? (
-                  <ArrowUp className="h-4 w-4" />
-                ) : (
-                  <ArrowDown className="h-4 w-4" />
-                )
+              {sortOrder === "asc" ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
               )}
             </TableHead>
-            <TableHead 
-              onClick={() => handleSort("grossPay")}
-              className="cursor-pointer hover:bg-muted/70 transition-colors flex items-center gap-2 text-right"
-            >
-              Gross Pay
-              {sortField === "grossPay" && (
-                sortOrder === "asc" ? (
-                  <ArrowUp className="h-4 w-4" />
-                ) : (
-                  <ArrowDown className="h-4 w-4" />
-                )
-              )}
-            </TableHead>
+            <TableHead className="text-right">Gross Pay</TableHead>
             <TableHead className="text-right">Net Pay</TableHead>
             <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
