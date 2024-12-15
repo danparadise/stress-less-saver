@@ -12,9 +12,9 @@ const PaystubData = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Subscribe to changes on both paystub_data and financial_documents tables
+    // Create a channel for real-time updates
     const channel = supabase
-      .channel('public:paystub_changes')
+      .channel('paystub-updates')
       .on(
         'postgres_changes',
         {
@@ -22,8 +22,8 @@ const PaystubData = () => {
           schema: 'public',
           table: 'paystub_data'
         },
-        () => {
-          console.log('Paystub data changed, invalidating query');
+        (payload) => {
+          console.log('Paystub data changed:', payload);
           queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
         }
       )
@@ -34,14 +34,17 @@ const PaystubData = () => {
           schema: 'public',
           table: 'financial_documents'
         },
-        () => {
-          console.log('Financial document changed, invalidating query');
+        (payload) => {
+          console.log('Financial document changed:', payload);
           queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
@@ -49,6 +52,7 @@ const PaystubData = () => {
   const { data: paystubs, isLoading } = useQuery({
     queryKey: ["paystub-data"],
     queryFn: async () => {
+      console.log('Fetching paystub data');
       const { data, error } = await supabase
         .from("paystub_data")
         .select(`
@@ -63,6 +67,7 @@ const PaystubData = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched paystub data:', data);
       return data;
     },
   });
