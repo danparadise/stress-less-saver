@@ -127,7 +127,7 @@ const PaystubData = () => {
 
   const cardHeader = (
     <CardHeader className="flex flex-row items-center justify-between">
-      <CardTitle>Extracted Paystub Data</CardTitle>
+      <CardTitle>Your Paystub Data</CardTitle>
       <Button
         variant="outline"
         size="sm"
