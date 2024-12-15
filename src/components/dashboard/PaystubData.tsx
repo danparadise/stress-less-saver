@@ -1,7 +1,9 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { RefreshCw } from "lucide-react";
 import PaystubTable from "../paystubs/PaystubTable";
 import PaystubEmpty from "../paystubs/PaystubEmpty";
 import PaystubLoading from "../paystubs/PaystubLoading";
@@ -53,7 +55,7 @@ const PaystubData = () => {
     };
   }, [queryClient]);
 
-  const { data: paystubs, isLoading } = useQuery({
+  const { data: paystubs, isLoading, refetch } = useQuery({
     queryKey: ["paystub-data"],
     queryFn: async () => {
       console.log('Fetching paystub data');
@@ -108,6 +110,22 @@ const PaystubData = () => {
     },
   });
 
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+      toast({
+        title: "Success",
+        description: "Data refreshed successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to refresh data",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -149,8 +167,17 @@ const PaystubData = () => {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Extracted Paystub Data</CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          className="gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
       </CardHeader>
       <CardContent>
         <PaystubTable 
