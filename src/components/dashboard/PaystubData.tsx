@@ -12,30 +12,34 @@ const PaystubData = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    console.log('Setting up real-time subscriptions');
+    
     // Create a channel for real-time updates
     const channel = supabase
       .channel('paystub-updates')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'paystub_data'
         },
         (payload) => {
           console.log('Paystub data changed:', payload);
+          // Immediately invalidate and refetch
           queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
         }
       )
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'financial_documents'
         },
         (payload) => {
           console.log('Financial document changed:', payload);
+          // Immediately invalidate and refetch
           queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
         }
       )
@@ -70,6 +74,10 @@ const PaystubData = () => {
       console.log('Fetched paystub data:', data);
       return data;
     },
+    // Enable real-time updates
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 0
   });
 
   const deleteMutation = useMutation({
@@ -87,6 +95,7 @@ const PaystubData = () => {
         title: "Success",
         description: "Paystub data deleted successfully",
       });
+      // Force an immediate refetch after deletion
       queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
     },
     onError: (error) => {
