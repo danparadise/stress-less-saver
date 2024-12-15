@@ -12,7 +12,7 @@ export async function extractFinancialData(text: string, apiKey: string) {
       messages: [
         {
           role: "system",
-          content: `Extract only the following information from bank statements:
+          content: `Extract the following information from bank statements:
             - statement_month (the month and year of the statement)
             - total_deposits (sum of all deposits)
             - total_withdrawals (sum of all withdrawals)
@@ -53,9 +53,9 @@ export async function extractFinancialData(text: string, apiKey: string) {
     const extractedData = JSON.parse(result.choices[0].message.content);
     return {
       statement_month: extractedData.statement_month || new Date().toISOString().slice(0, 10),
-      total_deposits: extractedData.total_deposits || 0,
-      total_withdrawals: extractedData.total_withdrawals || 0,
-      ending_balance: extractedData.ending_balance || 0
+      total_deposits: Number(extractedData.total_deposits) || 0,
+      total_withdrawals: Number(extractedData.total_withdrawals) || 0,
+      ending_balance: Number(extractedData.ending_balance) || 0
     };
   } catch (error) {
     console.error('Error parsing OpenAI response:', error);
