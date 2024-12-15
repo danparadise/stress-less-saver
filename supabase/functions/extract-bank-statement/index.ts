@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { extractTextFromPdf } from "./pdfService.ts";
-import { extractFinancialData } from "./openaiService.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,31 +15,128 @@ serve(async (req) => {
     const { documentId, pdfUrl } = await req.json();
     console.log('Processing document:', documentId, 'URL:', pdfUrl);
 
-    // Get API keys
-    const pdfCoApiKey = Deno.env.get('PDF_CO_API_KEY');
-    const openAiApiKey = Deno.env.get('OPENAI_API_KEY');
-
-    if (!pdfCoApiKey || !openAiApiKey) {
-      throw new Error('Missing required API keys');
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase environment variables');
     }
 
-    // Extract text from PDF
-    console.log('Extracting text from PDF...');
-    const extractedText = await extractTextFromPdf(pdfUrl, pdfCoApiKey);
-    console.log('Text extracted successfully');
-    
-    // Extract financial data using OpenAI
-    console.log('Extracting financial data...');
-    const extractedData = await extractFinancialData(extractedText, openAiApiKey);
-    console.log('Financial data extracted:', extractedData);
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Update database with extracted data
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Generate a signed URL that will be valid for 60 seconds
+    const { data: { signedUrl } } = await supabase
+      .storage
+      .from('financial_docs')
+      .createSignedUrl(pdfUrl, 60);
 
+    if (!signedUrl) {
+      throw new Error('Failed to generate signed URL');
+    }
+
+    console.log('Generated signed URL for document');
+
+    // Call OpenAI API to analyze the PDF
+    const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a bank statement analyzer. Extract key information from bank statements and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: statement_month (YYYY-MM-DD), total_deposits (numeric, no currency symbol or commas), total_withdrawals (numeric, no currency symbol or commas), ending_balance (numeric, no currency symbol or commas). Do not include markdown formatting, code blocks, or any other text."
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Extract the statement month, total deposits, total withdrawals, and ending balance from this bank statement. Return only a raw JSON object with the specified fields, no markdown or code blocks."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: signedUrl
+                }
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!openAiResponse.ok) {
+      const errorData = await openAiResponse.text();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${errorData}`);
+    }
+
+    const aiResult = await openAiResponse.json();
+    console.log('OpenAI API Response:', JSON.stringify(aiResult));
+
+    if (!aiResult.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response format from OpenAI');
+    }
+
+    // Parse the AI response with better error handling
+    let extractedData;
+    try {
+      const content = aiResult.choices[0].message.content.trim();
+      console.log('Raw content from OpenAI:', content);
+      
+      // Remove any markdown formatting if present
+      const jsonContent = content.replace(/```json\n|\n```|```/g, '').trim();
+      console.log('Cleaned content for parsing:', jsonContent);
+      
+      extractedData = JSON.parse(jsonContent);
+      
+      // Validate the required fields
+      const requiredFields = ['statement_month', 'total_deposits', 'total_withdrawals', 'ending_balance'];
+      const missingFields = requiredFields.filter(field => !(field in extractedData));
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Convert string numbers to actual numbers
+      extractedData.total_deposits = Number(String(extractedData.total_deposits).replace(/[^0-9.-]+/g, ''));
+      extractedData.total_withdrawals = Number(String(extractedData.total_withdrawals).replace(/[^0-9.-]+/g, ''));
+      extractedData.ending_balance = Number(String(extractedData.ending_balance).replace(/[^0-9.-]+/g, ''));
+
+      // Validate date
+      const validateDate = (date: string) => {
+        const parsed = new Date(date);
+        if (isNaN(parsed.getTime())) {
+          throw new Error(`Invalid date format: ${date}`);
+        }
+        return date;
+      };
+      
+      extractedData.statement_month = validateDate(extractedData.statement_month);
+
+      console.log('Parsed and validated extracted data:', extractedData);
+    } catch (e) {
+      console.error('Failed to parse AI response:', e, 'Raw content:', aiResult.choices[0].message.content);
+      throw new Error(`Failed to parse extracted data: ${e.message}`);
+    }
+
+    // Update document status
     const { error: updateError } = await supabase
+      .from('financial_documents')
+      .update({ status: 'completed' })
+      .eq('id', documentId);
+
+    if (updateError) {
+      console.error('Error updating document status:', updateError);
+    }
+
+    // Store the extracted data
+    const { error: insertError } = await supabase
       .from('bank_statement_data')
       .update({
         statement_month: extractedData.statement_month,
@@ -51,18 +146,8 @@ serve(async (req) => {
       })
       .eq('document_id', documentId);
 
-    if (updateError) {
-      throw new Error(`Failed to update database: ${updateError.message}`);
-    }
-
-    // Update document status
-    const { error: statusError } = await supabase
-      .from('financial_documents')
-      .update({ status: 'completed' })
-      .eq('id', documentId);
-
-    if (statusError) {
-      throw new Error(`Failed to update document status: ${statusError.message}`);
+    if (insertError) {
+      throw insertError;
     }
 
     return new Response(
@@ -70,12 +155,15 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error in extract-bank-statement function:', error);
+    console.error('Error in extract-bank-statement:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString()
+      }),
       { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
       }
     );
   }
