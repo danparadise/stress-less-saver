@@ -53,74 +53,30 @@ export const uploadDocument = async (
 
   console.log('Document record created:', docData.id);
 
-  // If it's a PDF, trigger conversion
+  // If it's a PDF, trigger conversion and data extraction
   if (file.type === "application/pdf") {
-    console.log('PDF detected, initiating conversion');
+    console.log('PDF detected, initiating conversion and extraction');
     
     const { data: { publicUrl } } = supabase.storage
       .from("financial_docs")
       .getPublicUrl(filePath);
 
     try {
-      console.log('Calling convert-pdf function with:', {
+      console.log('Calling extract-bank-statement function with:', {
         documentId: docData.id,
         pdfUrl: publicUrl
       });
 
-      const { data, error: convertError } = await supabase.functions
-        .invoke('convert-pdf', {
+      const { data, error: extractError } = await supabase.functions
+        .invoke('extract-bank-statement', {
           body: {
             documentId: docData.id,
             pdfUrl: publicUrl
           }
         });
 
-      if (convertError) {
-        console.error('Error converting PDF:', convertError);
-        // Update document status to failed
-        await supabase
-          .from("financial_documents")
-          .update({ status: 'failed' })
-          .eq('id', docData.id);
-        throw new Error(`Failed to convert PDF: ${convertError.message}`);
-      }
-
-      console.log('PDF conversion response:', data);
-    } catch (error) {
-      console.error('Failed to invoke convert-pdf function:', error);
-      // Update document status to failed
-      await supabase
-        .from("financial_documents")
-        .update({ status: 'failed' })
-        .eq('id', docData.id);
-      throw new Error(`Failed to process PDF: ${error.message}`);
-    }
-  }
-  // If it's a paystub, trigger text extraction
-  else if (documentType === 'paystub') {
-    console.log('Paystub detected, initiating text extraction');
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from("financial_docs")
-      .getPublicUrl(filePath);
-
-    try {
-      console.log('Calling extract-paystub-text function with:', {
-        documentId: docData.id,
-        imageUrl: publicUrl
-      });
-
-      const { data, error: extractError } = await supabase.functions
-        .invoke('extract-paystub-text', {
-          body: {
-            documentId: docData.id,
-            imageUrl: publicUrl
-          }
-        });
-
       if (extractError) {
-        console.error('Error extracting text:', extractError);
-        // Update document status to failed
+        console.error('Error extracting data:', extractError);
         await supabase
           .from("financial_documents")
           .update({ status: 'failed' })
@@ -128,17 +84,16 @@ export const uploadDocument = async (
         throw extractError;
       }
 
-      console.log('Text extraction response:', data);
+      console.log('Data extraction response:', data);
     } catch (error) {
-      console.error('Failed to invoke extract-paystub-text function:', error);
-      // Update document status to failed
+      console.error('Failed to invoke extract-bank-statement function:', error);
       await supabase
         .from("financial_documents")
         .update({ status: 'failed' })
         .eq('id', docData.id);
-      throw new Error(`Failed to process paystub: ${error.message}`);
+      throw new Error(`Failed to process bank statement: ${error.message}`);
     }
   }
 
-  return { filePath, fileName };
+  return { filePath, fileName, documentId: docData.id };
 };

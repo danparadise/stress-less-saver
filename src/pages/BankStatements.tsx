@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, Loader2 } from "lucide-react";
 import { uploadDocument } from "@/utils/documentUpload";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const BankStatements = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -15,11 +16,36 @@ const BankStatements = () => {
       const file = e.target.files[0];
       setIsUploading(true);
       try {
-        await uploadDocument(file, "bank_statement", new Date());
-        toast.success("Document uploaded successfully");
+        // Extract month from filename or use current month
+        const monthMatch = file.name.match(/(\d{4})[_-]?(\d{2})/);
+        const statementDate = monthMatch 
+          ? new Date(parseInt(monthMatch[1]), parseInt(monthMatch[2]) - 1)
+          : new Date();
+
+        const result = await uploadDocument(file, "bank_statement", statementDate);
+        
+        // Create initial bank statement record
+        const { data: bankStatementData, error: bankStatementError } = await supabase
+          .from('bank_statement_data')
+          .insert({
+            document_id: result.documentId,
+            statement_month: format(statementDate, 'yyyy-MM-dd'),
+            total_deposits: 0,
+            total_withdrawals: 0,
+            ending_balance: 0,
+            transactions: []
+          })
+          .select()
+          .single();
+
+        if (bankStatementError) {
+          throw bankStatementError;
+        }
+
+        toast.success("Bank statement uploaded successfully");
       } catch (error) {
         console.error("Upload error:", error);
-        toast.error("Error uploading document");
+        toast.error("Error uploading bank statement");
       } finally {
         setIsUploading(false);
         if (fileInputRef.current) {
