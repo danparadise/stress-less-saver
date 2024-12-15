@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useState } from "react";
 
 interface PaystubTableProps {
   paystubs: any[];
@@ -17,6 +18,25 @@ interface PaystubTableProps {
 }
 
 const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => {
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortedData, setSortedData] = useState(paystubs);
+
+  const handleSortByDate = () => {
+    const newOrder = sortOrder === "asc" ? "desc" : "asc";
+    
+    const sorted = [...sortedData].sort((a, b) => {
+      if (!a.pay_period_start || !b.pay_period_start) return 0;
+      
+      const dateA = new Date(a.pay_period_start).getTime();
+      const dateB = new Date(b.pay_period_start).getTime();
+      
+      return newOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
+
+    setSortedData(sorted);
+    setSortOrder(newOrder);
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -25,14 +45,24 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
             <TableHead>Document</TableHead>
             <TableHead>Upload Date</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead 
+              onClick={handleSortByDate}
+              className="cursor-pointer hover:bg-muted/70 transition-colors flex items-center gap-2"
+            >
+              Pay Period
+              {sortOrder === "asc" ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
+              )}
+            </TableHead>
             <TableHead className="text-right">Gross Pay</TableHead>
             <TableHead className="text-right">Net Pay</TableHead>
-            <TableHead>Pay Period</TableHead>
             <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paystubs.map((paystub) => (
+          {sortedData.map((paystub) => (
             <TableRow key={paystub.id} className="hover:bg-muted/50">
               <TableCell className="font-medium">
                 {paystub.financial_documents.file_name}
@@ -56,6 +86,14 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
                   {paystub.financial_documents.status}
                 </span>
               </TableCell>
+              <TableCell>
+                {paystub.pay_period_start && paystub.pay_period_end
+                  ? `${format(
+                      new Date(paystub.pay_period_start),
+                      "MMM d"
+                    )} - ${format(new Date(paystub.pay_period_end), "MMM d, yyyy")}`
+                  : "N/A"}
+              </TableCell>
               <TableCell className="text-right">
                 {paystub.gross_pay
                   ? new Intl.NumberFormat('en-US', {
@@ -70,14 +108,6 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
                       style: 'currency',
                       currency: 'USD'
                     }).format(paystub.net_pay)
-                  : "N/A"}
-              </TableCell>
-              <TableCell>
-                {paystub.pay_period_start && paystub.pay_period_end
-                  ? `${format(
-                      new Date(paystub.pay_period_start),
-                      "MMM d"
-                    )} - ${format(new Date(paystub.pay_period_end), "MMM d, yyyy")}`
                   : "N/A"}
               </TableCell>
               <TableCell>
