@@ -20,7 +20,8 @@ const PaystubData = () => {
           financial_documents(
             file_name,
             upload_date,
-            status
+            status,
+            id
           )
         `)
         .order("created_at", { ascending: false });
@@ -28,16 +29,17 @@ const PaystubData = () => {
       if (error) throw error;
       return data;
     },
-    // Increase refetch interval to check for updates more frequently during upload
     refetchInterval: 3000,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (paystubId: string) => {
+    mutationFn: async ({ paystubId, documentId }: { paystubId: string, documentId: string }) => {
+      // Delete the financial document (this will cascade delete the paystub data)
       const { error } = await supabase
-        .from("paystub_data")
+        .from("financial_documents")
         .delete()
-        .eq("id", paystubId);
+        .eq("id", documentId);
+      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -104,7 +106,7 @@ const PaystubData = () => {
       <CardContent>
         <PaystubTable 
           paystubs={uniquePaystubs} 
-          onDelete={(id) => deleteMutation.mutate(id)}
+          onDelete={(paystubId, documentId) => deleteMutation.mutate({ paystubId, documentId })}
           isDeleting={deleteMutation.isPending}
         />
       </CardContent>

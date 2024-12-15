@@ -13,7 +13,7 @@ import { useState } from "react";
 
 interface PaystubTableProps {
   paystubs: any[];
-  onDelete: (id: string) => void;
+  onDelete: (paystubId: string, documentId: string) => void;
   isDeleting: boolean;
 }
 
@@ -114,7 +114,7 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onDelete(paystub.id)}
+                  onClick={() => onDelete(paystub.id, paystub.financial_documents.id)}
                   className="hover:bg-destructive/10 hover:text-destructive"
                   disabled={isDeleting}
                 >
