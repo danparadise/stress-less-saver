@@ -1,4 +1,4 @@
-import { Settings, BarChart2, Activity, Grid, Database, LogOut, Moon, Sun, Upload, FileText } from "lucide-react";
+import { Settings, BarChart2, Activity, Grid, Database, LogOut, Moon, Sun, Upload, FileText, Loader2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Input } from "./ui/input";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { uploadDocument } from "@/utils/documentUpload";
 
 const menuItems = [
@@ -31,6 +31,7 @@ const AppSidebar = () => {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -45,15 +46,18 @@ const AppSidebar = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      setIsUploading(true);
       try {
         await uploadDocument(file, "paystub", new Date());
         toast.success("Document uploaded successfully");
       } catch (error) {
         console.error("Upload error:", error);
         toast.error("Error uploading document");
-      }
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      } finally {
+        setIsUploading(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     }
   };
@@ -88,9 +92,21 @@ const AppSidebar = () => {
                 </SidebarMenuItem>
               ))}
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="h-4 w-4" />
-                  <span>Upload Document</span>
+                <SidebarMenuButton 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      <span>Upload Document</span>
+                    </>
+                  )}
                 </SidebarMenuButton>
                 <Input
                   type="file"
@@ -98,6 +114,7 @@ const AppSidebar = () => {
                   className="hidden"
                   onChange={handleFileUpload}
                   accept="image/*,application/pdf"
+                  disabled={isUploading}
                 />
               </SidebarMenuItem>
             </SidebarMenu>
