@@ -67,8 +67,9 @@ const DocumentUpload = () => {
           : "Document uploaded successfully",
       });
 
-      // Invalidate the paystub-data query to trigger a refresh
-      queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+      // Force an immediate refetch after upload
+      await queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+      await queryClient.refetchQueries({ queryKey: ["paystub-data"] });
 
       // Reset form
       setFile(null);
