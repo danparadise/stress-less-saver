@@ -1,5 +1,5 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import { extractTextFromPdf } from "./pdfService.ts";
 import { extractFinancialData } from "./openaiService.ts";
 
@@ -26,10 +26,44 @@ serve(async (req) => {
     }
 
     // Extract text from PDF
+    console.log('Extracting text from PDF...');
     const extractedText = await extractTextFromPdf(pdfUrl, pdfCoApiKey);
+    console.log('Text extracted successfully');
     
     // Extract financial data using OpenAI
+    console.log('Extracting financial data...');
     const extractedData = await extractFinancialData(extractedText, openAiApiKey);
+    console.log('Financial data extracted:', extractedData);
+
+    // Update database with extracted data
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { error: updateError } = await supabase
+      .from('bank_statement_data')
+      .update({
+        statement_month: extractedData.statement_month,
+        total_deposits: extractedData.total_deposits,
+        total_withdrawals: extractedData.total_withdrawals,
+        ending_balance: extractedData.ending_balance
+      })
+      .eq('document_id', documentId);
+
+    if (updateError) {
+      throw new Error(`Failed to update database: ${updateError.message}`);
+    }
+
+    // Update document status
+    const { error: statusError } = await supabase
+      .from('financial_documents')
+      .update({ status: 'completed' })
+      .eq('id', documentId);
+
+    if (statusError) {
+      throw new Error(`Failed to update document status: ${statusError.message}`);
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: extractedData }),

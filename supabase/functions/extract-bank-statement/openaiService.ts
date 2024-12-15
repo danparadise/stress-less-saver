@@ -8,28 +8,24 @@ export async function extractFinancialData(text: string, apiKey: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `You are a financial data extraction assistant. Extract the following information from bank statements:
+          content: `Extract only the following information from bank statements:
+            - statement_month (the month and year of the statement)
             - total_deposits (sum of all deposits)
             - total_withdrawals (sum of all withdrawals)
             - ending_balance (final balance)
-            - transactions (array of objects with date, description, amount, and type fields)
             
             Rules:
             1. For monetary values:
                - Remove currency symbols and commas
                - Convert to plain numbers
-               - Use null if not found
-            2. For dates:
-               - Format as YYYY-MM-DD
-               - Use null if not found
-            3. For transactions:
-               - type should be either "deposit" or "withdrawal"
-               - amount should be a positive number
-               - Return empty array if none found
+               - Use 0 if not found
+            2. For statement_month:
+               - Format as YYYY-MM-DD (use the first day of the month)
+               - Use current month if not found
             
             Return ONLY a valid JSON object with these exact field names.`
         },
@@ -53,5 +49,16 @@ export async function extractFinancialData(text: string, apiKey: string) {
     throw new Error('Invalid response format from OpenAI');
   }
 
-  return JSON.parse(result.choices[0].message.content);
+  try {
+    const extractedData = JSON.parse(result.choices[0].message.content);
+    return {
+      statement_month: extractedData.statement_month || new Date().toISOString().slice(0, 10),
+      total_deposits: extractedData.total_deposits || 0,
+      total_withdrawals: extractedData.total_withdrawals || 0,
+      ending_balance: extractedData.ending_balance || 0
+    };
+  } catch (error) {
+    console.error('Error parsing OpenAI response:', error);
+    throw new Error('Failed to parse extracted data');
+  }
 }

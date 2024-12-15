@@ -6,78 +6,38 @@ const corsHeaders = {
 export async function extractTextFromPdf(pdfUrl: string, apiKey: string): Promise<string> {
   console.log('Starting PDF text extraction for:', pdfUrl);
   
+  const requestData = {
+    url: pdfUrl,
+    async: false,
+    inline: false,
+    profiles: ["General"]
+  };
+  
   // Start the PDF to Text conversion job
-  const startJobResponse = await fetch('https://api.pdf.co/v1/pdf/text/from-url', {
+  const startJobResponse = await fetch('https://api.pdf.co/v1/pdf/text', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      url: pdfUrl,
-      async: true,
-      pages: "",
-      password: "",
-      profiles: ["General"]
-    }),
+    body: JSON.stringify(requestData),
   });
 
   if (!startJobResponse.ok) {
     const errorData = await startJobResponse.text();
-    console.error('PDF.co job start error:', errorData);
+    console.error('PDF.co API error:', errorData);
     throw new Error(`Failed to start PDF conversion job: ${errorData}`);
   }
 
-  const jobData = await startJobResponse.json();
-  console.log('PDF.co job started:', jobData);
-
-  if (!jobData.jobId) {
-    throw new Error('No job ID received from PDF.co');
-  }
-
-  // Poll for job completion
-  let attempts = 0;
-  const maxAttempts = 10;
+  const result = await startJobResponse.json();
   
-  while (attempts < maxAttempts) {
-    console.log(`Checking job status, attempt ${attempts + 1}/${maxAttempts}`);
-    
-    const checkJobResponse = await fetch(`https://api.pdf.co/v1/job/check?jobid=${jobData.jobId}`, {
-      headers: {
-        'x-api-key': apiKey,
-      },
-    });
-
-    if (!checkJobResponse.ok) {
-      throw new Error('Failed to check job status');
-    }
-
-    const jobStatus = await checkJobResponse.json();
-    console.log('Job status:', jobStatus);
-
-    if (jobStatus.status === 'working') {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-      attempts++;
-      continue;
-    }
-
-    if (jobStatus.status === 'success') {
-      // Get the result URL and download the text
-      const resultResponse = await fetch(jobStatus.url);
-      if (!resultResponse.ok) {
-        throw new Error('Failed to fetch conversion result');
-      }
-      const textResult = await resultResponse.text();
-      console.log('PDF text extracted successfully');
-      return textResult;
-    }
-
-    if (jobStatus.status === 'error') {
-      throw new Error(`PDF.co job failed: ${jobStatus.error}`);
-    }
-
-    attempts++;
+  if (result.error) {
+    throw new Error(`PDF.co processing error: ${result.message}`);
   }
 
-  throw new Error('Failed to get text result after maximum attempts');
+  if (!result.body) {
+    throw new Error('No text content returned from PDF.co');
+  }
+
+  return result.body;
 }
