@@ -5,7 +5,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import UserProfile from "./sidebar/UserProfile";
-import SidebarMenu from "./sidebar/SidebarMenu";
+import SidebarNavigation from "./sidebar/SidebarMenu";
 import DocumentUploadButton from "./sidebar/DocumentUploadButton";
 import ThemeToggle from "./sidebar/ThemeToggle";
 import LogoutButton from "./sidebar/LogoutButton";
@@ -15,7 +15,7 @@ const AppSidebar = () => {
     <Sidebar variant="inset" className="sidebar-gradient">
       <SidebarContent>
         <UserProfile />
-        <SidebarMenu />
+        <SidebarNavigation />
         <SidebarMenu>
           <DocumentUploadButton />
         </SidebarMenu>

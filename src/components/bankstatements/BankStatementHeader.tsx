@@ -11,15 +11,10 @@ const BankStatementHeader = ({ onRefresh }: BankStatementHeaderProps) => {
   const handleRefresh = async () => {
     try {
       await onRefresh();
-      toast({
-        title: "Success",
-        description: "Data refreshed successfully",
-      });
+      toast("Data refreshed successfully");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh data",
-        variant: "destructive",
+      toast("Failed to refresh data", {
+        description: error instanceof Error ? error.message : "Unknown error occurred",
       });
     }
   };

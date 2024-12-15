@@ -10,10 +10,14 @@ const BankStatementData = () => {
   const { statements, isLoading, refetch } = useBankStatements();
   const deleteMutation = useDeleteBankStatement();
 
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
   if (isLoading) {
     return (
       <Card>
-        <BankStatementHeader onRefresh={refetch} />
+        <BankStatementHeader onRefresh={handleRefresh} />
         <CardContent>
           <BankStatementLoading />
         </CardContent>
@@ -24,7 +28,7 @@ const BankStatementData = () => {
   if (!statements?.length) {
     return (
       <Card>
-        <BankStatementHeader onRefresh={refetch} />
+        <BankStatementHeader onRefresh={handleRefresh} />
         <CardContent>
           <BankStatementEmpty />
         </CardContent>
@@ -34,7 +38,7 @@ const BankStatementData = () => {
 
   return (
     <Card>
-      <BankStatementHeader onRefresh={refetch} />
+      <BankStatementHeader onRefresh={handleRefresh} />
       <CardContent>
         <BankStatementTable 
           statements={statements} 
