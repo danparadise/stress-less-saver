@@ -5,14 +5,17 @@ import { useToast } from "@/components/ui/use-toast";
 import PaystubTable from "../paystubs/PaystubTable";
 import PaystubEmpty from "../paystubs/PaystubEmpty";
 import PaystubLoading from "../paystubs/PaystubLoading";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ArrowUpDown } from "lucide-react";
 import { useState } from "react";
+
+type SortDirection = "asc" | "desc";
 
 const PaystubData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [minGrossPay, setMinGrossPay] = useState<string>("");
-  const [maxGrossPay, setMaxGrossPay] = useState<string>("");
+  const [dateSort, setDateSort] = useState<SortDirection>("desc");
+  const [paySort, setPaySort] = useState<SortDirection>("desc");
 
   const { data: paystubs, isLoading } = useQuery({
     queryKey: ["paystub-data"],
@@ -89,7 +92,8 @@ const PaystubData = () => {
   // Sort paystubs by pay period dates
   const sortedPaystubs = [...paystubs].sort((a, b) => {
     if (!a.pay_period_start || !b.pay_period_start) return 0;
-    return new Date(b.pay_period_start).getTime() - new Date(a.pay_period_start).getTime();
+    const dateComparison = new Date(b.pay_period_start).getTime() - new Date(a.pay_period_start).getTime();
+    return dateSort === "desc" ? dateComparison : -dateComparison;
   });
 
   // Remove duplicates based on pay period dates and file name
@@ -105,15 +109,11 @@ const PaystubData = () => {
     return acc;
   }, [] as typeof sortedPaystubs);
 
-  // Filter paystubs based on gross pay range
-  const filteredPaystubs = uniquePaystubs.filter(paystub => {
-    if (!paystub.gross_pay) return true;
-    
-    const grossPay = Number(paystub.gross_pay);
-    const min = minGrossPay ? Number(minGrossPay) : -Infinity;
-    const max = maxGrossPay ? Number(maxGrossPay) : Infinity;
-    
-    return grossPay >= min && grossPay <= max;
+  // Sort by gross pay if needed
+  const finalSortedPaystubs = [...uniquePaystubs].sort((a, b) => {
+    const aGrossPay = Number(a.gross_pay) || 0;
+    const bGrossPay = Number(b.gross_pay) || 0;
+    return paySort === "desc" ? bGrossPay - aGrossPay : aGrossPay - bGrossPay;
   });
 
   return (
@@ -121,29 +121,29 @@ const PaystubData = () => {
       <CardHeader>
         <CardTitle>Extracted Paystub Data</CardTitle>
         <div className="flex gap-4 mt-4">
-          <div className="w-48">
-            <Input
-              type="number"
-              placeholder="Min Gross Pay"
-              value={minGrossPay}
-              onChange={(e) => setMinGrossPay(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <div className="w-48">
-            <Input
-              type="number"
-              placeholder="Max Gross Pay"
-              value={maxGrossPay}
-              onChange={(e) => setMaxGrossPay(e.target.value)}
-              className="w-full"
-            />
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => setDateSort(prev => prev === "desc" ? "asc" : "desc")}
+            className="flex items-center gap-2"
+          >
+            Sort by Date
+            <ArrowUpDown className="h-4 w-4" />
+            {dateSort === "desc" ? "↓" : "↑"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setPaySort(prev => prev === "desc" ? "asc" : "desc")}
+            className="flex items-center gap-2"
+          >
+            Sort by Gross Pay
+            <ArrowUpDown className="h-4 w-4" />
+            {paySort === "desc" ? "↓" : "↑"}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
         <PaystubTable 
-          paystubs={filteredPaystubs} 
+          paystubs={finalSortedPaystubs} 
           onDelete={(id) => deleteMutation.mutate(id)}
           isDeleting={deleteMutation.isPending}
         />
