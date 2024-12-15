@@ -9,7 +9,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -45,7 +44,8 @@ serve(async (req) => {
       throw new Error('Missing PDF.co API key');
     }
 
-    const pdfToTextResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to-text', {
+    // First, get a job ID from PDF.co
+    const startJobResponse = await fetch('https://api.pdf.co/v1/pdf/text', {
       method: 'POST',
       headers: {
         'x-api-key': pdfCoApiKey,
@@ -53,19 +53,70 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: pdfUrl,
-        async: false
+        async: true,
+        profiles: ["General"]
       }),
     });
 
-    if (!pdfToTextResponse.ok) {
-      const errorData = await pdfToTextResponse.text();
-      console.error('PDF.co API error:', errorData);
-      throw new Error('Failed to convert PDF to text');
+    if (!startJobResponse.ok) {
+      const errorData = await startJobResponse.text();
+      console.error('PDF.co job start error:', errorData);
+      throw new Error('Failed to start PDF conversion job');
     }
 
-    const pdfToTextData = await pdfToTextResponse.json();
-    if (!pdfToTextData.text) {
-      throw new Error('No text extracted from PDF');
+    const jobData = await startJobResponse.json();
+    console.log('PDF.co job started:', jobData);
+
+    if (!jobData.jobId) {
+      throw new Error('No job ID received from PDF.co');
+    }
+
+    // Poll for job completion
+    let textResult = null;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      console.log(`Checking job status, attempt ${attempts + 1}/${maxAttempts}`);
+      
+      const checkJobResponse = await fetch(`https://api.pdf.co/v1/job/check?jobid=${jobData.jobId}`, {
+        headers: {
+          'x-api-key': pdfCoApiKey,
+        },
+      });
+
+      if (!checkJobResponse.ok) {
+        throw new Error('Failed to check job status');
+      }
+
+      const jobStatus = await checkJobResponse.json();
+      console.log('Job status:', jobStatus);
+
+      if (jobStatus.status === 'working') {
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+        attempts++;
+        continue;
+      }
+
+      if (jobStatus.status === 'success') {
+        // Get the result URL and download the text
+        const resultResponse = await fetch(jobStatus.url);
+        if (!resultResponse.ok) {
+          throw new Error('Failed to fetch conversion result');
+        }
+        textResult = await resultResponse.text();
+        break;
+      }
+
+      if (jobStatus.status === 'error') {
+        throw new Error(`PDF.co job failed: ${jobStatus.error}`);
+      }
+
+      attempts++;
+    }
+
+    if (!textResult) {
+      throw new Error('Failed to get text result after maximum attempts');
     }
 
     console.log('PDF text extracted successfully');
@@ -77,15 +128,29 @@ serve(async (req) => {
         {
           role: "system",
           content: `You are a financial data extraction assistant. Extract the following information from bank statements:
-            - total_deposits (number)
-            - total_withdrawals (number)
-            - ending_balance (number)
+            - total_deposits (sum of all deposits)
+            - total_withdrawals (sum of all withdrawals)
+            - ending_balance (final balance)
             - transactions (array of objects with date, description, amount, and type fields)
-            Format the response as valid JSON with these exact field names.`
+            
+            Rules:
+            1. For monetary values:
+               - Remove currency symbols and commas
+               - Convert to plain numbers
+               - Use null if not found
+            2. For dates:
+               - Format as YYYY-MM-DD
+               - Use null if not found
+            3. For transactions:
+               - type should be either "deposit" or "withdrawal"
+               - amount should be a positive number
+               - Return empty array if none found
+            
+            Return ONLY a valid JSON object with these exact field names.`
         },
         {
           role: "user",
-          content: pdfToTextData.text
+          content: textResult
         }
       ],
       temperature: 0.1,
