@@ -6,6 +6,7 @@ import { Upload, Loader2 } from "lucide-react";
 import { uploadDocument } from "@/utils/documentUpload";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 const BankStatements = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
