@@ -89,24 +89,37 @@ const PaystubData = () => {
     );
   }
 
-  // First sort by date
-  const sortByDate = [...(paystubs || [])].sort((a, b) => {
-    // Handle cases where dates might be null
-    if (!a.pay_period_start) return 1;  // null dates go to the end
-    if (!b.pay_period_start) return -1;
-
-    const dateA = new Date(a.pay_period_start).getTime();
-    const dateB = new Date(b.pay_period_start).getTime();
+  // Sort paystubs by pay period dates
+  const sortedPaystubs = [...(paystubs || [])].sort((a, b) => {
+    if (!a.pay_period_start || !b.pay_period_start) return 0;
     
-    return dateSort === "desc" ? dateB - dateA : dateA - dateB;
+    const dateA = new Date(a.pay_period_start);
+    const dateB = new Date(b.pay_period_start);
+    
+    if (dateSort === "desc") {
+      return dateB.getTime() - dateA.getTime();
+    }
+    return dateA.getTime() - dateB.getTime();
   });
 
-  // Then sort by gross pay if needed
-  const finalSortedPaystubs = [...sortByDate].sort((a, b) => {
-    if (paySort === "desc") {
-      return (Number(b.gross_pay) || 0) - (Number(a.gross_pay) || 0);
+  // Remove duplicates based on pay period dates and file name
+  const uniquePaystubs = sortedPaystubs.reduce((acc, current) => {
+    const key = `${current.pay_period_start}-${current.pay_period_end}-${current.financial_documents.file_name}`;
+    const exists = acc.find(item => 
+      `${item.pay_period_start}-${item.pay_period_end}-${item.financial_documents.file_name}` === key
+    );
+    
+    if (!exists) {
+      acc.push(current);
     }
-    return (Number(a.gross_pay) || 0) - (Number(b.gross_pay) || 0);
+    return acc;
+  }, [] as typeof sortedPaystubs);
+
+  // Sort by gross pay if needed
+  const finalSortedPaystubs = [...uniquePaystubs].sort((a, b) => {
+    const aGrossPay = Number(a.gross_pay) || 0;
+    const bGrossPay = Number(b.gross_pay) || 0;
+    return paySort === "desc" ? bGrossPay - aGrossPay : aGrossPay - bGrossPay;
   });
 
   return (
