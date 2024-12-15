@@ -12,9 +12,9 @@ const PaystubData = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Subscribe to changes on the paystub_data table
+    // Subscribe to changes on both paystub_data and financial_documents tables
     const channel = supabase
-      .channel('public:paystub_data')
+      .channel('public:paystub_changes')
       .on(
         'postgres_changes',
         {
@@ -23,7 +23,19 @@ const PaystubData = () => {
           table: 'paystub_data'
         },
         () => {
-          // Invalidate and refetch when we get any change
+          console.log('Paystub data changed, invalidating query');
+          queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'financial_documents'
+        },
+        () => {
+          console.log('Financial document changed, invalidating query');
           queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
         }
       )
