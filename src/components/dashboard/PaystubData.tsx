@@ -76,7 +76,6 @@ const PaystubData = () => {
       console.log('Fetched paystub data:', data);
       return data;
     },
-    // Enable real-time updates
     refetchOnWindowFocus: true,
     refetchOnMount: true,
     staleTime: 0
@@ -126,12 +125,25 @@ const PaystubData = () => {
     }
   };
 
+  const cardHeader = (
+    <CardHeader className="flex flex-row items-center justify-between">
+      <CardTitle>Extracted Paystub Data</CardTitle>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleRefresh}
+        className="gap-2"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Refresh
+      </Button>
+    </CardHeader>
+  );
+
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Paystub Data</CardTitle>
-        </CardHeader>
+        {cardHeader}
         <CardContent>
           <PaystubLoading />
         </CardContent>
@@ -142,9 +154,7 @@ const PaystubData = () => {
   if (!paystubs?.length) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Paystub Data</CardTitle>
-        </CardHeader>
+        {cardHeader}
         <CardContent>
           <PaystubEmpty />
         </CardContent>
@@ -167,18 +177,7 @@ const PaystubData = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Extracted Paystub Data</CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          className="gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
-      </CardHeader>
+      {cardHeader}
       <CardContent>
         <PaystubTable 
           paystubs={uniquePaystubs} 
