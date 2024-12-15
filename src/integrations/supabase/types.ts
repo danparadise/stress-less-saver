@@ -9,6 +9,47 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bank_statement_data: {
+        Row: {
+          created_at: string
+          document_id: string
+          ending_balance: number | null
+          id: string
+          statement_month: string
+          total_deposits: number | null
+          total_withdrawals: number | null
+          transactions: Json | null
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          ending_balance?: number | null
+          id?: string
+          statement_month: string
+          total_deposits?: number | null
+          total_withdrawals?: number | null
+          transactions?: Json | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          ending_balance?: number | null
+          id?: string
+          statement_month?: string
+          total_deposits?: number | null
+          total_withdrawals?: number | null
+          transactions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statement_data_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "financial_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_documents: {
         Row: {
           document_type: string
@@ -118,6 +159,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      bank_statement_status:
+        | "pending"
+        | "pending_conversion"
+        | "completed"
+        | "failed"
       document_status: "pending" | "pending_conversion" | "completed" | "failed"
     }
     CompositeTypes: {
