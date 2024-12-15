@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadDocument } from "@/utils/documentUpload";
 import DocumentTypeSelect from "./DocumentTypeSelect";
@@ -107,6 +107,7 @@ const DocumentUpload = () => {
             type="file"
             accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"
             onChange={handleFileChange}
+            disabled={isUploading}
           />
         </div>
 
@@ -116,7 +117,10 @@ const DocumentUpload = () => {
           disabled={isUploading || !file || !documentType || !date}
         >
           {isUploading ? (
-            "Uploading..."
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Uploading...
+            </>
           ) : (
             <>
               <Upload className="mr-2 h-4 w-4" /> Upload Document

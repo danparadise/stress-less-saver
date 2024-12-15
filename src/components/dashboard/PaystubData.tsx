@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import PaystubTable from "../paystubs/PaystubTable";
 import PaystubEmpty from "../paystubs/PaystubEmpty";
 import PaystubLoading from "../paystubs/PaystubLoading";
@@ -28,7 +28,8 @@ const PaystubData = () => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 5000,
+    // Increase refetch interval to check for updates more frequently during upload
+    refetchInterval: 3000,
   });
 
   const deleteMutation = useMutation({
