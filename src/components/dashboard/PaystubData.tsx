@@ -90,10 +90,16 @@ const PaystubData = () => {
   }
 
   // Sort paystubs by pay period dates
-  const sortedPaystubs = [...paystubs].sort((a, b) => {
+  const sortedPaystubs = [...(paystubs || [])].sort((a, b) => {
     if (!a.pay_period_start || !b.pay_period_start) return 0;
-    const dateComparison = new Date(b.pay_period_start).getTime() - new Date(a.pay_period_start).getTime();
-    return dateSort === "desc" ? dateComparison : -dateComparison;
+    
+    const dateA = new Date(a.pay_period_start);
+    const dateB = new Date(b.pay_period_start);
+    
+    if (dateSort === "desc") {
+      return dateB.getTime() - dateA.getTime();
+    }
+    return dateA.getTime() - dateB.getTime();
   });
 
   // Remove duplicates based on pay period dates and file name
