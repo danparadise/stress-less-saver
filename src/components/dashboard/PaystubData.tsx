@@ -5,10 +5,34 @@ import { useToast } from "@/hooks/use-toast";
 import PaystubTable from "../paystubs/PaystubTable";
 import PaystubEmpty from "../paystubs/PaystubEmpty";
 import PaystubLoading from "../paystubs/PaystubLoading";
+import { useEffect } from "react";
 
 const PaystubData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // Subscribe to changes on the paystub_data table
+    const channel = supabase
+      .channel('public:paystub_data')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'paystub_data'
+        },
+        () => {
+          // Invalidate and refetch when we get any change
+          queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: paystubs, isLoading } = useQuery({
     queryKey: ["paystub-data"],
@@ -29,7 +53,6 @@ const PaystubData = () => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 3000,
   });
 
   const deleteMutation = useMutation({
