@@ -25,8 +25,13 @@ interface BankStatementTableProps {
 }
 
 const BankStatementTable = ({ statements, onDelete, isDeleting }: BankStatementTableProps) => {
+  // Filter out statements with no transactions before setting initial state
+  const validStatements = statements.filter(statement => 
+    Array.isArray(statement.transactions) && statement.transactions.length > 0
+  );
+  
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [sortedData, setSortedData] = useState(statements);
+  const [sortedData, setSortedData] = useState(validStatements);
   const navigate = useNavigate();
 
   const handleSortByDate = () => {
