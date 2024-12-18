@@ -21,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    const { documentId } = await req.json()
+    const { documentId, pdfUrl } = await req.json()
     console.log('Processing document:', documentId)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -34,27 +34,53 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Get document details
-    const { data: document, error: docError } = await supabase
-      .from('financial_documents')
-      .select('file_path, file_name')
-      .eq('id', documentId)
-      .single()
+    // 1. Convert PDF to PNG using PDF.co
+    console.log('Converting PDF to PNG using PDF.co')
+    const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
+      method: 'POST',
+      headers: {
+        'x-api-key': pdfCoApiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: pdfUrl,
+        async: false
+      })
+    })
 
-    if (docError || !document) {
-      throw new Error('Document not found')
+    if (!pdfCoResponse.ok) {
+      throw new Error('Failed to convert PDF to PNG')
     }
 
-    // Download PDF file
-    const { data: fileData, error: fileError } = await supabase.storage
+    const pdfCoData = await pdfCoResponse.json()
+    if (!pdfCoData.urls || pdfCoData.urls.length === 0) {
+      throw new Error('No PNG URLs returned from PDF.co')
+    }
+
+    // 2. Download and store PNG in Supabase
+    console.log('Downloading PNG and storing in Supabase')
+    const pngResponse = await fetch(pdfCoData.urls[0])
+    const pngArrayBuffer = await pngResponse.arrayBuffer()
+    const pngPath = `converted/${documentId}.png`
+
+    const { error: uploadError } = await supabase.storage
       .from('financial_docs')
-      .download(document.file_path)
+      .upload(pngPath, pngArrayBuffer, {
+        contentType: 'image/png',
+        upsert: true
+      })
 
-    if (fileError || !fileData) {
-      throw new Error('Failed to download PDF file')
+    if (uploadError) {
+      throw new Error(`Failed to upload PNG: ${uploadError.message}`)
     }
 
-    // Process PDF with OpenAI
+    // Get public URL for the stored PNG
+    const { data: { publicUrl } } = supabase.storage
+      .from('financial_docs')
+      .getPublicUrl(pngPath)
+
+    // 3. Extract data using OpenAI Vision
+    console.log('Extracting data using OpenAI Vision')
     const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -62,23 +88,35 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "gpt-4-vision-preview",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "Extract bank statement transactions and return them in a specific JSON format. Include statement_month (YYYY-MM-DD), total_deposits (numeric), total_withdrawals (numeric), ending_balance (numeric), and transactions array with objects containing: date (YYYY-MM-DD), description (string), category (string), amount (numeric, negative for withdrawals), and balance (numeric)."
+            content: `Extract bank statement transactions and return them in a specific JSON format. Include:
+              - statement_month (YYYY-MM-DD)
+              - total_deposits (numeric)
+              - total_withdrawals (numeric)
+              - ending_balance (numeric)
+              - transactions array with objects containing:
+                - date (YYYY-MM-DD)
+                - description (string)
+                - category (string, inferred from description)
+                - amount (numeric, negative for withdrawals)
+                - balance (numeric)
+              
+              Format numbers without currency symbols or commas.`
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Extract all transaction details from this bank statement, including dates, descriptions, categories, amounts, and running balances. Format as specified."
+                text: "Extract all transaction details from this bank statement image, including dates, descriptions, categories, amounts, and running balances. Format as specified."
               },
               {
                 type: "image_url",
                 image_url: {
-                  url: document.file_path
+                  url: publicUrl
                 }
               }
             ]
@@ -94,8 +132,13 @@ serve(async (req) => {
     }
 
     const aiResult = await openAiResponse.json()
+    console.log('OpenAI response:', aiResult)
+    
     const content = aiResult.choices[0].message.content.trim()
+    console.log('Extracted content:', content)
+    
     const extractedData = JSON.parse(content)
+    console.log('Parsed data:', extractedData)
 
     // Validate and process transactions
     const transactions: Transaction[] = extractedData.transactions.map((t: any) => ({
