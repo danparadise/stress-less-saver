@@ -72,8 +72,14 @@ const PaystubData = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      console.log('Fetched paystub data:', data);
-      return data;
+      
+      // Additional filter to ensure we only get paystub documents
+      const filteredData = data?.filter(item => 
+        item.financial_documents?.document_type === 'paystub'
+      );
+      
+      console.log('Fetched and filtered paystub data:', filteredData);
+      return filteredData;
     },
     refetchOnWindowFocus: true,
     refetchOnMount: true,
