@@ -1,26 +1,27 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { BankStatement, Transaction } from "@/types/bankStatement";
 
 interface BankStatementInsightsProps {
-  statement: any;
+  statement: BankStatement;
 }
 
 const BankStatementInsights = ({ statement }: BankStatementInsightsProps) => {
   const transactions = statement.transactions || [];
   
   // Calculate insights
-  const totalIncome = transactions.reduce((sum: number, t: any) => 
+  const totalIncome = transactions.reduce((sum: number, t: Transaction) => 
     t.amount > 0 ? sum + t.amount : sum, 0);
   
-  const totalExpenses = Math.abs(transactions.reduce((sum: number, t: any) => 
+  const totalExpenses = Math.abs(transactions.reduce((sum: number, t: Transaction) => 
     t.amount < 0 ? sum + t.amount : sum, 0));
   
   const savingsRate = ((totalIncome - totalExpenses) / totalIncome) * 100;
   
   // Group expenses by category
   const expensesByCategory = transactions
-    .filter((t: any) => t.amount < 0)
-    .reduce((acc: any, t: any) => {
+    .filter((t: Transaction) => t.amount < 0)
+    .reduce((acc: Record<string, number>, t: Transaction) => {
       const category = t.category || 'Uncategorized';
       acc[category] = (acc[category] || 0) + Math.abs(t.amount);
       return acc;
@@ -28,7 +29,7 @@ const BankStatementInsights = ({ statement }: BankStatementInsightsProps) => {
   
   // Find highest expense category
   const highestExpenseCategory = Object.entries(expensesByCategory)
-    .sort(([,a]: any, [,b]: any) => b - a)[0];
+    .sort(([,a], [,b]) => b - a)[0];
 
   return (
     <div className="space-y-4">

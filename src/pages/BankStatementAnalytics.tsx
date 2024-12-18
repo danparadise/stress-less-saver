@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BankStatementCharts from "@/components/bankstatements/analytics/BankStatementCharts";
 import BankStatementInsights from "@/components/bankstatements/analytics/BankStatementInsights";
 import BankStatementCategories from "@/components/bankstatements/analytics/BankStatementCategories";
+import { BankStatement } from "@/types/bankStatement";
 
 const BankStatementAnalytics = () => {
   const { id } = useParams();
@@ -28,8 +29,15 @@ const BankStatementAnalytics = () => {
         .single();
 
       if (error) throw error;
-      console.log('Fetched bank statement data:', data);
-      return data;
+      
+      // Ensure transactions is an array
+      const parsedData = {
+        ...data,
+        transactions: Array.isArray(data.transactions) ? data.transactions : []
+      } as BankStatement;
+      
+      console.log('Fetched bank statement data:', parsedData);
+      return parsedData;
     },
   });
 

@@ -1,18 +1,19 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { Transaction } from '@/types/bankStatement';
 
 interface BankStatementCategoriesProps {
-  transactions: any[];
+  transactions: Transaction[];
 }
 
 const BankStatementCategories = ({ transactions }: BankStatementCategoriesProps) => {
   // Group transactions by category and calculate totals
-  const categoryTotals = transactions?.reduce((acc: any, transaction: any) => {
+  const categoryTotals = transactions.reduce((acc: Record<string, number>, transaction: Transaction) => {
     const category = transaction.category || 'Uncategorized';
     acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
     return acc;
   }, {});
 
-  const data = Object.entries(categoryTotals || {}).map(([category, amount]) => ({
+  const data = Object.entries(categoryTotals).map(([category, amount]) => ({
     category,
     amount,
   }));

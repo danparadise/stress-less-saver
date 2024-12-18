@@ -1,8 +1,9 @@
 import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
+import { BankStatement } from '@/types/bankStatement';
 
 interface BankStatementChartsProps {
-  statement: any;
+  statement: BankStatement;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -11,11 +12,11 @@ const BankStatementCharts = ({ statement }: BankStatementChartsProps) => {
   // Prepare data for the pie chart
   const pieData = [
     { name: 'Deposits', value: statement.total_deposits || 0 },
-    { name: 'Withdrawals', value: Math.abs(statement.total_withdrawals) || 0 },
+    { name: 'Withdrawals', value: Math.abs(statement.total_withdrawals || 0) },
   ];
 
   // Prepare data for the line chart
-  const lineData = statement.transactions?.map((transaction: any) => ({
+  const lineData = statement.transactions?.map((transaction) => ({
     date: format(new Date(transaction.date), 'MMM d'),
     balance: transaction.balance,
   })) || [];
