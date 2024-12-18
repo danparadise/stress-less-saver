@@ -1,18 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
+import { extractDataFromImage } from './openaiService.ts'
+import { parseOpenAIResponse } from './openaiParser.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-interface Transaction {
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
-  balance: number;
 }
 
 serve(async (req) => {
@@ -81,81 +75,11 @@ serve(async (req) => {
 
     // 3. Extract data using OpenAI Vision
     console.log('Extracting data using OpenAI Vision')
-    const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `Extract bank statement transactions and return them in a specific JSON format. Include:
-              - statement_month (YYYY-MM-DD)
-              - total_deposits (numeric)
-              - total_withdrawals (numeric)
-              - ending_balance (numeric)
-              - transactions array with objects containing:
-                - date (YYYY-MM-DD)
-                - description (string)
-                - category (string, inferred from description)
-                - amount (numeric, negative for withdrawals)
-                - balance (numeric)
-              
-              Format numbers as plain numbers without currency symbols or commas.
-              Ensure the response is valid JSON.`
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Extract all transaction details from this bank statement image, including dates, descriptions, categories, amounts, and running balances. Format as specified."
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: publicUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 4096,
-        temperature: 0.1
-      })
-    })
-
-    if (!openAiResponse.ok) {
-      const errorData = await openAiResponse.text()
-      throw new Error(`OpenAI API error: ${errorData}`)
-    }
-
+    const openAiResponse = await extractDataFromImage(publicUrl)
     const aiResult = await openAiResponse.json()
-    console.log('OpenAI response:', aiResult)
     
-    let extractedData;
-    try {
-      const content = aiResult.choices[0].message.content.trim()
-      console.log('Raw extracted content:', content)
-      extractedData = JSON.parse(content)
-      console.log('Parsed data:', extractedData)
-    } catch (error) {
-      console.error('Error parsing OpenAI response:', error)
-      console.error('Raw content:', aiResult.choices[0].message.content)
-      throw new Error('Failed to parse extracted data')
-    }
-
-    // Validate and process transactions
-    const transactions: Transaction[] = (extractedData.transactions || []).map((t: any) => ({
-      date: t.date,
-      description: t.description,
-      category: t.category || 'Uncategorized',
-      amount: Number(t.amount),
-      balance: Number(t.balance)
-    }))
+    // Parse and validate the extracted data
+    const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
 
     // Update document status
     await supabase
@@ -172,16 +96,13 @@ serve(async (req) => {
         total_deposits: extractedData.total_deposits,
         total_withdrawals: extractedData.total_withdrawals,
         ending_balance: extractedData.ending_balance,
-        transactions: transactions
+        transactions: extractedData.transactions
       })
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: {
-          ...extractedData,
-          transactions
-        }
+        data: extractedData
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
