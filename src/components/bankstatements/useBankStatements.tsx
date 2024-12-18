@@ -52,13 +52,15 @@ export const useBankStatements = () => {
         .from("bank_statement_data")
         .select(`
           *,
-          financial_documents(
+          financial_documents!inner(
             file_name,
             upload_date,
             status,
-            id
+            id,
+            document_type
           )
         `)
+        .eq('financial_documents.document_type', 'bank_statement')
         .order("statement_month", { ascending: false });
 
       if (error) throw error;

@@ -16,32 +16,29 @@ const PaystubData = () => {
   useEffect(() => {
     console.log('Setting up real-time subscriptions');
     
-    // Create a channel for real-time updates
     const channel = supabase
       .channel('paystub-updates')
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          event: '*',
           schema: 'public',
           table: 'paystub_data'
         },
         (payload) => {
           console.log('Paystub data changed:', payload);
-          // Immediately invalidate and refetch
           queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
         }
       )
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          event: '*',
           schema: 'public',
           table: 'financial_documents'
         },
         (payload) => {
           console.log('Financial document changed:', payload);
-          // Immediately invalidate and refetch
           queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
         }
       )
@@ -63,13 +60,15 @@ const PaystubData = () => {
         .from("paystub_data")
         .select(`
           *,
-          financial_documents(
+          financial_documents!inner(
             file_name,
             upload_date,
             status,
-            id
+            id,
+            document_type
           )
         `)
+        .eq('financial_documents.document_type', 'paystub')
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -83,7 +82,6 @@ const PaystubData = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ paystubId, documentId }: { paystubId: string, documentId: string }) => {
-      // Delete the financial document (this will cascade delete the paystub data)
       const { error } = await supabase
         .from("financial_documents")
         .delete()
@@ -96,7 +94,6 @@ const PaystubData = () => {
         title: "Success",
         description: "Paystub data deleted successfully",
       });
-      // Force an immediate refetch after deletion
       queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
     },
     onError: (error) => {
