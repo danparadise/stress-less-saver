@@ -4,55 +4,72 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
   console.log('Converting PDF to images:', pdfUrl);
   const pdfCoApiKey = Deno.env.get('PDF_CO_API_KEY');
   
-  // First, get the page count
-  const pageInfoResponse = await fetch(`https://api.pdf.co/v1/pdf/info`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': pdfCoApiKey!,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ url: pdfUrl })
-  });
-
-  if (!pageInfoResponse.ok) {
-    const errorData = await pageInfoResponse.text();
-    console.error('PDF info error:', errorData);
-    throw new Error(`Failed to get PDF info: ${errorData}`);
+  if (!pdfCoApiKey) {
+    throw new Error('PDF_CO_API_KEY is not set');
   }
 
-  const pageInfo = await pageInfoResponse.json();
-  console.log('PDF info:', pageInfo);
-  
-  const pageCount = pageInfo.pageCount || 1;
-  const pageRange = pageCount > 1 ? "1-2" : "1"; // Only convert up to first 2 pages
+  try {
+    // First, get the page count
+    console.log('Getting PDF info...');
+    const pageInfoResponse = await fetch('https://api.pdf.co/v1/pdf/info', {
+      method: 'POST',
+      headers: {
+        'x-api-key': pdfCoApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url: pdfUrl })
+    });
 
-  console.log(`Converting PDF pages ${pageRange}`);
+    if (!pageInfoResponse.ok) {
+      const errorData = await pageInfoResponse.text();
+      console.error('PDF info error:', errorData);
+      throw new Error(`Failed to get PDF info: ${errorData}`);
+    }
 
-  const convertResponse = await fetch(`https://api.pdf.co/v1/pdf/convert/to/png`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': pdfCoApiKey!,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      url: pdfUrl,
-      pages: pageRange,
-      async: false
-    })
-  });
+    const pageInfo = await pageInfoResponse.json();
+    console.log('PDF info:', pageInfo);
+    
+    if (!pageInfo.pageCount) {
+      throw new Error('Could not determine page count from PDF');
+    }
 
-  if (!convertResponse.ok) {
-    const errorData = await convertResponse.text();
-    console.error('PDF conversion error:', errorData);
-    throw new Error(`PDF conversion failed: ${errorData}`);
+    // Convert only the first page if that's all we have, otherwise try first two
+    const pageRange = pageInfo.pageCount === 1 ? "1" : "1-2";
+    console.log(`Converting PDF pages ${pageRange}`);
+
+    const convertResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
+      method: 'POST',
+      headers: {
+        'x-api-key': pdfCoApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: pdfUrl,
+        pages: pageRange,
+        async: false
+      })
+    });
+
+    if (!convertResponse.ok) {
+      const errorData = await convertResponse.text();
+      console.error('PDF conversion error:', errorData);
+      throw new Error(`PDF conversion failed: ${errorData}`);
+    }
+
+    const convertResult = await convertResponse.json();
+    console.log('PDF conversion result:', convertResult);
+
+    if (convertResult.error) {
+      throw new Error(`PDF conversion failed: ${JSON.stringify(convertResult)}`);
+    }
+
+    if (!convertResult.urls || convertResult.urls.length === 0) {
+      throw new Error('No image URLs returned from conversion');
+    }
+
+    return convertResult.urls;
+  } catch (error) {
+    console.error('Error in convertPdfToImages:', error);
+    throw error;
   }
-
-  const convertResult = await convertResponse.json();
-  console.log('PDF conversion result:', convertResult);
-
-  if (!convertResult.urls || convertResult.urls.length === 0) {
-    throw new Error('No image URLs returned from conversion');
-  }
-
-  return convertResult.urls;
 }
