@@ -42,7 +42,6 @@ const BankStatementAnalytics = () => {
 
       if (error) throw error;
       
-      // Convert the raw data to match our BankStatement type
       const bankStatement: BankStatement = {
         id: data.id,
         document_id: data.document_id,
@@ -85,39 +84,36 @@ const BankStatementAnalytics = () => {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Transaction Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[400px]">
-              <BankStatementCharts statement={statement} />
-            </ScrollArea>
-          </CardContent>
-        </Card>
+      <div className="space-y-8 max-w-[1400px] mx-auto">
+        {/* Transaction Overview Section - Full Width */}
+        <div className="w-full">
+          <BankStatementCharts statement={statement} />
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Spending Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[400px]">
-              <BankStatementCategories transactions={statement.transactions} />
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        {/* Two Column Layout for Categories and Insights */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle>Spending Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <BankStatementCategories transactions={statement.transactions} />
+              </ScrollArea>
+            </CardContent>
+          </Card>
 
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Financial Insights</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[300px]">
-              <BankStatementInsights statement={statement} />
-            </ScrollArea>
-          </CardContent>
-        </Card>
+          <Card className="md:col-span-1">
+            <CardHeader>
+              <CardTitle>Financial Insights</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <BankStatementInsights statement={statement} />
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
