@@ -15,21 +15,20 @@ const BankStatementCharts = ({ statement }: BankStatementChartsProps) => {
     }).format(amount);
   };
 
-  console.log('Statement data:', statement); // Debug log
-
   return (
     <div className="container mx-auto px-4">
       <Card className="mx-auto max-w-5xl">
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-center">Transaction Details</h3>
-          <div className="rounded-md border">
+          <h3 className="text-2xl font-semibold mb-6 text-center">Transaction Details</h3>
+          <div className="rounded-lg border bg-card">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="w-[150px]">Date</TableHead>
-                  <TableHead className="w-[300px]">Description</TableHead>
-                  <TableHead className="w-[200px]">Category</TableHead>
+                  <TableHead className="w-[150px] text-left">Date</TableHead>
+                  <TableHead className="w-[300px] text-left">Description</TableHead>
+                  <TableHead className="w-[200px] text-left">Category</TableHead>
                   <TableHead className="text-right w-[150px]">Amount</TableHead>
+                  <TableHead className="text-right w-[150px]">Balance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -37,12 +36,12 @@ const BankStatementCharts = ({ statement }: BankStatementChartsProps) => {
                   statement.transactions.map((transaction, index) => (
                     <TableRow key={index} className="hover:bg-muted/50">
                       <TableCell>
-                        {format(new Date(transaction.date), 'MMM d, yyyy')}
+                        {format(new Date(transaction.date), 'MM/dd/yyyy')}
                       </TableCell>
-                      <TableCell className="truncate">
+                      <TableCell className="font-medium">
                         {transaction.description}
                       </TableCell>
-                      <TableCell>{transaction.category || 'Uncategorized'}</TableCell>
+                      <TableCell>{transaction.category}</TableCell>
                       <TableCell className={`text-right ${
                         transaction.amount < 0 
                           ? 'text-destructive' 
@@ -50,11 +49,14 @@ const BankStatementCharts = ({ statement }: BankStatementChartsProps) => {
                       }`}>
                         {formatCurrency(transaction.amount)}
                       </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(transaction.balance)}
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                       No transaction data available
                     </TableCell>
                   </TableRow>
