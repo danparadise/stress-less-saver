@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, ArrowUp, ArrowDown, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,6 +10,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import BankStatementTransactions from "./BankStatementTransactions";
 
 interface BankStatementTableProps {
@@ -21,6 +27,7 @@ interface BankStatementTableProps {
 const BankStatementTable = ({ statements, onDelete, isDeleting }: BankStatementTableProps) => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sortedData, setSortedData] = useState(statements);
+  const navigate = useNavigate();
 
   const handleSortByDate = () => {
     const newOrder = sortOrder === "asc" ? "desc" : "asc";
@@ -68,14 +75,37 @@ const BankStatementTable = ({ statements, onDelete, isDeleting }: BankStatementT
             <TableHead className="text-right">Total Withdrawals</TableHead>
             <TableHead className="text-right">Ending Balance</TableHead>
             <TableHead>Transactions</TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
+            <TableHead className="w-[150px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedData.map((statement) => (
             <TableRow key={statement.id} className="hover:bg-muted/50">
               <TableCell className="font-medium">
-                {statement.financial_documents.file_name}
+                <HoverCard>
+                  <HoverCardTrigger>
+                    {statement.financial_documents.file_name}
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-80">
+                    <div className="flex justify-between space-x-4">
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold">View Analytics</h4>
+                        <p className="text-sm">
+                          Click to see detailed financial analysis and insights
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => navigate(`/bank-statements/${statement.id}/analytics`)}
+                        >
+                          <BarChart2 className="h-4 w-4 mr-2" />
+                          View Analytics
+                        </Button>
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               </TableCell>
               <TableCell>
                 {statement.financial_documents.upload_date
@@ -124,7 +154,15 @@ const BankStatementTable = ({ statements, onDelete, isDeleting }: BankStatementT
                   />
                 )}
               </TableCell>
-              <TableCell>
+              <TableCell className="space-x-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigate(`/bank-statements/${statement.id}/analytics`)}
+                  className="hover:bg-primary/10 hover:text-primary"
+                >
+                  <BarChart2 className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Paystubs from "./pages/Paystubs";
 import BankStatements from "./pages/BankStatements";
+import BankStatementAnalytics from "./pages/BankStatementAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,21 @@ const App = () => (
                       <AppSidebar />
                       <main className="flex-1">
                         <BankStatements />
+                      </main>
+                    </div>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/bank-statements/:id/analytics"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full">
+                      <AppSidebar />
+                      <main className="flex-1">
+                        <BankStatementAnalytics />
                       </main>
                     </div>
                   </SidebarProvider>
