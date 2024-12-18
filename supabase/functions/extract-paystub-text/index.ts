@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,38 +13,41 @@ serve(async (req) => {
   }
 
   try {
-    const { documentId, imageUrl } = await req.json()
-    console.log('Processing document:', documentId)
+    const { documentId, pdfUrl } = await req.json()
+    console.log('Processing document:', documentId, 'URL:', pdfUrl)
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const supabase = createClient(supabaseUrl!, supabaseKey!)
+    // First convert PDF to PNG using PDF.co Web API
+    const pdfCoApiKey = Deno.env.get('PDF_CO_API_KEY')
+    const convertResponse = await fetch(`https://api.pdf.co/v1/pdf/convert/to/png`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': pdfCoApiKey!,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: pdfUrl,
+        pages: "1-1",
+        async: false
+      })
+    })
 
-    // Get the document details
-    const { data: document } = await supabase
-      .from('financial_documents')
-      .select('file_path, file_name')
-      .eq('id', documentId)
-      .single()
-
-    if (!document) {
-      throw new Error('Document not found')
+    if (!convertResponse.ok) {
+      const errorData = await convertResponse.text()
+      console.error('PDF conversion error:', errorData)
+      throw new Error(`PDF conversion failed: ${errorData}`)
     }
 
-    // Generate a signed URL that will be valid for 60 seconds
-    const { data: { signedUrl } } = await supabase
-      .storage
-      .from('financial_docs')
-      .createSignedUrl(document.file_path, 60)
+    const convertResult = await convertResponse.json()
+    console.log('PDF conversion result:', convertResult)
 
-    if (!signedUrl) {
-      throw new Error('Failed to generate signed URL')
+    if (!convertResult.urls || convertResult.urls.length === 0) {
+      throw new Error('No image URLs returned from conversion')
     }
 
-    console.log('Generated signed URL for document')
+    const imageUrl = convertResult.urls[0]
+    console.log('Using converted image URL:', imageUrl)
 
-    // Call OpenAI API to analyze the image
+    // Now analyze the image with OpenAI
     const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -67,7 +71,7 @@ serve(async (req) => {
               {
                 type: "image_url",
                 image_url: {
-                  url: signedUrl
+                  url: imageUrl
                 }
               }
             ]
@@ -89,17 +93,18 @@ serve(async (req) => {
       throw new Error('Invalid response format from OpenAI')
     }
 
-    // Parse the AI response with better error handling
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Parse and validate the extracted data
     let extractedData
     try {
       const content = aiResult.choices[0].message.content.trim()
       console.log('Raw content from OpenAI:', content)
       
-      // Remove any markdown formatting if present
-      const jsonContent = content.replace(/```json\n|\n```|```/g, '').trim()
-      console.log('Cleaned content for parsing:', jsonContent)
-      
-      extractedData = JSON.parse(jsonContent)
+      extractedData = JSON.parse(content)
       
       // Validate the required fields
       const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end']
@@ -127,7 +132,7 @@ serve(async (req) => {
 
       console.log('Parsed and validated extracted data:', extractedData)
     } catch (e) {
-      console.error('Failed to parse AI response:', e, 'Raw content:', aiResult.choices[0].message.content)
+      console.error('Failed to parse AI response:', e)
       throw new Error(`Failed to parse extracted data: ${e.message}`)
     }
 
