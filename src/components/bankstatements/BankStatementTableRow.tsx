@@ -101,24 +101,28 @@ const BankStatementTableRow = ({ statement, onDelete, isDeleting }: BankStatemen
           />
         )}
       </TableCell>
-      <TableCell className="space-x-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => navigate(`/bank-statements/${statement.id}/analytics`)}
-          className="hover:bg-primary/10 hover:text-primary"
-        >
-          <BarChart2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onDelete(statement.id, statement.financial_documents.id)}
-          className="hover:bg-destructive/10 hover:text-destructive"
-          disabled={isDeleting}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(`/bank-statements/${statement.id}/analytics`)}
+            className="h-8 w-8 hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900 dark:hover:text-purple-300"
+          >
+            <BarChart2 className="h-4 w-4" />
+            <span className="sr-only">View Analytics</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete(statement.id, statement.financial_documents.id)}
+            disabled={isDeleting}
+            className="h-8 w-8 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-300"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Delete Statement</span>
+          </Button>
+        </div>
       </TableCell>
     </TableRow>
   );
