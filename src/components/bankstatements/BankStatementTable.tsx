@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useState } from "react";
+import BankStatementTransactions from "./BankStatementTransactions";
 
 interface BankStatementTableProps {
   statements: any[];
@@ -66,6 +67,7 @@ const BankStatementTable = ({ statements, onDelete, isDeleting }: BankStatementT
             <TableHead className="text-right">Total Deposits</TableHead>
             <TableHead className="text-right">Total Withdrawals</TableHead>
             <TableHead className="text-right">Ending Balance</TableHead>
+            <TableHead>Transactions</TableHead>
             <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -113,6 +115,14 @@ const BankStatementTable = ({ statements, onDelete, isDeleting }: BankStatementT
                 {statement.ending_balance
                   ? formatCurrency(statement.ending_balance)
                   : "N/A"}
+              </TableCell>
+              <TableCell>
+                {statement.transactions && (
+                  <BankStatementTransactions 
+                    transactions={statement.transactions}
+                    statementMonth={statement.statement_month}
+                  />
+                )}
               </TableCell>
               <TableCell>
                 <Button
