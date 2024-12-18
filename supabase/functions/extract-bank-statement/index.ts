@@ -104,7 +104,8 @@ serve(async (req) => {
                 - amount (numeric, negative for withdrawals)
                 - balance (numeric)
               
-              Format numbers without currency symbols or commas.`
+              Format numbers as plain numbers without currency symbols or commas.
+              Ensure the response is valid JSON.`
           },
           {
             role: "user",
@@ -122,7 +123,8 @@ serve(async (req) => {
             ]
           }
         ],
-        max_tokens: 4096
+        max_tokens: 4096,
+        temperature: 0.1
       })
     })
 
@@ -134,14 +136,20 @@ serve(async (req) => {
     const aiResult = await openAiResponse.json()
     console.log('OpenAI response:', aiResult)
     
-    const content = aiResult.choices[0].message.content.trim()
-    console.log('Extracted content:', content)
-    
-    const extractedData = JSON.parse(content)
-    console.log('Parsed data:', extractedData)
+    let extractedData;
+    try {
+      const content = aiResult.choices[0].message.content.trim()
+      console.log('Raw extracted content:', content)
+      extractedData = JSON.parse(content)
+      console.log('Parsed data:', extractedData)
+    } catch (error) {
+      console.error('Error parsing OpenAI response:', error)
+      console.error('Raw content:', aiResult.choices[0].message.content)
+      throw new Error('Failed to parse extracted data')
+    }
 
     // Validate and process transactions
-    const transactions: Transaction[] = extractedData.transactions.map((t: any) => ({
+    const transactions: Transaction[] = (extractedData.transactions || []).map((t: any) => ({
       date: t.date,
       description: t.description,
       category: t.category || 'Uncategorized',
