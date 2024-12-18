@@ -59,14 +59,28 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a paystub analyzer. Extract key information from paystubs and return it in a specific JSON format. Return ONLY a raw JSON object with these exact fields: gross_pay (numeric, no currency symbol or commas), net_pay (numeric, no currency symbol or commas), pay_period_start (YYYY-MM-DD), pay_period_end (YYYY-MM-DD). Do not include markdown formatting, code blocks, or any other text."
+            content: `You are a paystub data extractor. Your task is to extract specific numerical data from paystubs and return it in a strict JSON format.
+
+IMPORTANT: You must ONLY return a valid JSON object with these exact fields:
+- gross_pay (number, no currency symbols or commas)
+- net_pay (number, no currency symbols or commas)
+- pay_period_start (string in YYYY-MM-DD format)
+- pay_period_end (string in YYYY-MM-DD format)
+
+If you cannot extract any of these values, use null for that field.
+Do not include any explanations or additional text in your response.
+Do not use markdown formatting or code blocks.
+Just return the raw JSON object.
+
+Example of valid response:
+{"gross_pay": 1234.56, "net_pay": 987.65, "pay_period_start": "2024-01-01", "pay_period_end": "2024-01-15"}`
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Extract the gross pay, net pay, and pay period dates from this paystub. Return only a raw JSON object with the specified fields, no markdown or code blocks."
+                text: "Extract the required paystub information and return ONLY a JSON object with the specified fields."
               },
               {
                 type: "image_url",
@@ -76,7 +90,8 @@ serve(async (req) => {
               }
             ]
           }
-        ]
+        ],
+        max_tokens: 1000
       })
     })
 
@@ -104,36 +119,63 @@ serve(async (req) => {
       const content = aiResult.choices[0].message.content.trim()
       console.log('Raw content from OpenAI:', content)
       
-      extractedData = JSON.parse(content)
-      
-      // Validate the required fields
-      const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end']
-      const missingFields = requiredFields.filter(field => !(field in extractedData))
-      
-      if (missingFields.length > 0) {
-        throw new Error(`Missing required fields: ${missingFields.join(', ')}`)
-      }
-
-      // Convert string numbers to actual numbers
-      extractedData.gross_pay = Number(String(extractedData.gross_pay).replace(/[^0-9.-]+/g, ''))
-      extractedData.net_pay = Number(String(extractedData.net_pay).replace(/[^0-9.-]+/g, ''))
-
-      // Validate dates
-      const validateDate = (date: string) => {
-        const parsed = new Date(date)
-        if (isNaN(parsed.getTime())) {
-          throw new Error(`Invalid date format: ${date}`)
+      try {
+        extractedData = JSON.parse(content)
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
+        // If parsing fails, return a valid JSON with null values
+        extractedData = {
+          gross_pay: null,
+          net_pay: null,
+          pay_period_start: null,
+          pay_period_end: null
         }
-        return date
       }
       
-      extractedData.pay_period_start = validateDate(extractedData.pay_period_start)
-      extractedData.pay_period_end = validateDate(extractedData.pay_period_end)
+      // Validate the required fields exist
+      const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end']
+      for (const field of requiredFields) {
+        if (!(field in extractedData)) {
+          extractedData[field] = null
+        }
+      }
+
+      // Convert string numbers to actual numbers if they're not null
+      if (extractedData.gross_pay !== null) {
+        const grossPay = Number(String(extractedData.gross_pay).replace(/[^0-9.-]+/g, ''))
+        if (isNaN(grossPay)) {
+          console.warn('Invalid gross_pay value, setting to null')
+          extractedData.gross_pay = null
+        } else {
+          extractedData.gross_pay = grossPay
+        }
+      }
+      
+      if (extractedData.net_pay !== null) {
+        const netPay = Number(String(extractedData.net_pay).replace(/[^0-9.-]+/g, ''))
+        if (isNaN(netPay)) {
+          console.warn('Invalid net_pay value, setting to null')
+          extractedData.net_pay = null
+        } else {
+          extractedData.net_pay = netPay
+        }
+      }
+      
+      // Validate dates if they're not null
+      for (const dateField of ['pay_period_start', 'pay_period_end']) {
+        if (extractedData[dateField] !== null) {
+          const date = new Date(extractedData[dateField])
+          if (isNaN(date.getTime())) {
+            console.warn(`Invalid ${dateField} value, setting to null`)
+            extractedData[dateField] = null
+          }
+        }
+      }
 
       console.log('Parsed and validated extracted data:', extractedData)
-    } catch (e) {
-      console.error('Failed to parse AI response:', e)
-      throw new Error(`Failed to parse extracted data: ${e.message}`)
+    } catch (error) {
+      console.error('Failed to process extracted data:', error)
+      throw new Error(`Failed to process extracted data: ${error.message}`)
     }
 
     // Update document status
