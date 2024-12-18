@@ -1,7 +1,8 @@
 import { format } from 'date-fns';
 import { BankStatement } from '@/types/bankStatement';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BankStatementChartsProps {
   statement: BankStatement;
@@ -16,53 +17,72 @@ const BankStatementCharts = ({ statement }: BankStatementChartsProps) => {
   };
 
   return (
-    <div className="container mx-auto px-4">
-      <Card className="mx-auto max-w-5xl">
-        <CardContent className="p-6">
-          <h3 className="text-2xl font-semibold mb-6 text-center">Transaction Details</h3>
-          <div className="rounded-lg border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[150px] text-left">Date</TableHead>
-                  <TableHead className="w-[300px] text-left">Description</TableHead>
-                  <TableHead className="w-[200px] text-left">Category</TableHead>
-                  <TableHead className="text-right w-[150px]">Amount</TableHead>
-                  <TableHead className="text-right w-[150px]">Balance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {statement.transactions && statement.transactions.length > 0 ? (
-                  statement.transactions.map((transaction, index) => (
-                    <TableRow key={index} className="hover:bg-muted/50">
-                      <TableCell>
-                        {format(new Date(transaction.date), 'MM/dd/yyyy')}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {transaction.description}
-                      </TableCell>
-                      <TableCell>{transaction.category}</TableCell>
-                      <TableCell className={`text-right ${
-                        transaction.amount < 0 
-                          ? 'text-destructive' 
-                          : 'text-green-600 dark:text-green-400'
-                      }`}>
-                        {formatCurrency(transaction.amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(transaction.balance)}
-                      </TableCell>
+    <div className="w-full h-full">
+      <Card className="bg-[#1E1533] border-none shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold text-white">
+            Transaction Overview
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg bg-[#2D1B4B] p-6">
+            <h3 className="text-2xl font-semibold mb-6 text-white">
+              Transaction Details
+            </h3>
+            <ScrollArea className="h-[500px] w-full rounded-md">
+              <div className="w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-white/10">
+                      <TableHead className="text-lg font-medium text-white">Date</TableHead>
+                      <TableHead className="text-lg font-medium text-white">Description</TableHead>
+                      <TableHead className="text-lg font-medium text-white">Category</TableHead>
+                      <TableHead className="text-lg font-medium text-white text-right">Amount</TableHead>
+                      <TableHead className="text-lg font-medium text-white text-right">Balance</TableHead>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                      No transaction data available
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {statement.transactions && statement.transactions.length > 0 ? (
+                      statement.transactions.map((transaction, index) => (
+                        <TableRow 
+                          key={index} 
+                          className="border-b border-white/10 hover:bg-white/5"
+                        >
+                          <TableCell className="text-white">
+                            {format(new Date(transaction.date), 'MM/dd/yyyy')}
+                          </TableCell>
+                          <TableCell className="text-white">
+                            {transaction.description}
+                          </TableCell>
+                          <TableCell className="text-white">
+                            {transaction.category}
+                          </TableCell>
+                          <TableCell className={`text-right ${
+                            transaction.amount < 0 
+                              ? 'text-red-400' 
+                              : 'text-green-400'
+                          }`}>
+                            {formatCurrency(transaction.amount)}
+                          </TableCell>
+                          <TableCell className="text-right text-white">
+                            {formatCurrency(transaction.balance)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell 
+                          colSpan={5} 
+                          className="text-center py-6 text-white/60"
+                        >
+                          No transaction data available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </ScrollArea>
           </div>
         </CardContent>
       </Card>
