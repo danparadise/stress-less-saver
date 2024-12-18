@@ -9,14 +9,28 @@ const BankStatementCategories = ({ transactions }: BankStatementCategoriesProps)
   // Group transactions by category and calculate totals
   const categoryTotals = transactions.reduce((acc: Record<string, number>, transaction: Transaction) => {
     const category = transaction.category || 'Uncategorized';
-    acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
+    // Only include expenses (negative amounts)
+    if (transaction.amount < 0) {
+      acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
+    }
     return acc;
   }, {});
 
-  const data = Object.entries(categoryTotals).map(([category, amount]) => ({
-    category,
-    amount,
-  }));
+  const data = Object.entries(categoryTotals)
+    .map(([category, amount]) => ({
+      category,
+      amount,
+    }))
+    .sort((a, b) => b.amount - a.amount); // Sort by amount in descending order
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   return (
     <div className="h-[300px]">
@@ -32,10 +46,13 @@ const BankStatementCategories = ({ transactions }: BankStatementCategoriesProps)
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="category" />
-          <YAxis />
-          <Tooltip />
+          <YAxis tickFormatter={formatCurrency} />
+          <Tooltip 
+            formatter={(value: number) => formatCurrency(value)}
+            labelStyle={{ color: 'black' }}
+          />
           <Legend />
-          <Bar dataKey="amount" fill="#8884d8" />
+          <Bar dataKey="amount" fill="#8884d8" name="Spending Amount" />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -10,17 +10,13 @@ import { BankStatement, Transaction } from "@/types/bankStatement";
 import { Json } from "@/integrations/supabase/types";
 
 // Helper function to convert Json to Transaction
-const convertJsonToTransaction = (json: Json): Transaction => {
-  if (typeof json !== 'object' || !json) {
-    throw new Error('Invalid transaction data');
-  }
-  
+const convertJsonToTransaction = (jsonData: any): Transaction => {
   return {
-    date: String(json.date || ''),
-    description: String(json.description || ''),
-    category: String(json.category || ''),
-    amount: Number(json.amount || 0),
-    balance: Number(json.balance || 0)
+    date: String(jsonData?.date || ''),
+    description: String(jsonData?.description || ''),
+    category: String(jsonData?.category || ''),
+    amount: Number(jsonData?.amount || 0),
+    balance: Number(jsonData?.balance || 0)
   };
 };
 
