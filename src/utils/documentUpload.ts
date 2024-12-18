@@ -53,7 +53,7 @@ export const uploadDocument = async (
 
   console.log('Document record created:', docData.id);
 
-  // If it's a PDF, trigger conversion and data extraction
+  // If it's a PDF, trigger conversion and data extraction based on document type
   if (file.type === "application/pdf") {
     console.log('PDF detected, initiating conversion and extraction');
     
@@ -62,13 +62,15 @@ export const uploadDocument = async (
       .getPublicUrl(filePath);
 
     try {
-      console.log('Calling extract-bank-statement function with:', {
+      // Call the appropriate edge function based on document type
+      const functionName = documentType === 'paystub' ? 'extract-paystub-text' : 'extract-bank-statement';
+      console.log(`Calling ${functionName} function with:`, {
         documentId: docData.id,
         pdfUrl: publicUrl
       });
 
       const { data, error: extractError } = await supabase.functions
-        .invoke('extract-bank-statement', {
+        .invoke(functionName, {
           body: {
             documentId: docData.id,
             pdfUrl: publicUrl
@@ -86,12 +88,12 @@ export const uploadDocument = async (
 
       console.log('Data extraction response:', data);
     } catch (error) {
-      console.error('Failed to invoke extract-bank-statement function:', error);
+      console.error(`Failed to invoke ${documentType === 'paystub' ? 'extract-paystub-text' : 'extract-bank-statement'} function:`, error);
       await supabase
         .from("financial_documents")
         .update({ status: 'failed' })
         .eq('id', docData.id);
-      throw new Error(`Failed to process bank statement: ${error.message}`);
+      throw new Error(`Failed to process ${documentType}: ${error.message}`);
     }
   }
 
