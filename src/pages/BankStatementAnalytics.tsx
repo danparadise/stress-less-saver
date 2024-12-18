@@ -6,7 +6,23 @@ import { supabase } from "@/integrations/supabase/client";
 import BankStatementCharts from "@/components/bankstatements/analytics/BankStatementCharts";
 import BankStatementInsights from "@/components/bankstatements/analytics/BankStatementInsights";
 import BankStatementCategories from "@/components/bankstatements/analytics/BankStatementCategories";
-import { BankStatement } from "@/types/bankStatement";
+import { BankStatement, Transaction } from "@/types/bankStatement";
+import { Json } from "@/integrations/supabase/types";
+
+// Helper function to convert Json to Transaction
+const convertJsonToTransaction = (json: Json): Transaction => {
+  if (typeof json !== 'object' || !json) {
+    throw new Error('Invalid transaction data');
+  }
+  
+  return {
+    date: String(json.date || ''),
+    description: String(json.description || ''),
+    category: String(json.category || ''),
+    amount: Number(json.amount || 0),
+    balance: Number(json.balance || 0)
+  };
+};
 
 const BankStatementAnalytics = () => {
   const { id } = useParams();
@@ -30,14 +46,27 @@ const BankStatementAnalytics = () => {
 
       if (error) throw error;
       
-      // Ensure transactions is an array
-      const parsedData = {
-        ...data,
-        transactions: Array.isArray(data.transactions) ? data.transactions : []
-      } as BankStatement;
+      // Convert the raw data to match our BankStatement type
+      const bankStatement: BankStatement = {
+        id: data.id,
+        document_id: data.document_id,
+        statement_month: data.statement_month,
+        total_deposits: data.total_deposits || 0,
+        total_withdrawals: data.total_withdrawals || 0,
+        ending_balance: data.ending_balance || 0,
+        transactions: Array.isArray(data.transactions) 
+          ? data.transactions.map(convertJsonToTransaction)
+          : [],
+        created_at: data.created_at,
+        financial_documents: {
+          file_name: data.financial_documents.file_name,
+          upload_date: data.financial_documents.upload_date,
+          status: data.financial_documents.status
+        }
+      };
       
-      console.log('Fetched bank statement data:', parsedData);
-      return parsedData;
+      console.log('Processed bank statement data:', bankStatement);
+      return bankStatement;
     },
   });
 
