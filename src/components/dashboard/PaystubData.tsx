@@ -69,7 +69,7 @@ const PaystubData = () => {
           )
         `)
         .eq('financial_documents.document_type', 'paystub')
-        .order("created_at", { ascending: false });
+        .order("pay_period_start", { ascending: true });
 
       if (error) throw error;
       
@@ -81,19 +81,27 @@ const PaystubData = () => {
       console.log('Fetched and filtered paystub data:', filteredData);
       return filteredData;
     },
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     staleTime: 0
   });
 
   const deleteMutation = useMutation({
     mutationFn: async ({ paystubId, documentId }: { paystubId: string, documentId: string }) => {
-      const { error } = await supabase
+      // First delete the paystub data
+      const { error: paystubError } = await supabase
+        .from("paystub_data")
+        .delete()
+        .eq("id", paystubId);
+      
+      if (paystubError) throw paystubError;
+
+      // Then delete the financial document
+      const { error: documentError } = await supabase
         .from("financial_documents")
         .delete()
         .eq("id", documentId);
       
-      if (error) throw error;
+      if (documentError) throw documentError;
     },
     onSuccess: () => {
       toast({
