@@ -1,13 +1,5 @@
 project_id = "dfwiszjyvkfmpejsqvbf"
 
-[functions.extract-paystub-text]
-verify_jwt = false
-import_map = "import_map.json"
-
 [functions.extract-bank-statement]
-verify_jwt = false
-import_map = "import_map.json"
-
-[functions.convert-pdf]
 verify_jwt = false
 import_map = "import_map.json"

@@ -7,16 +7,21 @@ import { parseOpenAIResponse } from './openaiParser.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204
+    })
   }
 
   try {
     const { documentId, pdfUrl } = await req.json()
-    console.log('Processing document:', documentId)
+    console.log('Processing document:', documentId, 'URL:', pdfUrl)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -28,7 +33,7 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // 1. Get PDF info to determine number of pages
+    // 1. Get PDF info
     console.log('Getting PDF info')
     const pdfInfoResponse = await fetch('https://api.pdf.co/v1/pdf/info', {
       method: 'POST',
@@ -40,13 +45,15 @@ serve(async (req) => {
     })
 
     if (!pdfInfoResponse.ok) {
-      throw new Error('Failed to get PDF info')
+      const errorText = await pdfInfoResponse.text()
+      console.error('PDF info error:', errorText)
+      throw new Error(`Failed to get PDF info: ${errorText}`)
     }
 
     const pdfInfo = await pdfInfoResponse.json()
     console.log('PDF info:', pdfInfo)
 
-    // 2. Convert all pages to PNG
+    // 2. Convert PDF to PNG
     console.log('Converting PDF pages to PNG')
     const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
       method: 'POST',
@@ -56,13 +63,15 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: pdfUrl,
-        pages: `1-${pdfInfo.pageCount}`, // Convert all pages
+        pages: `1-${pdfInfo.pageCount}`,
         async: false
       })
     })
 
     if (!pdfCoResponse.ok) {
-      throw new Error('Failed to convert PDF to PNG')
+      const errorText = await pdfCoResponse.text()
+      console.error('PDF conversion error:', errorText)
+      throw new Error(`Failed to convert PDF: ${errorText}`)
     }
 
     const pdfCoData = await pdfCoResponse.json()
@@ -72,7 +81,7 @@ serve(async (req) => {
 
     console.log(`Successfully converted ${pdfCoData.urls.length} pages to PNG`)
 
-    // 3. Process each page and combine the results
+    // 3. Process each page
     let allTransactions: any[] = []
     let statementMonth = ''
     let totalDeposits = 0
@@ -80,11 +89,18 @@ serve(async (req) => {
     let endingBalance = 0
 
     for (let i = 0; i < pdfCoData.urls.length; i++) {
-      console.log(`Processing page ${i + 1}`)
+      console.log(`Processing page ${i + 1} of ${pdfCoData.urls.length}`)
       try {
         const openAiResponse = await extractDataFromImage(pdfCoData.urls[i])
         const aiResult = await openAiResponse.json()
+        
+        if (!aiResult.choices?.[0]?.message?.content) {
+          console.error(`No content in OpenAI response for page ${i + 1}`)
+          continue
+        }
+
         const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
+        console.log(`Extracted data from page ${i + 1}:`, extractedData)
 
         // Update statement month if not set (take from first page)
         if (!statementMonth && extractedData.statement_month) {
@@ -112,12 +128,18 @@ serve(async (req) => {
 
     // Sort transactions by date
     allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    console.log(`Total transactions extracted: ${allTransactions.length}`)
 
     // Update document status
-    await supabase
+    const { error: updateError } = await supabase
       .from('financial_documents')
       .update({ status: 'completed' })
       .eq('id', documentId)
+
+    if (updateError) {
+      console.error('Error updating document status:', updateError)
+      throw updateError
+    }
 
     // Store combined extracted data
     const finalData = {
@@ -129,16 +151,28 @@ serve(async (req) => {
       transactions: allTransactions
     }
 
-    await supabase
+    const { error: insertError } = await supabase
       .from('bank_statement_data')
       .upsert(finalData)
+
+    if (insertError) {
+      console.error('Error inserting bank statement data:', insertError)
+      throw insertError
+    }
+
+    console.log('Successfully processed document:', documentId)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         data: finalData
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     )
   } catch (error) {
     console.error('Error:', error)
