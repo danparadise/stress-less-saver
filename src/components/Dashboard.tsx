@@ -10,7 +10,6 @@ import AiInsights from "./dashboard/AiInsights";
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
 
-  // Fetch bank statement data
   const { data: bankStatements } = useQuery({
     queryKey: ["dashboard-bank-statements"],
     queryFn: async () => {
@@ -88,13 +87,12 @@ const Dashboard = () => {
   const monthlySavings = monthlyIncome - monthlyExpenses;
   const savingsGoal = 1000; // This could be made configurable in the future
 
-  // Prepare income trend data from paystubs
+  // Prepare income trend data from paystubs - now in ascending order
   const incomeData = paystubs?.slice(0, 4).map(paystub => ({
     date: new Date(paystub.pay_period_end).toISOString().slice(0, 7),
     amount: Number(paystub.gross_pay) || 0
-  })).reverse() || [];
+  })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) || [];
 
-  // Generate AI suggestions based on real data
   const generateAiSuggestions = () => {
     const suggestions = [];
 
