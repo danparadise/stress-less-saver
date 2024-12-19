@@ -28,10 +28,12 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
           1. Process EVERY SINGLE transaction visible in the image
           2. Do not skip any transactions
           3. If you can't read a value clearly, use null instead of guessing
-          4. Format all dates as YYYY-MM-DD
+          4. Format all dates EXACTLY as shown in the statement - do not modify or adjust the dates
           5. Format all numbers as plain numbers without currency symbols or commas
           6. For withdrawals, use negative numbers
           7. For deposits, use positive numbers
+          8. Preserve the exact date format from the statement (MM/DD/YYYY)
+          9. Do not adjust or modify dates in any way
           
           Required JSON format:
           {
@@ -57,7 +59,7 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
           content: [
             {
               type: "text",
-              text: "Extract ALL transaction details from this bank statement image. Make sure to capture EVERY SINGLE transaction visible, including the date, description, amount, and running balance for each one. Do not skip any transactions."
+              text: "Extract ALL transaction details from this bank statement image. Make sure to capture EVERY SINGLE transaction visible, including the EXACT date as shown, description, amount, and running balance for each one. Do not skip any transactions or modify dates."
             },
             {
               type: "image_url",
