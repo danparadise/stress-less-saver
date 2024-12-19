@@ -51,35 +51,43 @@ serve(async (req) => {
       throw new Error('No PNG URLs returned from PDF.co')
     }
 
-    // 2. Download and store PNG in Supabase
-    console.log('Downloading PNG and storing in Supabase')
-    const pngResponse = await fetch(pdfCoData.urls[0])
-    const pngArrayBuffer = await pngResponse.arrayBuffer()
-    const pngPath = `converted/${documentId}.png`
+    // Process all pages
+    console.log(`Processing ${pdfCoData.urls.length} pages`)
+    const allExtractedData = []
 
-    const { error: uploadError } = await supabase.storage
-      .from('financial_docs')
-      .upload(pngPath, pngArrayBuffer, {
-        contentType: 'image/png',
-        upsert: true
-      })
-
-    if (uploadError) {
-      throw new Error(`Failed to upload PNG: ${uploadError.message}`)
+    for (const pageUrl of pdfCoData.urls) {
+      console.log(`Processing page URL: ${pageUrl}`)
+      try {
+        const openAiResponse = await extractDataFromImage(pageUrl)
+        const aiResult = await openAiResponse.json()
+        const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
+        allExtractedData.push(extractedData)
+      } catch (error) {
+        console.warn(`Failed to process page ${pageUrl}:`, error)
+      }
     }
 
-    // Get public URL for the stored PNG
-    const { data: { publicUrl } } = supabase.storage
-      .from('financial_docs')
-      .getPublicUrl(pngPath)
+    if (allExtractedData.length === 0) {
+      throw new Error('Failed to extract data from any page')
+    }
 
-    // 3. Extract data using OpenAI Vision
-    console.log('Extracting data using OpenAI Vision')
-    const openAiResponse = await extractDataFromImage(publicUrl)
-    const aiResult = await openAiResponse.json()
-    
-    // Parse and validate the extracted data
-    const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
+    // Merge data from all pages
+    const mergedData = allExtractedData.reduce((acc, curr) => ({
+      statement_month: curr.statement_month || acc.statement_month,
+      total_deposits: (curr.total_deposits || 0) + (acc.total_deposits || 0),
+      total_withdrawals: (curr.total_withdrawals || 0) + (acc.total_withdrawals || 0),
+      ending_balance: curr.ending_balance || acc.ending_balance,
+      transactions: [...(acc.transactions || []), ...(curr.transactions || [])]
+    }), {
+      statement_month: null,
+      total_deposits: 0,
+      total_withdrawals: 0,
+      ending_balance: 0,
+      transactions: []
+    })
+
+    // Sort transactions by date
+    mergedData.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     // Update document status
     await supabase
@@ -87,22 +95,22 @@ serve(async (req) => {
       .update({ status: 'completed' })
       .eq('id', documentId)
 
-    // Store extracted data
+    // Store merged data
     await supabase
       .from('bank_statement_data')
       .upsert({
         document_id: documentId,
-        statement_month: extractedData.statement_month,
-        total_deposits: extractedData.total_deposits,
-        total_withdrawals: extractedData.total_withdrawals,
-        ending_balance: extractedData.ending_balance,
-        transactions: extractedData.transactions
+        statement_month: mergedData.statement_month,
+        total_deposits: mergedData.total_deposits,
+        total_withdrawals: mergedData.total_withdrawals,
+        ending_balance: mergedData.ending_balance,
+        transactions: mergedData.transactions
       })
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: extractedData
+        data: mergedData
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

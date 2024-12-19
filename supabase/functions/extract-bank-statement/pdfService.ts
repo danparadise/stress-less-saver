@@ -6,8 +6,34 @@ const corsHeaders = {
 export async function extractTextFromPdf(pdfUrl: string, apiKey: string): Promise<string> {
   console.log('Starting PDF text extraction for:', pdfUrl);
   
-  // First, get a presigned URL for the job
-  const presignedResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/text', {
+  // First, get the page count
+  const pageInfoResponse = await fetch('https://api.pdf.co/v1/pdf/info', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url: pdfUrl })
+  });
+
+  if (!pageInfoResponse.ok) {
+    const errorData = await pageInfoResponse.text();
+    console.error('PDF info error:', errorData);
+    throw new Error(`Failed to get PDF info: ${errorData}`);
+  }
+
+  const pageInfo = await pageInfoResponse.json();
+  console.log('PDF info:', pageInfo);
+
+  if (!pageInfo.pageCount) {
+    throw new Error('Could not determine page count from PDF');
+  }
+
+  // Convert all pages
+  const pageRange = Array.from({ length: pageInfo.pageCount }, (_, i) => i + 1).join(',');
+  console.log(`Converting PDF pages ${pageRange}`);
+
+  const convertResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/text', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -15,36 +41,37 @@ export async function extractTextFromPdf(pdfUrl: string, apiKey: string): Promis
     },
     body: JSON.stringify({
       url: pdfUrl,
+      pages: pageRange,
       async: false,
       inline: false,
       profiles: ["General"]
     })
   });
 
-  if (!presignedResponse.ok) {
-    const errorData = await presignedResponse.text();
-    console.error('PDF.co API error:', errorData);
-    throw new Error(`Failed to start PDF conversion job: ${errorData}`);
+  if (!convertResponse.ok) {
+    const errorData = await convertResponse.text();
+    console.error('PDF conversion error:', errorData);
+    throw new Error(`Failed to convert PDF: ${errorData}`);
   }
 
-  const result = await presignedResponse.json();
-  console.log('PDF.co conversion response:', result);
+  const result = await convertResponse.json();
+  console.log('PDF conversion response:', result);
   
   if (result.error) {
-    throw new Error(`PDF.co processing error: ${result.message}`);
+    throw new Error(`PDF processing error: ${result.message}`);
   }
 
   if (!result.url) {
     throw new Error('No text content URL returned from PDF.co');
   }
 
-  // Download the text content
+  // Download all text content
   const textResponse = await fetch(result.url);
   if (!textResponse.ok) {
     throw new Error('Failed to download converted text');
   }
 
   const text = await textResponse.text();
-  console.log('Successfully extracted text from PDF');
+  console.log('Successfully extracted text from all PDF pages');
   return text;
 }
