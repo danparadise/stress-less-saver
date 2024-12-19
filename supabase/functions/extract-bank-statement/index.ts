@@ -16,20 +16,15 @@ serve(async (req) => {
 
   try {
     const { documentId, pdfUrl } = await req.json()
-    console.log('Processing document:', documentId)
+    console.log('Processing document:', documentId, 'URL:', pdfUrl)
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Convert PDF to images using PDF.co
+    console.log('Converting PDF to PNG using PDF.co')
     const pdfCoApiKey = Deno.env.get('PDF_CO_API_KEY')
-    
-    if (!supabaseUrl || !supabaseKey || !pdfCoApiKey) {
-      throw new Error('Missing required environment variables')
+    if (!pdfCoApiKey) {
+      throw new Error('PDF_CO_API_KEY not configured')
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // 1. Convert PDF to PNG using PDF.co
-    console.log('Converting PDF to PNG using PDF.co')
     const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
       method: 'POST',
       headers: {
@@ -38,7 +33,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: pdfUrl,
-        async: false
+        async: false,
+        pages: "1-10" // Support up to 10 pages
       })
     })
 
@@ -47,6 +43,10 @@ serve(async (req) => {
     }
 
     const pdfCoData = await pdfCoResponse.json()
+    if (pdfCoData.error) {
+      throw new Error(`PDF.co error: ${JSON.stringify(pdfCoData)}`)
+    }
+    
     if (!pdfCoData.urls || pdfCoData.urls.length === 0) {
       throw new Error('No PNG URLs returned from PDF.co')
     }
@@ -54,20 +54,30 @@ serve(async (req) => {
     // Process all pages
     console.log(`Processing ${pdfCoData.urls.length} pages`)
     const allExtractedData = []
+    let successfulExtractions = 0
 
     for (const pageUrl of pdfCoData.urls) {
       console.log(`Processing page URL: ${pageUrl}`)
       try {
         const openAiResponse = await extractDataFromImage(pageUrl)
         const aiResult = await openAiResponse.json()
+        
+        if (!aiResult.choices?.[0]?.message?.content) {
+          console.warn('Invalid OpenAI response format:', aiResult)
+          continue
+        }
+
         const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
-        allExtractedData.push(extractedData)
+        if (extractedData) {
+          allExtractedData.push(extractedData)
+          successfulExtractions++
+        }
       } catch (error) {
         console.warn(`Failed to process page ${pageUrl}:`, error)
       }
     }
 
-    if (allExtractedData.length === 0) {
+    if (successfulExtractions === 0) {
       throw new Error('Failed to extract data from any page')
     }
 
@@ -87,7 +97,14 @@ serve(async (req) => {
     })
 
     // Sort transactions by date
-    mergedData.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    mergedData.transactions.sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Update document status
     await supabase
@@ -110,7 +127,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: mergedData
+        data: mergedData,
+        pagesProcessed: pdfCoData.urls.length,
+        successfulExtractions
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
