@@ -22,11 +22,11 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
       messages: [
         {
           role: "system",
-          content: `Extract bank statement transactions and return them in a specific JSON format. Include:
-            - statement_month (YYYY-MM-DD)
-            - total_deposits (numeric)
-            - total_withdrawals (numeric)
-            - ending_balance (numeric)
+          content: `You are a bank statement analyzer. Extract ALL transactions from the bank statement image and return them in a specific JSON format. Include:
+            - statement_month (YYYY-MM-DD format for the first day of the statement month)
+            - total_deposits (sum of all deposits)
+            - total_withdrawals (sum of all withdrawals as a positive number)
+            - ending_balance (final balance)
             - transactions array with objects containing:
               - date (YYYY-MM-DD)
               - description (string)
@@ -35,6 +35,7 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
               - balance (numeric)
             
             Format numbers as plain numbers without currency symbols or commas.
+            Process ALL transactions visible in the image.
             Return ONLY the JSON object, no markdown or other formatting.`
         },
         {
@@ -42,7 +43,7 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
           content: [
             {
               type: "text",
-              text: "Extract all transaction details from this bank statement image, including dates, descriptions, categories, amounts, and running balances. Format as specified."
+              text: "Extract ALL transaction details from this bank statement image, including dates, descriptions, categories, amounts, and running balances. Make sure to capture every single transaction visible in the image."
             },
             {
               type: "image_url",
