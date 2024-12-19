@@ -9,7 +9,7 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
