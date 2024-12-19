@@ -2,6 +2,7 @@ import { corsHeaders } from "./config.ts";
 
 export async function extractDataFromImage(imageUrl: string): Promise<any> {
   console.log('Calling OpenAI API for text extraction from image:', imageUrl);
+  
   const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -13,25 +14,25 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       messages: [
         {
           role: "system",
-          content: `You are a paystub data extractor that ONLY returns valid JSON objects. Your task is to find and extract ONLY these specific values:
+          content: `You are a paystub data extractor that ONLY returns valid JSON objects. Extract these specific values:
 
 1. Gross Pay (Total Earnings):
    - Look for labels like: "Gross Pay", "Total Earnings", "Gross Earnings", "Total Gross"
-   - Must be a number without "$" or "," characters
-   - If not found with high confidence, use null
+   - Return as a number without "$" or "," characters
+   - If not found, return null
 
 2. Net Pay (Take-home amount):
    - Look for labels like: "Net Pay", "Take Home Pay", "Net Amount", "Net Earnings"
-   - Must be a number without "$" or "," characters
-   - If not found with high confidence, use null
+   - Return as a number without "$" or "," characters
+   - If not found, return null
 
 3. Pay Period Dates:
    - Look for "Pay Period", "Pay Date Range", or "Period Ending"
-   - Must be in YYYY-MM-DD format
-   - If not found with high confidence, use null
+   - Return in YYYY-MM-DD format
+   - If not found, return null
 
 YOU MUST:
-1. Return ONLY a valid JSON object with these exact fields:
+1. Return ONLY this exact JSON format with no additional text or formatting:
 {
   "gross_pay": number or null,
   "net_pay": number or null,
@@ -39,10 +40,10 @@ YOU MUST:
   "pay_period_end": "YYYY-MM-DD" or null
 }
 
-2. NEVER include any explanations or text outside the JSON
-3. NEVER use markdown formatting or code blocks
-4. If you can't extract data, return the JSON with all null values
-5. NEVER return any other response format`
+2. Never include explanations or text outside the JSON
+3. Never use markdown formatting
+4. If you can't extract data, return all null values
+5. Never return any other response format`
         },
         {
           role: "user",
@@ -83,7 +84,6 @@ YOU MUST:
   try {
     // Remove any unexpected characters or formatting
     const cleanContent = content
-      .replace(/```json\n|\n```|```/g, '')  // Remove markdown
       .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
       .trim();
     
