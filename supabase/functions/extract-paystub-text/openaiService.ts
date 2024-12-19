@@ -14,25 +14,12 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
         {
           role: "system",
           content: `You are a paystub data extractor. Extract ONLY the following information:
-- Gross pay (total earnings before deductions, typically labeled as "Gross Pay", "Total Gross", or "Gross Earnings")
-- Net pay (final take-home amount after all deductions, typically labeled as "Net Pay", "Take Home Pay", or "Net Amount")
+- Gross pay (before deductions)
+- Net pay (take-home amount)
 - Pay period start date
 - Pay period end date
 
-CRITICAL INSTRUCTIONS:
-1. For monetary values (gross_pay and net_pay):
-   - Remove any currency symbols ($) and commas
-   - Convert string amounts to numbers
-   - Look for clearly labeled sections that show these totals
-   - If multiple amounts exist, use the final/total amount
-   - Do not include text like "YTD" or year-to-date totals
-
-2. For dates:
-   - Format as YYYY-MM-DD
-   - Look for "Pay Period" or "Period Ending" dates
-   - Ensure dates are within the last year
-
-You MUST return ONLY a valid JSON object with these exact fields:
+CRITICAL: You MUST return ONLY a valid JSON object with these exact fields:
 {
   "gross_pay": number or null,
   "net_pay": number or null,
@@ -41,17 +28,18 @@ You MUST return ONLY a valid JSON object with these exact fields:
 }
 
 Rules:
-1. ONLY return the JSON object, no additional text
-2. If you cannot find a value with high confidence, use null
-3. DO NOT use markdown formatting
-4. Monetary values MUST be numbers (not strings)`
+1. Remove currency symbols and commas from monetary values
+2. Format dates as YYYY-MM-DD
+3. Use null for any values you cannot extract
+4. DO NOT include any explanations or text outside the JSON
+5. DO NOT use markdown formatting`
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the paystub information and return ONLY a JSON object with gross_pay, net_pay, and pay period dates."
+              text: "Extract the paystub information and return ONLY a JSON object."
             },
             {
               type: "image_url",
@@ -83,28 +71,7 @@ Rules:
   console.log('Raw content from OpenAI:', content);
   
   try {
-    const parsedData = JSON.parse(content);
-    
-    // Additional validation and cleaning of monetary values
-    if (parsedData.gross_pay) {
-      parsedData.gross_pay = Number(String(parsedData.gross_pay).replace(/[^0-9.-]+/g, ''));
-    }
-    if (parsedData.net_pay) {
-      parsedData.net_pay = Number(String(parsedData.net_pay).replace(/[^0-9.-]+/g, ''));
-    }
-    
-    // Validate the data structure
-    if (typeof parsedData.gross_pay !== 'number' && parsedData.gross_pay !== null) {
-      console.error('Invalid gross_pay format:', parsedData.gross_pay);
-      parsedData.gross_pay = null;
-    }
-    if (typeof parsedData.net_pay !== 'number' && parsedData.net_pay !== null) {
-      console.error('Invalid net_pay format:', parsedData.net_pay);
-      parsedData.net_pay = null;
-    }
-
-    console.log('Validated and cleaned data:', parsedData);
-    return parsedData;
+    return JSON.parse(content);
   } catch (error) {
     console.error('Failed to parse OpenAI response:', error);
     return {
