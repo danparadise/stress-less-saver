@@ -14,15 +14,54 @@ serve(async (req) => {
     const { documentId, pdfUrl } = await req.json()
     console.log('Processing document:', documentId, 'URL:', pdfUrl)
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
     // Convert PDF to images
     const imageUrls = await convertPdfToImages(pdfUrl)
     console.log('Converted PDF to images:', imageUrls)
+
+    // Download and store converted images
+    const convertedUrls = []
+    for (let i = 0; i < imageUrls.length; i++) {
+      console.log(`Downloading PNG page ${i + 1}:`, imageUrls[i])
+      const response = await fetch(imageUrls[i])
+      if (!response.ok) {
+        throw new Error(`Failed to download PNG page ${i + 1}`)
+      }
+
+      const imageData = await response.arrayBuffer()
+      const fileName = `converted/${documentId}_page${i + 1}.png`
+      
+      console.log(`Uploading converted image to storage:`, fileName)
+      const { error: uploadError } = await supabase.storage
+        .from('financial_docs')
+        .upload(fileName, imageData, {
+          contentType: 'image/png',
+          upsert: true
+        })
+
+      if (uploadError) {
+        console.error(`Error uploading converted image:`, uploadError)
+        throw uploadError
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('financial_docs')
+        .getPublicUrl(fileName)
+      
+      convertedUrls.push(publicUrl)
+    }
+
+    console.log('Successfully stored converted images:', convertedUrls)
 
     // Extract data from all pages
     let bestResult = null
     let highestConfidence = 0
 
-    for (const imageUrl of imageUrls) {
+    for (const imageUrl of convertedUrls) {
       console.log(`Processing image: ${imageUrl}`)
       try {
         const extractedData = await extractDataFromImage(imageUrl)
@@ -51,11 +90,6 @@ serve(async (req) => {
         pay_period_end: null
       }
     }
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Update document status
     const { error: updateError } = await supabase

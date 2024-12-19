@@ -39,7 +39,13 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     body: JSON.stringify({
       url: pdfUrl,
       pages: `1-${pdfInfo.pageCount}`, // Convert all pages
-      async: false
+      async: false,
+      profiles: [
+        {
+          resolution: 300,
+          colorspace: "rgb"
+        }
+      ]
     })
   });
 
@@ -50,6 +56,8 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
   }
 
   const pdfCoData = await pdfCoResponse.json();
+  console.log('PDF.co conversion response:', pdfCoData);
+  
   if (!pdfCoData.urls || pdfCoData.urls.length === 0) {
     throw new Error('No PNG URLs returned from PDF.co');
   }
