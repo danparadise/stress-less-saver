@@ -20,22 +20,25 @@ EXTRACTION RULES:
 1. Look for these specific values:
 
    GROSS PAY:
-   - Common labels: "Gross Pay", "Total Gross", "Gross Earnings", "Total Earnings", "Current Gross"
-   - Include all earnings before deductions
-   - Return as a plain number (e.g., 1234.56)
-   - If multiple gross pay values exist, use the one labeled as current/this period
+   - Look for "Gross Pay" field, usually found at the bottom of earnings section
+   - It's typically the total sum of all earnings before deductions
+   - In ADP paystubs, it's often shown in a shaded/highlighted row
+   - Return as a plain number (e.g., 3584.22)
+   - If multiple values exist, use the "this period" column
 
    NET PAY:
-   - Common labels: "Net Pay", "Take Home Pay", "Net Amount", "Net Earnings", "Amount Paid"
-   - The final amount after all deductions
-   - Usually the largest bold number or in a "TOTAL" row
-   - Return as a plain number (e.g., 1234.56)
+   - Look for "Net Pay" section near the bottom of the paystub
+   - It's the final take-home amount after all deductions
+   - In ADP paystubs, it's often shown as "Net Check" or "Net Pay"
+   - Return as a plain number (e.g., 2299.93)
+   - Use the "this period" amount
 
    PAY PERIOD:
-   - Look for "Pay Period", "Pay Date Range", "Period Beginning/Ending"
-   - Must find both start and end dates
-   - Return in YYYY-MM-DD format
-   - If only one date is found, use it for both start and end
+   - Located at the top of the paystub
+   - Look for "Period Beginning" and "Period Ending" dates
+   - Usually in MM/DD/YYYY format
+   - Convert to YYYY-MM-DD format
+   - Both start and end dates must be found
 
 2. Data Cleaning:
    - Remove all currency symbols ($)
@@ -56,7 +59,8 @@ IMPORTANT:
 - Never include markdown formatting
 - If you can't find a value with high confidence, return null
 - Double-check all numbers for accuracy
-- Ensure dates are properly formatted`
+- Ensure dates are properly formatted
+- For ADP paystubs, check both pages if available`
         },
         {
           role: "user",
