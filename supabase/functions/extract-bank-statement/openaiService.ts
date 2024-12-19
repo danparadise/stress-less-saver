@@ -18,7 +18,7 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -35,8 +35,7 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
               - balance (numeric)
             
             Format numbers as plain numbers without currency symbols or commas.
-            Return ONLY the JSON object, no markdown or other formatting.
-            Process as many transactions as possible from the visible page.`
+            Return ONLY the JSON object, no markdown or other formatting.`
         },
         {
           role: "user",
@@ -48,8 +47,7 @@ export async function extractDataFromImage(imageUrl: string): Promise<Response> 
             {
               type: "image_url",
               image_url: {
-                url: imageUrl,
-                detail: "high"
+                url: imageUrl
               }
             }
           ]

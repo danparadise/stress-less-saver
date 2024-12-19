@@ -16,15 +16,20 @@ serve(async (req) => {
 
   try {
     const { documentId, pdfUrl } = await req.json()
-    console.log('Processing document:', documentId, 'URL:', pdfUrl)
+    console.log('Processing document:', documentId)
 
-    // Convert PDF to images using PDF.co
-    console.log('Converting PDF to PNG using PDF.co')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const pdfCoApiKey = Deno.env.get('PDF_CO_API_KEY')
-    if (!pdfCoApiKey) {
-      throw new Error('PDF_CO_API_KEY not configured')
+    
+    if (!supabaseUrl || !supabaseKey || !pdfCoApiKey) {
+      throw new Error('Missing required environment variables')
     }
 
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // 1. Convert PDF to PNG using PDF.co
+    console.log('Converting PDF to PNG using PDF.co')
     const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
       method: 'POST',
       headers: {
@@ -33,8 +38,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: pdfUrl,
-        async: false,
-        pages: "1" // Start with just first page
+        async: false
       })
     })
 
@@ -43,32 +47,39 @@ serve(async (req) => {
     }
 
     const pdfCoData = await pdfCoResponse.json()
-    if (pdfCoData.error) {
-      throw new Error(`PDF.co error: ${JSON.stringify(pdfCoData)}`)
-    }
-    
     if (!pdfCoData.urls || pdfCoData.urls.length === 0) {
       throw new Error('No PNG URLs returned from PDF.co')
     }
 
-    // Process first page
-    console.log(`Processing page URL: ${pdfCoData.urls[0]}`)
-    const openAiResponse = await extractDataFromImage(pdfCoData.urls[0])
+    // 2. Download and store PNG in Supabase
+    console.log('Downloading PNG and storing in Supabase')
+    const pngResponse = await fetch(pdfCoData.urls[0])
+    const pngArrayBuffer = await pngResponse.arrayBuffer()
+    const pngPath = `converted/${documentId}.png`
+
+    const { error: uploadError } = await supabase.storage
+      .from('financial_docs')
+      .upload(pngPath, pngArrayBuffer, {
+        contentType: 'image/png',
+        upsert: true
+      })
+
+    if (uploadError) {
+      throw new Error(`Failed to upload PNG: ${uploadError.message}`)
+    }
+
+    // Get public URL for the stored PNG
+    const { data: { publicUrl } } = supabase.storage
+      .from('financial_docs')
+      .getPublicUrl(pngPath)
+
+    // 3. Extract data using OpenAI Vision
+    console.log('Extracting data using OpenAI Vision')
+    const openAiResponse = await extractDataFromImage(publicUrl)
     const aiResult = await openAiResponse.json()
     
-    if (!aiResult.choices?.[0]?.message?.content) {
-      throw new Error('Invalid OpenAI response format')
-    }
-
+    // Parse and validate the extracted data
     const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
-    if (!extractedData) {
-      throw new Error('Failed to parse extracted data')
-    }
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Update document status
     await supabase
