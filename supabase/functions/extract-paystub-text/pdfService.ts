@@ -9,7 +9,6 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
   }
 
   try {
-    // First, get the page count
     console.log('Getting PDF info...');
     const pageInfoResponse = await fetch('https://api.pdf.co/v1/pdf/info', {
       method: 'POST',
@@ -30,11 +29,13 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     console.log('PDF info:', pageInfo);
     
     if (!pageInfo.pageCount) {
-      throw new Error('Could not determine page count from PDF');
+      console.log('No page count found, defaulting to single page conversion');
+      // If we can't determine page count, try converting just the first page
+      return await convertSinglePage(pdfUrl, pdfCoApiKey);
     }
 
     // Convert only the first page if that's all we have, otherwise try first two
-    const pageRange = pageInfo.pageCount === 1 ? "1" : "1-2";
+    const pageRange = pageInfo.pageCount === 1 ? "1" : "1,2";
     console.log(`Converting PDF pages ${pageRange}`);
 
     const convertResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
@@ -53,14 +54,20 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     if (!convertResponse.ok) {
       const errorData = await convertResponse.text();
       console.error('PDF conversion error:', errorData);
-      throw new Error(`PDF conversion failed: ${errorData}`);
+      
+      // If multi-page conversion fails, try single page as fallback
+      console.log('Multi-page conversion failed, trying single page conversion');
+      return await convertSinglePage(pdfUrl, pdfCoApiKey);
     }
 
     const convertResult = await convertResponse.json();
     console.log('PDF conversion result:', convertResult);
 
     if (convertResult.error) {
-      throw new Error(`PDF conversion failed: ${JSON.stringify(convertResult)}`);
+      console.error('PDF conversion returned error:', convertResult);
+      // If multi-page conversion fails, try single page as fallback
+      console.log('Multi-page conversion failed, trying single page conversion');
+      return await convertSinglePage(pdfUrl, pdfCoApiKey);
     }
 
     if (!convertResult.urls || convertResult.urls.length === 0) {
@@ -72,4 +79,39 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     console.error('Error in convertPdfToImages:', error);
     throw error;
   }
+}
+
+async function convertSinglePage(pdfUrl: string, apiKey: string): Promise<string[]> {
+  console.log('Attempting single page conversion');
+  const convertResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url: pdfUrl,
+      pages: "1",
+      async: false
+    })
+  });
+
+  if (!convertResponse.ok) {
+    const errorData = await convertResponse.text();
+    console.error('Single page conversion error:', errorData);
+    throw new Error(`Single page PDF conversion failed: ${errorData}`);
+  }
+
+  const convertResult = await convertResponse.json();
+  console.log('Single page conversion result:', convertResult);
+
+  if (convertResult.error) {
+    throw new Error(`Single page PDF conversion failed: ${JSON.stringify(convertResult)}`);
+  }
+
+  if (!convertResult.urls || convertResult.urls.length === 0) {
+    throw new Error('No image URLs returned from single page conversion');
+  }
+
+  return convertResult.urls;
 }
