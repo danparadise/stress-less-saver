@@ -13,23 +13,24 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       messages: [
         {
           role: "system",
-          content: `You are a paystub data extractor. Your task is to find and extract ONLY these specific values:
+          content: `You are a paystub data extractor that ONLY returns valid JSON objects. Your task is to find and extract ONLY these specific values:
 
 1. Gross Pay (Total Earnings):
    - Look for labels like: "Gross Pay", "Total Earnings", "Gross Earnings", "Total Gross"
-   - Remove any "$" or "," characters
-   - Convert to a plain number (e.g., "$1,234.56" → 1234.56)
+   - Must be a number without "$" or "," characters
+   - If not found with high confidence, use null
 
 2. Net Pay (Take-home amount):
    - Look for labels like: "Net Pay", "Take Home Pay", "Net Amount", "Net Earnings"
-   - Remove any "$" or "," characters
-   - Convert to a plain number (e.g., "$1,234.56" → 1234.56)
+   - Must be a number without "$" or "," characters
+   - If not found with high confidence, use null
 
 3. Pay Period Dates:
    - Look for "Pay Period", "Pay Date Range", or "Period Ending"
-   - Return dates in YYYY-MM-DD format
+   - Must be in YYYY-MM-DD format
+   - If not found with high confidence, use null
 
-CRITICAL REQUIREMENTS:
+YOU MUST:
 1. Return ONLY a valid JSON object with these exact fields:
 {
   "gross_pay": number or null,
@@ -38,23 +39,17 @@ CRITICAL REQUIREMENTS:
   "pay_period_end": "YYYY-MM-DD" or null
 }
 
-2. For monetary values:
-   - Must be numeric values (not strings)
-   - No currency symbols
-   - No commas
-   - No text descriptions
-
-3. If you can't find a value with high confidence, use null
-4. DO NOT include any explanations or text outside the JSON
-5. DO NOT use markdown formatting or code blocks
-6. Return ONLY the raw JSON object`
+2. NEVER include any explanations or text outside the JSON
+3. NEVER use markdown formatting or code blocks
+4. If you can't extract data, return the JSON with all null values
+5. NEVER return any other response format`
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the paystub information, focusing especially on finding the gross pay and net pay values. Return ONLY a JSON object."
+              text: "Extract the paystub information, focusing on gross pay, net pay, and pay period dates. Return ONLY a JSON object."
             },
             {
               type: "image_url",
@@ -86,46 +81,46 @@ CRITICAL REQUIREMENTS:
   console.log('Raw content from OpenAI:', content);
   
   try {
-    // Remove any markdown formatting if present
-    const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
+    // Remove any unexpected characters or formatting
+    const cleanContent = content
+      .replace(/```json\n|\n```|```/g, '')  // Remove markdown
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .trim();
+    
     console.log('Cleaned content for parsing:', cleanContent);
     
     const parsedData = JSON.parse(cleanContent);
     console.log('Successfully parsed JSON:', parsedData);
     
-    // Ensure numeric values for pay amounts
-    if (parsedData.gross_pay !== null) {
-      const grossPay = Number(String(parsedData.gross_pay).replace(/[^0-9.-]+/g, ''));
-      if (isNaN(grossPay)) {
-        console.warn('Invalid gross_pay value, setting to null');
-        parsedData.gross_pay = null;
-      } else {
-        parsedData.gross_pay = grossPay;
-      }
+    // Validate and clean the data
+    const validatedData = {
+      gross_pay: parsedData.gross_pay !== null ? 
+        Number(String(parsedData.gross_pay).replace(/[^0-9.-]+/g, '')) : null,
+      net_pay: parsedData.net_pay !== null ? 
+        Number(String(parsedData.net_pay).replace(/[^0-9.-]+/g, '')) : null,
+      pay_period_start: parsedData.pay_period_start,
+      pay_period_end: parsedData.pay_period_end
+    };
+
+    // Validate numbers
+    if (validatedData.gross_pay !== null && isNaN(validatedData.gross_pay)) {
+      validatedData.gross_pay = null;
     }
-    
-    if (parsedData.net_pay !== null) {
-      const netPay = Number(String(parsedData.net_pay).replace(/[^0-9.-]+/g, ''));
-      if (isNaN(netPay)) {
-        console.warn('Invalid net_pay value, setting to null');
-        parsedData.net_pay = null;
-      } else {
-        parsedData.net_pay = netPay;
-      }
+    if (validatedData.net_pay !== null && isNaN(validatedData.net_pay)) {
+      validatedData.net_pay = null;
     }
-    
-    // Validate dates if present
-    for (const dateField of ['pay_period_start', 'pay_period_end']) {
-      if (parsedData[dateField] !== null) {
-        const date = new Date(parsedData[dateField]);
+
+    // Validate dates
+    for (const dateField of ['pay_period_start', 'pay_period_end'] as const) {
+      if (validatedData[dateField]) {
+        const date = new Date(validatedData[dateField]);
         if (isNaN(date.getTime())) {
-          console.warn(`Invalid ${dateField} value, setting to null`);
-          parsedData[dateField] = null;
+          validatedData[dateField] = null;
         }
       }
     }
-    
-    return parsedData;
+
+    return validatedData;
   } catch (error) {
     console.error('Failed to parse OpenAI response:', error);
     console.error('Failed content:', content);
