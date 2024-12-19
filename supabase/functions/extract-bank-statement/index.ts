@@ -11,7 +11,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -87,6 +86,7 @@ serve(async (req) => {
     let totalDeposits = 0
     let totalWithdrawals = 0
     let endingBalance = 0
+    let successfulPages = 0
 
     for (let i = 0; i < pdfCoData.urls.length; i++) {
       console.log(`Processing page ${i + 1} of ${pdfCoData.urls.length}`)
@@ -99,28 +99,34 @@ serve(async (req) => {
           continue
         }
 
+        console.log(`Raw OpenAI response for page ${i + 1}:`, aiResult.choices[0].message.content)
+        
         const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
         console.log(`Extracted data from page ${i + 1}:`, extractedData)
 
-        // Update statement month if not set (take from first page)
-        if (!statementMonth && extractedData.statement_month) {
-          statementMonth = extractedData.statement_month
-        }
-
-        // Merge transactions
         if (extractedData.transactions && extractedData.transactions.length > 0) {
-          allTransactions = [...allTransactions, ...extractedData.transactions]
-        }
+          successfulPages++
+          // Update statement month if not set (take from first successful page)
+          if (!statementMonth && extractedData.statement_month) {
+            statementMonth = extractedData.statement_month
+          }
 
-        // Update totals
-        if (extractedData.total_deposits) totalDeposits += extractedData.total_deposits
-        if (extractedData.total_withdrawals) totalWithdrawals += extractedData.total_withdrawals
-        if (extractedData.ending_balance) endingBalance = extractedData.ending_balance // Take the last one
+          // Merge transactions
+          allTransactions = [...allTransactions, ...extractedData.transactions]
+
+          // Update totals
+          if (extractedData.total_deposits) totalDeposits += extractedData.total_deposits
+          if (extractedData.total_withdrawals) totalWithdrawals += extractedData.total_withdrawals
+          if (extractedData.ending_balance) endingBalance = extractedData.ending_balance // Take the last one
+        }
       } catch (error) {
         console.error(`Error processing page ${i + 1}:`, error)
-        continue // Continue with next page if one fails
+        continue
       }
     }
+
+    console.log('Processing complete. Successful pages:', successfulPages)
+    console.log('Total transactions extracted:', allTransactions.length)
 
     if (allTransactions.length === 0) {
       throw new Error('No transactions extracted from any page')
@@ -128,7 +134,6 @@ serve(async (req) => {
 
     // Sort transactions by date
     allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    console.log(`Total transactions extracted: ${allTransactions.length}`)
 
     // Update document status
     const { error: updateError } = await supabase
@@ -150,6 +155,8 @@ serve(async (req) => {
       ending_balance: endingBalance,
       transactions: allTransactions
     }
+
+    console.log('Final data to be inserted:', finalData)
 
     const { error: insertError } = await supabase
       .from('bank_statement_data')
