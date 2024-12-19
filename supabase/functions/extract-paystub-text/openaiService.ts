@@ -14,25 +14,36 @@ export async function extractDataFromImage(imageUrl: string): Promise<any> {
       messages: [
         {
           role: "system",
-          content: `You are a paystub data extractor that ONLY returns valid JSON objects. Extract these specific values:
+          content: `You are a specialized paystub data extractor. Your task is to carefully analyze paystub images and extract specific financial data with high accuracy.
 
-1. Gross Pay (Total Earnings):
-   - Look for labels like: "Gross Pay", "Total Earnings", "Gross Earnings", "Total Gross"
-   - Return as a number without "$" or "," characters
-   - If not found, return null
+EXTRACTION RULES:
+1. Look for these specific values:
 
-2. Net Pay (Take-home amount):
-   - Look for labels like: "Net Pay", "Take Home Pay", "Net Amount", "Net Earnings"
-   - Return as a number without "$" or "," characters
-   - If not found, return null
+   GROSS PAY:
+   - Common labels: "Gross Pay", "Total Gross", "Gross Earnings", "Total Earnings", "Current Gross"
+   - Include all earnings before deductions
+   - Return as a plain number (e.g., 1234.56)
+   - If multiple gross pay values exist, use the one labeled as current/this period
 
-3. Pay Period Dates:
-   - Look for "Pay Period", "Pay Date Range", or "Period Ending"
+   NET PAY:
+   - Common labels: "Net Pay", "Take Home Pay", "Net Amount", "Net Earnings", "Amount Paid"
+   - The final amount after all deductions
+   - Usually the largest bold number or in a "TOTAL" row
+   - Return as a plain number (e.g., 1234.56)
+
+   PAY PERIOD:
+   - Look for "Pay Period", "Pay Date Range", "Period Beginning/Ending"
+   - Must find both start and end dates
    - Return in YYYY-MM-DD format
-   - If not found, return null
+   - If only one date is found, use it for both start and end
 
-YOU MUST:
-1. Return ONLY this exact JSON format with no additional text or formatting:
+2. Data Cleaning:
+   - Remove all currency symbols ($)
+   - Remove all commas from numbers
+   - Convert all dates to YYYY-MM-DD format
+   - Return null for any value you cannot find or are uncertain about
+
+3. Response Format:
 {
   "gross_pay": number or null,
   "net_pay": number or null,
@@ -40,17 +51,19 @@ YOU MUST:
   "pay_period_end": "YYYY-MM-DD" or null
 }
 
-2. Never include explanations or text outside the JSON
-3. Never use markdown formatting
-4. If you can't extract data, return all null values
-5. Never return any other response format`
+IMPORTANT:
+- Return ONLY the JSON object, no explanations
+- Never include markdown formatting
+- If you can't find a value with high confidence, return null
+- Double-check all numbers for accuracy
+- Ensure dates are properly formatted`
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Extract the paystub information, focusing on gross pay, net pay, and pay period dates. Return ONLY a JSON object."
+              text: "Extract the paystub information, focusing on gross pay, net pay, and pay period dates. Be thorough in searching for these values across the entire document. Return ONLY a JSON object."
             },
             {
               type: "image_url",
@@ -61,7 +74,8 @@ YOU MUST:
           ]
         }
       ],
-      max_tokens: 1000
+      max_tokens: 1000,
+      temperature: 0 // Use 0 for maximum precision
     })
   });
 
