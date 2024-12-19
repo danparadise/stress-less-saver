@@ -1,10 +1,35 @@
 project_id = "dfwiszjyvkfmpejsqvbf"
 
-[functions.extract-paystub-text]
-verify_jwt = false
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
 
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+port = 54325
+
+[realtime]
+enabled = true
+
+[functions]
 [functions.extract-bank-statement]
 verify_jwt = false
-
+[functions.extract-paystub-text]
+verify_jwt = false
 [functions.convert-pdf]
 verify_jwt = false

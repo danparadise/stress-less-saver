@@ -34,7 +34,7 @@ serve(async (req) => {
       body: JSON.stringify({
         url: pdfUrl,
         async: false,
-        pages: "1-10" // Support up to 10 pages
+        pages: "1" // Start with just first page
       })
     })
 
@@ -51,55 +51,19 @@ serve(async (req) => {
       throw new Error('No PNG URLs returned from PDF.co')
     }
 
-    // Process all pages
-    console.log(`Processing ${pdfCoData.urls.length} pages`)
-    const allExtractedData = []
-    let successfulExtractions = 0
-
-    for (const pageUrl of pdfCoData.urls) {
-      console.log(`Processing page URL: ${pageUrl}`)
-      try {
-        const openAiResponse = await extractDataFromImage(pageUrl)
-        const aiResult = await openAiResponse.json()
-        
-        if (!aiResult.choices?.[0]?.message?.content) {
-          console.warn('Invalid OpenAI response format:', aiResult)
-          continue
-        }
-
-        const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
-        if (extractedData) {
-          allExtractedData.push(extractedData)
-          successfulExtractions++
-        }
-      } catch (error) {
-        console.warn(`Failed to process page ${pageUrl}:`, error)
-      }
+    // Process first page
+    console.log(`Processing page URL: ${pdfCoData.urls[0]}`)
+    const openAiResponse = await extractDataFromImage(pdfCoData.urls[0])
+    const aiResult = await openAiResponse.json()
+    
+    if (!aiResult.choices?.[0]?.message?.content) {
+      throw new Error('Invalid OpenAI response format')
     }
 
-    if (successfulExtractions === 0) {
-      throw new Error('Failed to extract data from any page')
+    const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
+    if (!extractedData) {
+      throw new Error('Failed to parse extracted data')
     }
-
-    // Merge data from all pages
-    const mergedData = allExtractedData.reduce((acc, curr) => ({
-      statement_month: curr.statement_month || acc.statement_month,
-      total_deposits: (curr.total_deposits || 0) + (acc.total_deposits || 0),
-      total_withdrawals: (curr.total_withdrawals || 0) + (acc.total_withdrawals || 0),
-      ending_balance: curr.ending_balance || acc.ending_balance,
-      transactions: [...(acc.transactions || []), ...(curr.transactions || [])]
-    }), {
-      statement_month: null,
-      total_deposits: 0,
-      total_withdrawals: 0,
-      ending_balance: 0,
-      transactions: []
-    })
-
-    // Sort transactions by date
-    mergedData.transactions.sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -112,24 +76,22 @@ serve(async (req) => {
       .update({ status: 'completed' })
       .eq('id', documentId)
 
-    // Store merged data
+    // Store extracted data
     await supabase
       .from('bank_statement_data')
       .upsert({
         document_id: documentId,
-        statement_month: mergedData.statement_month,
-        total_deposits: mergedData.total_deposits,
-        total_withdrawals: mergedData.total_withdrawals,
-        ending_balance: mergedData.ending_balance,
-        transactions: mergedData.transactions
+        statement_month: extractedData.statement_month,
+        total_deposits: extractedData.total_deposits,
+        total_withdrawals: extractedData.total_withdrawals,
+        ending_balance: extractedData.ending_balance,
+        transactions: extractedData.transactions
       })
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: mergedData,
-        pagesProcessed: pdfCoData.urls.length,
-        successfulExtractions
+        data: extractedData
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
