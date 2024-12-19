@@ -46,7 +46,8 @@ CRITICAL REQUIREMENTS:
 
 3. If you can't find a value with high confidence, use null
 4. DO NOT include any explanations or text outside the JSON
-5. DO NOT use markdown formatting`
+5. DO NOT use markdown formatting or code blocks
+6. Return ONLY the raw JSON object`
         },
         {
           role: "user",
@@ -85,8 +86,12 @@ CRITICAL REQUIREMENTS:
   console.log('Raw content from OpenAI:', content);
   
   try {
-    const parsedData = JSON.parse(content);
-    console.log('Parsed paystub data:', parsedData);
+    // Remove any markdown formatting if present
+    const cleanContent = content.replace(/```json\n|\n```|```/g, '').trim();
+    console.log('Cleaned content for parsing:', cleanContent);
+    
+    const parsedData = JSON.parse(cleanContent);
+    console.log('Successfully parsed JSON:', parsedData);
     
     // Ensure numeric values for pay amounts
     if (parsedData.gross_pay !== null) {
@@ -123,6 +128,7 @@ CRITICAL REQUIREMENTS:
     return parsedData;
   } catch (error) {
     console.error('Failed to parse OpenAI response:', error);
+    console.error('Failed content:', content);
     return {
       gross_pay: null,
       net_pay: null,
