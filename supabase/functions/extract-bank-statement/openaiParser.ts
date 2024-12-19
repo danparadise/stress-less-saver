@@ -41,21 +41,12 @@ export function parseOpenAIResponse(content: string): ExtractedData {
         return false;
       }
 
-      // Keep the date exactly as it comes from the statement
-      // Only convert if it's not already in YYYY-MM-DD format
+      // Ensure date is in correct format (YYYY-MM-DD)
       const dateStr = t.date;
       if (dateStr.includes('/')) {
-        // Parse the date considering UTC to avoid timezone issues
+        // Convert MM/DD/YYYY to YYYY-MM-DD
         const [month, day, year] = dateStr.split('/');
-        // Create date in UTC
-        const date = new Date(Date.UTC(
-          parseInt(year),
-          parseInt(month) - 1, // months are 0-based
-          parseInt(day)
-        ));
-        // Format the date in YYYY-MM-DD while preserving the exact day
-        t.date = date.toISOString().split('T')[0];
-        console.log(`Converted date from ${dateStr} to ${t.date}`);
+        t.date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
       }
 
       return true;
