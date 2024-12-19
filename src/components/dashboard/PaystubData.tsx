@@ -2,7 +2,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import PaystubTable from "../paystubs/PaystubTable";
 import PaystubEmpty from "../paystubs/PaystubEmpty";
@@ -10,7 +10,6 @@ import PaystubLoading from "../paystubs/PaystubLoading";
 import { useEffect } from "react";
 
 const PaystubData = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -96,35 +95,21 @@ const PaystubData = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Paystub data deleted successfully",
-      });
+      toast.success("Paystub data deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
     },
     onError: (error) => {
       console.error("Error deleting paystub:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete paystub data",
-        variant: "destructive",
-      });
+      toast.error("Failed to delete paystub data");
     },
   });
 
   const handleRefresh = async () => {
     try {
       await refetch();
-      toast({
-        title: "Success",
-        description: "Data refreshed successfully",
-      });
+      toast.success("Data refreshed successfully");
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh data",
-        variant: "destructive",
-      });
+      toast.error("Failed to refresh data");
     }
   };
 
