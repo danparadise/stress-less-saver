@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Text } from "recharts";
 import { format } from "date-fns";
 
 interface SpendingDistributionChartProps {
@@ -122,6 +122,16 @@ const SpendingDistributionChart = ({
                   />
                 ))}
               </Pie>
+              {/* Add center text for total spending */}
+              <Text
+                x="50%"
+                y="50%"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="fill-purple-200 text-2xl font-bold"
+              >
+                {formatCurrency(totalSpending)}
+              </Text>
               <Tooltip 
                 formatter={(value: number, name: string) => [
                   `${formatCurrency(value)}`,
