@@ -6,6 +6,7 @@ import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
+import { Skeleton } from "./ui/skeleton";
 
 const mockData = {
   balance: 5240.50,
@@ -35,7 +36,7 @@ const mockData = {
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
 
-  const { data: paystubData } = useQuery({
+  const { data: paystubData, isLoading, error } = useQuery({
     queryKey: ["paystub-data"],
     queryFn: async () => {
       console.log('Fetching paystub data for income trend');
@@ -53,7 +54,10 @@ const Dashboard = () => {
         .eq('financial_documents.document_type', 'paystub')
         .order('pay_period_start', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching paystub data:', error);
+        throw error;
+      }
       
       // Transform and validate data for the chart
       const chartData = data?.map(item => ({
@@ -66,7 +70,9 @@ const Dashboard = () => {
       
       console.log('Transformed paystub data for chart:', chartData);
       return chartData;
-    }
+    },
+    retry: 1, // Only retry once to prevent infinite loading
+    refetchOnWindowFocus: false // Prevent unnecessary refetches
   });
 
   useEffect(() => {
@@ -88,6 +94,18 @@ const Dashboard = () => {
   const calculateSavingsProgress = () => {
     return (mockData.savings / mockData.savingsGoal) * 100;
   };
+
+  if (error) {
+    console.error('Dashboard error:', error);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-destructive mb-2">Error loading dashboard</h2>
+          <p className="text-muted-foreground">Please refresh the page to try again</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,7 +159,11 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <IncomeChart data={paystubData || []} />
+              {isLoading ? (
+                <div className="w-full h-[300px] bg-card rounded-lg animate-pulse" />
+              ) : (
+                <IncomeChart data={paystubData || []} />
+              )}
             </div>
             <div className="lg:col-span-1">
               <AiInsights suggestions={mockData.aiSuggestions} />
