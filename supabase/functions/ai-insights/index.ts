@@ -20,7 +20,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch user's financial data
+    // Fetch last 3 months of bank statements
     const { data: bankStatements, error: bankError } = await supabase
       .from('bank_statement_data')
       .select(`
@@ -28,8 +28,10 @@ serve(async (req) => {
         financial_documents!inner(*)
       `)
       .eq('financial_documents.user_id', userId)
-      .order('statement_month', { ascending: false });
+      .order('statement_month', { ascending: false })
+      .limit(3);
 
+    // Fetch last 3 months of paystubs
     const { data: paystubs, error: paystubError } = await supabase
       .from('paystub_data')
       .select(`
@@ -37,7 +39,8 @@ serve(async (req) => {
         financial_documents!inner(*)
       `)
       .eq('financial_documents.user_id', userId)
-      .order('pay_period_start', { ascending: false });
+      .order('pay_period_start', { ascending: false })
+      .limit(6); // Assuming bi-weekly pay, this gives us 3 months
 
     if (bankError || paystubError) {
       throw new Error('Error fetching financial data');
@@ -45,53 +48,96 @@ serve(async (req) => {
 
     // Calculate key financial metrics
     const latestStatement = bankStatements?.[0];
-    const monthlyIncome = paystubs?.[0]?.net_pay || 0; // Using net_pay instead of gross_pay
     const monthlyExpenses = Math.abs(latestStatement?.total_withdrawals || 0);
-    const savingsRate = monthlyIncome > 0 
-      ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 
+    
+    // Calculate average monthly net income from paystubs
+    const monthlyNetIncome = paystubs?.reduce((total, stub) => total + (stub.net_pay || 0), 0) / 3 || 0;
+    
+    // Calculate savings rate
+    const savingsRate = monthlyNetIncome > 0 
+      ? ((monthlyNetIncome - monthlyExpenses) / monthlyNetIncome) * 100 
       : 0;
 
-    // Enhanced system prompt
+    // Analyze spending patterns
+    const spendingCategories = new Map();
+    latestStatement?.transactions?.forEach((transaction: any) => {
+      if (transaction.amount < 0) { // Only count expenses
+        const category = transaction.category || 'Uncategorized';
+        spendingCategories.set(
+          category, 
+          (spendingCategories.get(category) || 0) + Math.abs(transaction.amount)
+        );
+      }
+    });
+
+    // Convert spending categories to sorted array
+    const topExpenseCategories = Array.from(spendingCategories.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([category, amount]) => ({ category, amount }));
+
+    // Calculate income trends
+    const incomeChanges = [];
+    for (let i = 1; i < paystubs?.length; i++) {
+      const currentPay = paystubs[i].net_pay;
+      const previousPay = paystubs[i-1].net_pay;
+      if (currentPay && previousPay) {
+        const change = ((currentPay - previousPay) / previousPay) * 100;
+        incomeChanges.push(change);
+      }
+    }
+
+    // Enhanced system prompt with comprehensive financial data
     const systemPrompt = `You are **PayGuard AI Assistant**, an expert in accounting, personalized financial advice, and growth coaching. Your mission is to provide users with the most accurate insights derived directly from their financial data.
 
 Current Financial Snapshot:
-- Monthly Net Income: $${monthlyIncome}
-- Monthly Expenses: $${monthlyExpenses}
-- Savings Rate: ${savingsRate.toFixed(1)}%
-- Data from: ${latestStatement?.statement_month}
+- Monthly Net Income (3-month average): $${monthlyNetIncome.toFixed(2)}
+- Monthly Expenses: $${monthlyExpenses.toFixed(2)}
+- Current Savings Rate: ${savingsRate.toFixed(1)}%
+- Latest Statement Period: ${latestStatement?.statement_month}
+
+Income Analysis:
+- Latest Net Pay: $${paystubs?.[0]?.net_pay || 0}
+- Income Trend: ${incomeChanges.length > 0 ? 
+  `${incomeChanges[0] > 0 ? 'Increasing' : 'Decreasing'} by ${Math.abs(incomeChanges[0]).toFixed(1)}% from previous pay period` 
+  : 'Insufficient data'}
+
+Top 5 Expense Categories:
+${topExpenseCategories.map(cat => `- ${cat.category}: $${cat.amount.toFixed(2)}`).join('\n')}
+
+Recent Transactions (Last 5):
+${JSON.stringify(latestStatement?.transactions?.slice(0, 5) || [], null, 2)}
 
 Key Responsibilities:
-1. Accounting Expertise:
-   - Analyze financial data from uploaded paystubs and bank statements
-   - Offer detailed explanations of financial terms and concepts
+1. Financial Analysis:
+   - Analyze spending patterns and trends
+   - Identify potential areas for savings
+   - Monitor income stability and growth
 
-2. Personalized Financial Advice:
-   - Provide tailored advice on spending habits, saving strategies, and budgeting
-   - Assist users in setting and achieving financial goals
+2. Personalized Advice:
+   - Provide specific recommendations based on actual spending data
+   - Suggest realistic budgeting strategies
+   - Help optimize savings rate
 
 3. Growth Coaching:
-   - Act as a financial growth coach, offering strategies to enhance financial health
-   - Motivate users to adopt better financial practices based on their data
+   - Set achievable financial goals
+   - Track progress towards savings targets
+   - Identify opportunities for income growth
 
 Guidelines:
-- Maintain a positive, motivational, and professional tone
-- Base all insights and recommendations on the user's actual financial data
-- Focus on practical steps they can take to improve their financial health
-- Provide specific, actionable advice
-- Be concise but friendly
-- Use actual numbers from their data when relevant
+- Base all advice on actual financial data
+- Provide specific, actionable recommendations
+- Focus on practical steps for improvement
+- Maintain a positive and encouraging tone
+- Use real numbers from the user's data
 
 Remember:
-- No financial strategy is guaranteed to work
-- You can only make suggestions, assist with planning, or provide data-driven feedback
-- Stay focused on financial topics and redirect unrelated questions
-- Maintain confidentiality and data protection
-- Do not provide legal or investment advice
+- No financial strategy is guaranteed
+- Focus on data-driven insights
+- Maintain user privacy and confidentiality
+- Avoid specific investment advice`;
 
-Recent Transactions Context:
-${JSON.stringify(latestStatement?.transactions?.slice(0, 5) || [], null, 2)}`;
-
-    // Call OpenAI with the enhanced prompt
+    // Call OpenAI with enhanced context
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
