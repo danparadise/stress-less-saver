@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import TransactionsPopup from "@/components/analytics/TransactionsPopup";
-import MonthSelector from "@/components/analytics/MonthSelector";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/types/bankStatement";
+import TransactionsPopup from "@/components/analytics/TransactionsPopup";
+import MonthSelector from "@/components/analytics/MonthSelector";
+import SpendingDistributionChart from "@/components/analytics/SpendingDistributionChart";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -32,29 +31,25 @@ const Analytics = () => {
     }
   });
 
-  // Process transactions data for the selected month
   const processTransactionsData = () => {
     if (!bankStatements || bankStatements.length === 0) return [];
 
-    // Filter statement by selected month
     const selectedStatement = selectedMonth 
       ? bankStatements.find(statement => statement.statement_month === selectedMonth)
-      : bankStatements[0]; // Default to most recent if none selected
+      : bankStatements[0];
 
     if (!selectedStatement) return [];
 
     const transactions = selectedStatement.transactions as unknown as Transaction[] || [];
 
-    // Group transactions by category and calculate totals (only expenses)
     const categoryTotals = transactions.reduce((acc: { [key: string]: number }, transaction) => {
-      if (transaction.amount < 0) { // Only include expenses
+      if (transaction.amount < 0) {
         const category = transaction.category || 'Uncategorized';
         acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
       }
       return acc;
     }, {});
 
-    // Convert to chart data format and sort by amount
     return Object.entries(categoryTotals)
       .map(([category, value]) => ({
         name: category,
@@ -126,93 +121,12 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Spending Distribution
-              {currentStatement && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
-                  for {format(new Date(currentStatement.statement_month), "MMMM yyyy")}
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[500px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius="60%"
-                    outerRadius="80%"
-                    paddingAngle={2}
-                    dataKey="value"
-                    onClick={(data) => setSelectedCategory(data.name)}
-                    cursor="pointer"
-                    label={({
-                      cx,
-                      cy,
-                      midAngle,
-                      innerRadius,
-                      outerRadius,
-                      value,
-                      index
-                    }) => {
-                      const RADIAN = Math.PI / 180;
-                      const radius = 25 + innerRadius + (outerRadius - innerRadius);
-                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                      const percent = ((value / totalSpending) * 100).toFixed(0);
-
-                      return (
-                        <text
-                          x={x}
-                          y={y}
-                          fill="#888888"
-                          textAnchor={x > cx ? 'start' : 'end'}
-                          dominantBaseline="central"
-                          className="text-xs"
-                        >
-                          {`${percent}%`}
-                        </text>
-                      );
-                    }}
-                  >
-                    {data.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.color}
-                        className="transition-opacity hover:opacity-80"
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: number) => formatCurrency(value)}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '0.5rem',
-                    }}
-                  />
-                  <Legend 
-                    layout="vertical"
-                    align="right"
-                    verticalAlign="middle"
-                    formatter={(value, entry) => {
-                      const item = data.find(d => d.name === value);
-                      if (item) {
-                        return `${value} (${formatCurrency(item.value)})`;
-                      }
-                      return value;
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <SpendingDistributionChart
+          data={data}
+          totalSpending={totalSpending}
+          currentMonth={currentStatement?.statement_month || null}
+          onCategoryClick={setSelectedCategory}
+        />
       </div>
 
       {selectedData && (
