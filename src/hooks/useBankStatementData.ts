@@ -13,7 +13,11 @@ export const useBankStatementData = () => {
         .select("*")
         .order('month_year', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
+
+      if (summaryError) {
+        console.error('Error fetching monthly summary:', summaryError);
+      }
 
       if (summaryData) {
         console.log('Found monthly summary data:', summaryData);
@@ -34,8 +38,7 @@ export const useBankStatementData = () => {
       const { data, error } = await supabase
         .from("bank_statement_data")
         .select(`
-          transactions,
-          statement_month,
+          *,
           financial_documents!inner(
             status,
             upload_date
