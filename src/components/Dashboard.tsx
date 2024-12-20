@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
-import { ArrowDownRight, PiggyBank, List } from "lucide-react";
+import { ArrowDownRight, PiggyBank, List, BarChart2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import FinancialChatbot from "./dashboard/FinancialChatbot";
-import TransactionsPopup from "./analytics/TransactionsPopup";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
-import { Transaction } from "@/types/bankStatement";
 
 const mockData = {
   savings: 450,
@@ -38,8 +47,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
   const [monthlyExpenses, setMonthlyExpenses] = useState(0);
-  const [isTransactionsOpen, setIsTransactionsOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
   const { data: paystubData, isLoading: isPaystubLoading, error } = usePaystubTrends();
@@ -48,12 +55,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (financialData) {
       console.log('Processing financial data:', financialData);
-      
-      // Set monthly expenses from total_withdrawals
       setMonthlyExpenses(Math.abs(financialData.total_withdrawals || 0));
-      
-      // Set transactions
-      setTransactions(financialData.transactions || []);
     }
   }, [financialData]);
 
@@ -72,12 +74,15 @@ const Dashboard = () => {
     return (mockData.savings / mockData.savingsGoal) * 100;
   };
 
-  const handleExpensesClick = () => {
+  const handleAnalyticsClick = () => {
     navigate('/analytics');
   };
 
-  const handleTransactionsClick = () => {
-    setIsTransactionsOpen(true);
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
   };
 
   if (error) {
@@ -101,22 +106,63 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-4">
-              <StatsCard
-                title="Monthly Expenses"
-                value={`-$${monthlyExpenses.toLocaleString()}`}
-                icon={ArrowDownRight}
-                iconBgColor="bg-destructive/10"
-                iconColor="text-destructive"
-                valueColor="text-destructive"
-                onClick={handleExpensesClick}
-              />
-              <button
-                onClick={handleTransactionsClick}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <List className="h-4 w-4" />
-                View Transactions
-              </button>
+              <div className="bg-card rounded-lg p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-lg font-medium">Monthly Expenses</h3>
+                    <p className="text-2xl font-bold text-destructive">
+                      -{formatCurrency(monthlyExpenses)}
+                    </p>
+                  </div>
+                  <div className="bg-destructive/10 p-2 rounded-full">
+                    <ArrowDownRight className="h-5 w-5 text-destructive" />
+                  </div>
+                </div>
+
+                <ScrollArea className="h-[300px] w-full rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {financialData?.transactions.map((transaction, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            {format(new Date(transaction.date), "MMM d, yyyy")}
+                          </TableCell>
+                          <TableCell>{transaction.description}</TableCell>
+                          <TableCell>{transaction.category}</TableCell>
+                          <TableCell className={`text-right ${
+                            transaction.amount < 0 ? 'text-destructive' : 'text-sage-500'
+                          }`}>
+                            {formatCurrency(transaction.amount)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(transaction.balance)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleAnalyticsClick}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <BarChart2 className="h-4 w-4" />
+                    View Analytics
+                  </Button>
+                </div>
+              </div>
             </div>
             <StatsCard
               title="Monthly Savings"
@@ -146,16 +192,6 @@ const Dashboard = () => {
             <FinancialChatbot />
           </div>
         </div>
-
-        {transactions && transactions.length > 0 && (
-          <TransactionsPopup
-            isOpen={isTransactionsOpen}
-            onClose={() => setIsTransactionsOpen(false)}
-            category="All Transactions"
-            transactions={transactions}
-            color="#ef4444"
-          />
-        )}
       </main>
     </div>
   );
