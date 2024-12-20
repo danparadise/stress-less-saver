@@ -8,7 +8,6 @@ export const useBankStatementData = () => {
     queryFn: async () => {
       console.log('Fetching latest bank statement data');
       
-      // Get all completed bank statements, ordered by date descending
       const { data: statements, error: statementError } = await supabase
         .from("bank_statement_data")
         .select(`

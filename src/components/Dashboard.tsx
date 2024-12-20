@@ -131,7 +131,7 @@ const Dashboard = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {financialData?.transactions.map((transaction, index) => (
+                      {financialData?.transactions?.map((transaction, index) => (
                         <TableRow key={index}>
                           <TableCell>
                             {format(new Date(transaction.date), "MMM d, yyyy")}
