@@ -9,6 +9,7 @@ import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/types/bankStatement";
+import { Json } from "@/integrations/supabase/types";
 
 const mockData = {
   savings: 450,
@@ -30,6 +31,27 @@ const mockData = {
       category: "savings"
     }
   ]
+};
+
+// Helper function to safely convert Json to Transaction
+const convertJsonToTransaction = (json: Json): Transaction => {
+  if (typeof json === 'object' && json !== null) {
+    return {
+      date: String(json.date || ''),
+      description: String(json.description || ''),
+      category: String(json.category || ''),
+      amount: Number(json.amount || 0),
+      balance: Number(json.balance || 0)
+    };
+  }
+  // Return a default transaction if conversion fails
+  return {
+    date: '',
+    description: '',
+    category: '',
+    amount: 0,
+    balance: 0
+  };
 };
 
 const Dashboard = () => {
@@ -54,7 +76,10 @@ const Dashboard = () => {
         () => {
           // Refresh the monthly expenses when bank statement data changes
           if (bankStatementData?.transactions) {
-            const transactionsArray = bankStatementData.transactions as Transaction[];
+            const transactionsArray = Array.isArray(bankStatementData.transactions) 
+              ? bankStatementData.transactions.map(convertJsonToTransaction)
+              : [];
+              
             const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
               if (transaction.amount < 0) {
                 return total + Math.abs(transaction.amount);
@@ -77,7 +102,10 @@ const Dashboard = () => {
   // Initial calculation of monthly expenses
   useEffect(() => {
     if (bankStatementData?.transactions) {
-      const transactionsArray = bankStatementData.transactions as Transaction[];
+      const transactionsArray = Array.isArray(bankStatementData.transactions)
+        ? bankStatementData.transactions.map(convertJsonToTransaction)
+        : [];
+        
       const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
         if (transaction.amount < 0) {
           return total + Math.abs(transaction.amount);
