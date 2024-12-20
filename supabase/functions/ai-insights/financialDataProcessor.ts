@@ -10,9 +10,19 @@ export function processFinancialData(
   const monthlyNetIncome = paystubs?.reduce((total, stub) => 
     total + (stub.net_pay || 0), 0) / 3 || 0;
 
-  // Get latest statement's expenses
+  // Get latest statement's transactions
   const latestStatement = bankStatements?.[0];
-  const monthlyExpenses = Math.abs(latestStatement?.total_withdrawals || 0);
+  console.log('Latest statement:', latestStatement);
+
+  // Calculate monthly expenses from transactions
+  let monthlyExpenses = 0;
+  if (latestStatement?.transactions && Array.isArray(latestStatement.transactions)) {
+    monthlyExpenses = latestStatement.transactions.reduce((total, transaction: Transaction) => {
+      // Only sum negative amounts (expenses)
+      return transaction.amount < 0 ? total + Math.abs(transaction.amount) : total;
+    }, 0);
+  }
+  console.log('Calculated monthly expenses:', monthlyExpenses);
 
   // Calculate savings rate
   const savingsRate = monthlyNetIncome > 0 
@@ -21,15 +31,17 @@ export function processFinancialData(
 
   // Analyze spending categories
   const spendingCategories = new Map();
-  latestStatement?.transactions?.forEach((transaction: Transaction) => {
-    if (transaction.amount < 0) {
-      const category = transaction.category || 'Uncategorized';
-      spendingCategories.set(
-        category, 
-        (spendingCategories.get(category) || 0) + Math.abs(transaction.amount)
-      );
-    }
-  });
+  if (latestStatement?.transactions) {
+    latestStatement.transactions.forEach((transaction: Transaction) => {
+      if (transaction.amount < 0) {
+        const category = transaction.category || 'Uncategorized';
+        spendingCategories.set(
+          category, 
+          (spendingCategories.get(category) || 0) + Math.abs(transaction.amount)
+        );
+      }
+    });
+  }
 
   // Get top expense categories
   const topExpenseCategories = Array.from(spendingCategories.entries())
@@ -48,19 +60,14 @@ export function processFinancialData(
     }
   }
 
-  console.log('Processed financial metrics:', {
-    monthlyNetIncome,
-    monthlyExpenses,
-    savingsRate,
-    topExpenseCategories,
-    incomeChanges
-  });
-
-  return {
+  const metrics: FinancialMetrics = {
     monthlyNetIncome,
     monthlyExpenses,
     savingsRate,
     topExpenseCategories,
     incomeChanges
   };
+
+  console.log('Processed financial metrics:', metrics);
+  return metrics;
 }
