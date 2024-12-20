@@ -45,10 +45,12 @@ const Dashboard = () => {
           gross_pay,
           pay_period_start,
           financial_documents!inner(
-            status
+            status,
+            document_type
           )
         `)
         .eq('financial_documents.status', 'completed')
+        .eq('financial_documents.document_type', 'paystub')
         .order('pay_period_start', { ascending: true });
 
       if (error) throw error;
@@ -57,7 +59,10 @@ const Dashboard = () => {
       const chartData = data?.map(item => ({
         date: item.pay_period_start,
         amount: Number(item.gross_pay)
-      })).filter(item => !isNaN(item.amount)) || [];
+      })).filter(item => 
+        !isNaN(item.amount) && 
+        item.date // Ensure we have a valid date
+      ) || [];
       
       console.log('Transformed paystub data for chart:', chartData);
       return chartData;
