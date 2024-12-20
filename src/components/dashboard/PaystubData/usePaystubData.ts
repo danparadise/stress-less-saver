@@ -34,7 +34,7 @@ export const usePaystubData = () => {
       console.log('Fetched and filtered paystub data:', filteredData);
       return filteredData;
     },
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     staleTime: 0
   });
 
