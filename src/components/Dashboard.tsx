@@ -6,6 +6,7 @@ import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import DashboardHeader from "./dashboard/DashboardHeader";
+import FinancialChatbot from "./dashboard/FinancialChatbot";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { supabase } from "@/integrations/supabase/client";
@@ -147,6 +148,10 @@ const Dashboard = () => {
             <div className="lg:col-span-1">
               <AiInsights suggestions={mockData.aiSuggestions} />
             </div>
+          </div>
+
+          <div className="w-full">
+            <FinancialChatbot />
           </div>
         </div>
       </main>
