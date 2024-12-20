@@ -2,20 +2,29 @@ import { CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 
 interface PaystubDataHeaderProps {
   onRefresh: () => Promise<void>;
 }
 
 const PaystubDataHeader = ({ onRefresh }: PaystubDataHeaderProps) => {
+  const [isSpinning, setIsSpinning] = useState(false);
+
   const handleRefresh = async () => {
+    setIsSpinning(true);
     try {
       await onRefresh();
-      toast("Data refreshed successfully");
+      toast("Refreshing page...");
+      // Short delay to show the spinning animation and toast
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
       toast("Failed to refresh data", {
         description: error instanceof Error ? error.message : "Unknown error occurred",
       });
+      setIsSpinning(false);
     }
   };
 
@@ -26,10 +35,11 @@ const PaystubDataHeader = ({ onRefresh }: PaystubDataHeaderProps) => {
         variant="outline"
         size="sm"
         onClick={handleRefresh}
-        className="gap-2"
+        className="gap-2 transition-transform"
+        disabled={isSpinning}
       >
-        <RefreshCw className="h-4 w-4" />
-        Refresh
+        <RefreshCw className={`h-4 w-4 ${isSpinning ? 'animate-spin' : ''}`} />
+        {isSpinning ? 'Refreshing...' : 'Refresh'}
       </Button>
     </CardHeader>
   );
