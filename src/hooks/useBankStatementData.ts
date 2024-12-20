@@ -1,5 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { BankStatement } from "@/types/bankStatement";
+
+interface MonthlyFinancialSummary {
+  id: string;
+  user_id: string;
+  month_year: string;
+  total_income: number;
+  total_expenses: number;
+  total_deposits: number;
+  total_withdrawals: number;
+  ending_balance: number;
+  transactions: any[];
+  transaction_categories: Record<string, number>;
+  created_at: string;
+  updated_at: string;
+}
+
+type FinancialData = MonthlyFinancialSummary | BankStatement;
 
 export const useBankStatementData = () => {
   return useQuery({
@@ -22,7 +40,7 @@ export const useBankStatementData = () => {
 
       if (summaryData) {
         console.log('Found monthly summary data:', summaryData);
-        return summaryData;
+        return summaryData as MonthlyFinancialSummary;
       }
 
       console.log('No monthly summary found, falling back to bank statement data');
@@ -48,7 +66,7 @@ export const useBankStatementData = () => {
       }
 
       console.log('Fetched bank statement data:', data);
-      return data;
+      return data as BankStatement;
     },
     refetchOnWindowFocus: true,
     staleTime: 0

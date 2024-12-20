@@ -47,18 +47,15 @@ const Dashboard = () => {
     if (financialData) {
       console.log('Processing financial data:', financialData);
       
-      // If we have monthly summary data with total_expenses
-      if (financialData.total_expenses !== undefined && financialData.total_expenses !== null) {
+      if ('total_expenses' in financialData && typeof financialData.total_expenses === 'number') {
         console.log('Setting monthly expenses from summary:', financialData.total_expenses);
         setMonthlyExpenses(Math.abs(financialData.total_expenses));
       }
-      // If we have total_withdrawals from bank statement
-      else if (financialData.total_withdrawals !== undefined && financialData.total_withdrawals !== null) {
+      else if ('total_withdrawals' in financialData && typeof financialData.total_withdrawals === 'number') {
         console.log('Setting monthly expenses from withdrawals:', Math.abs(financialData.total_withdrawals));
         setMonthlyExpenses(Math.abs(financialData.total_withdrawals));
       }
-      // Fallback to calculating from transactions
-      else if (financialData.transactions) {
+      else if ('transactions' in financialData && financialData.transactions) {
         console.log('Calculating monthly expenses from transactions');
         const calculatedExpenses = calculateMonthlyExpenses(financialData.transactions);
         console.log('Calculated monthly expenses:', calculatedExpenses);
@@ -83,7 +80,7 @@ const Dashboard = () => {
         },
         (payload) => {
           console.log('Monthly summary updated:', payload);
-          if (payload.new && 'total_expenses' in payload.new) {
+          if (payload.new && 'total_expenses' in payload.new && typeof payload.new.total_expenses === 'number') {
             setMonthlyExpenses(Math.abs(payload.new.total_expenses));
           }
         }
