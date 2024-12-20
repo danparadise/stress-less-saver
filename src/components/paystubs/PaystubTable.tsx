@@ -65,10 +65,10 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
           {sortedData.map((paystub) => (
             <TableRow key={paystub.id} className="hover:bg-muted/50">
               <TableCell className="font-medium">
-                {paystub.financial_documents.file_name}
+                {paystub.financial_documents?.file_name || 'N/A'}
               </TableCell>
               <TableCell>
-                {paystub.financial_documents.upload_date
+                {paystub.financial_documents?.upload_date
                   ? format(
                       new Date(paystub.financial_documents.upload_date),
                       "MMM d, yyyy"
@@ -78,12 +78,12 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
               <TableCell>
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    paystub.financial_documents.status === "completed"
+                    paystub.financial_documents?.status === "completed"
                       ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                       : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                   }`}
                 >
-                  {paystub.financial_documents.status}
+                  {paystub.financial_documents?.status || 'pending'}
                 </span>
               </TableCell>
               <TableCell>
@@ -114,9 +114,9 @@ const PaystubTable = ({ paystubs, onDelete, isDeleting }: PaystubTableProps) => 
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onDelete(paystub.id, paystub.financial_documents.id)}
+                  onClick={() => onDelete(paystub.id, paystub.financial_documents?.id)}
                   className="hover:bg-destructive/10 hover:text-destructive"
-                  disabled={isDeleting}
+                  disabled={isDeleting || !paystub.financial_documents?.id}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
