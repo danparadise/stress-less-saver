@@ -9,7 +9,6 @@ import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 
 const mockData = {
-  expenses: 1850,
   savings: 450,
   savingsGoal: 1000,
   aiSuggestions: [
@@ -34,6 +33,49 @@ const mockData = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
+  const [monthlyExpenses, setMonthlyExpenses] = useState(0);
+
+  // Fetch latest bank statement data
+  const { data: bankStatementData } = useQuery({
+    queryKey: ["latest-bank-statement"],
+    queryFn: async () => {
+      console.log('Fetching latest bank statement data');
+      const { data, error } = await supabase
+        .from("bank_statement_data")
+        .select(`
+          transactions,
+          statement_month,
+          financial_documents!inner(status)
+        `)
+        .eq('financial_documents.status', 'completed')
+        .order('statement_month', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        console.error('Error fetching bank statement data:', error);
+        throw error;
+      }
+
+      return data;
+    }
+  });
+
+  // Calculate monthly expenses from transactions
+  useEffect(() => {
+    if (bankStatementData?.transactions) {
+      const expenses = bankStatementData.transactions.reduce((total: number, transaction: any) => {
+        // Only sum negative amounts (expenses)
+        if (transaction.amount < 0) {
+          return total + Math.abs(transaction.amount);
+        }
+        return total;
+      }, 0);
+
+      console.log('Calculated monthly expenses:', expenses);
+      setMonthlyExpenses(expenses);
+    }
+  }, [bankStatementData]);
 
   const { data: paystubData, isLoading, error } = useQuery({
     queryKey: ["paystub-data"],
@@ -123,7 +165,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatsCard
               title="Monthly Expenses"
-              value={`-$${mockData.expenses.toLocaleString()}`}
+              value={`-$${monthlyExpenses.toLocaleString()}`}
               icon={ArrowDownRight}
               iconBgColor="bg-destructive/10"
               iconColor="text-destructive"
