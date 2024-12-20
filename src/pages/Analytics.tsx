@@ -5,6 +5,7 @@ import TransactionsPopup from "@/components/analytics/TransactionsPopup";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { Transaction } from "@/types/bankStatement";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -34,25 +35,27 @@ const Analytics = () => {
   });
 
   // Process transactions into category data for the chart
-  const categoryData = latestStatement?.transactions?.reduce((acc: any[], transaction: any) => {
-    if (transaction.amount < 0) { // Only include expenses (negative amounts)
-      const category = transaction.category || 'Uncategorized';
-      const existingCategory = acc.find(item => item.name === category);
-      
-      if (existingCategory) {
-        existingCategory.value += Math.abs(transaction.amount);
-        existingCategory.transactions.push(transaction);
-      } else {
-        acc.push({
-          name: category,
-          value: Math.abs(transaction.amount),
-          color: getColorForCategory(category),
-          transactions: [transaction]
-        });
-      }
-    }
-    return acc;
-  }, []) || [];
+  const categoryData = latestStatement?.transactions 
+    ? (latestStatement.transactions as Transaction[]).reduce((acc: any[], transaction: Transaction) => {
+        if (transaction.amount < 0) { // Only include expenses (negative amounts)
+          const category = transaction.category || 'Uncategorized';
+          const existingCategory = acc.find(item => item.name === category);
+          
+          if (existingCategory) {
+            existingCategory.value += Math.abs(transaction.amount);
+            existingCategory.transactions.push(transaction);
+          } else {
+            acc.push({
+              name: category,
+              value: Math.abs(transaction.amount),
+              color: getColorForCategory(category),
+              transactions: [transaction]
+            });
+          }
+        }
+        return acc;
+      }, [])
+    : [];
 
   const selectedData = categoryData.find(item => item.name === selectedCategory);
 
