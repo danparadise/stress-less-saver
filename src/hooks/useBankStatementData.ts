@@ -1,28 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Transaction } from "@/types/bankStatement";
-import { Json } from "@/integrations/supabase/types";
-
-// Helper function to convert Json to Transaction
-const convertJsonToTransaction = (jsonData: Json): Transaction => {
-  if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
-    return {
-      date: String(jsonData.date || ''),
-      description: String(jsonData.description || ''),
-      category: String(jsonData.category || ''),
-      amount: Number(jsonData.amount || 0),
-      balance: Number(jsonData.balance || 0)
-    };
-  }
-  // Return a default transaction if conversion fails
-  return {
-    date: '',
-    description: '',
-    category: '',
-    amount: 0,
-    balance: 0
-  };
-};
 
 export const useBankStatementData = () => {
   return useQuery({
