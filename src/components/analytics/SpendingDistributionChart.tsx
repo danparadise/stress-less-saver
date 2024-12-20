@@ -133,7 +133,11 @@ const SpendingDistributionChart = ({
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="fill-purple-200 text-4xl font-bold"
-                style={{ zIndex: 1000 }}
+                style={{ 
+                  zIndex: 1000,
+                  pointerEvents: 'none', // Ensure text doesn't interfere with chart interactions
+                  position: 'relative' // Establish stacking context
+                }}
               >
                 {formatCurrency(totalSpending)}
               </Text>
