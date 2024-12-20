@@ -5,6 +5,7 @@ import { Transaction } from "@/types/bankStatement";
 import TransactionsPopup from "@/components/analytics/TransactionsPopup";
 import MonthSelector from "@/components/analytics/MonthSelector";
 import SpendingDistributionChart from "@/components/analytics/SpendingDistributionChart";
+import { format } from "date-fns";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -24,9 +25,11 @@ const Analytics = () => {
             status
           )
         `)
+        .not('transactions', 'is', null) // Only fetch statements with transactions
         .order('statement_month', { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched bank statements:', data);
       return data;
     }
   });
