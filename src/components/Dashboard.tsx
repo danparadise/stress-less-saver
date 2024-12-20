@@ -7,6 +7,7 @@ import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
+import { Transaction } from "@/types/bankStatement";
 
 const mockData = {
   savings: 450,
@@ -64,7 +65,12 @@ const Dashboard = () => {
   // Calculate monthly expenses from transactions
   useEffect(() => {
     if (bankStatementData?.transactions) {
-      const expenses = bankStatementData.transactions.reduce((total: number, transaction: any) => {
+      // Type guard to ensure transactions is an array
+      const transactionsArray = Array.isArray(bankStatementData.transactions) 
+        ? bankStatementData.transactions as Transaction[]
+        : [];
+
+      const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
         // Only sum negative amounts (expenses)
         if (transaction.amount < 0) {
           return total + Math.abs(transaction.amount);
