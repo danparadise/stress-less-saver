@@ -8,6 +8,7 @@ import AiInsights from "./dashboard/AiInsights";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { supabase } from "@/integrations/supabase/client";
+import { Transaction } from "@/types/bankStatement";
 
 const mockData = {
   savings: 450,
@@ -53,7 +54,8 @@ const Dashboard = () => {
         () => {
           // Refresh the monthly expenses when bank statement data changes
           if (bankStatementData?.transactions) {
-            const expenses = bankStatementData.transactions.reduce((total: number, transaction: any) => {
+            const transactionsArray = bankStatementData.transactions as Transaction[];
+            const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
               if (transaction.amount < 0) {
                 return total + Math.abs(transaction.amount);
               }
@@ -75,7 +77,8 @@ const Dashboard = () => {
   // Initial calculation of monthly expenses
   useEffect(() => {
     if (bankStatementData?.transactions) {
-      const expenses = bankStatementData.transactions.reduce((total: number, transaction: any) => {
+      const transactionsArray = bankStatementData.transactions as Transaction[];
+      const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
         if (transaction.amount < 0) {
           return total + Math.abs(transaction.amount);
         }
