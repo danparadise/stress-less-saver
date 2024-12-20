@@ -14,7 +14,7 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
         console.error('Invalid date:', dateStr);
         return 'Invalid Date';
       }
-      return format(parsedDate, "MMM yyyy");
+      return format(parsedDate, "MMM d");
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Invalid Date';
@@ -26,7 +26,7 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(value);
   };
 
@@ -40,12 +40,19 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
     }
   });
 
+  // Sort data by date to ensure correct chronological order
+  const sortedData = [...validData].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return dateA - dateB;
+  });
+
   return (
     <Card className="col-span-2 p-6 glass-card">
       <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-4">Income Trend</h3>
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={validData}>
+          <LineChart data={sortedData}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis 
               dataKey="date" 
@@ -58,7 +65,10 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
             />
             <Tooltip 
               formatter={(value: number) => [formatCurrency(value), "Gross Pay"]}
-              labelFormatter={formatDate}
+              labelFormatter={(label) => {
+                const date = parseISO(label as string);
+                return isValid(date) ? format(date, "MMM d, yyyy") : label;
+              }}
             />
             <Line
               type="monotone"

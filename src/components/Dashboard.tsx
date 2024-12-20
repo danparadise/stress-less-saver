@@ -53,11 +53,11 @@ const Dashboard = () => {
 
       if (error) throw error;
       
-      // Transform data for the chart
+      // Transform and validate data for the chart
       const chartData = data?.map(item => ({
         date: item.pay_period_start,
         amount: Number(item.gross_pay)
-      })) || [];
+      })).filter(item => !isNaN(item.amount)) || [];
       
       console.log('Transformed paystub data for chart:', chartData);
       return chartData;
