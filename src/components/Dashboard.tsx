@@ -10,6 +10,7 @@ import FinancialChatbot from "./dashboard/FinancialChatbot";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateMonthlyExpenses } from "@/utils/transactionUtils";
 
 const mockData = {
   savings: 450,
@@ -44,15 +45,27 @@ const Dashboard = () => {
   // Update monthly expenses when financial data changes
   useEffect(() => {
     if (financialData) {
-      // If we have monthly summary data
-      if ('total_expenses' in financialData) {
+      console.log('Processing financial data:', financialData);
+      
+      // If we have monthly summary data with total_expenses
+      if (financialData.total_expenses !== undefined && financialData.total_expenses !== null) {
         console.log('Setting monthly expenses from summary:', financialData.total_expenses);
-        setMonthlyExpenses(financialData.total_expenses || 0);
+        setMonthlyExpenses(Math.abs(financialData.total_expenses));
       }
-      // Fallback to total_withdrawals from bank statement
-      else if ('total_withdrawals' in financialData) {
-        console.log('Setting monthly expenses from withdrawals:', Math.abs(financialData.total_withdrawals || 0));
-        setMonthlyExpenses(Math.abs(financialData.total_withdrawals || 0));
+      // If we have total_withdrawals from bank statement
+      else if (financialData.total_withdrawals !== undefined && financialData.total_withdrawals !== null) {
+        console.log('Setting monthly expenses from withdrawals:', Math.abs(financialData.total_withdrawals));
+        setMonthlyExpenses(Math.abs(financialData.total_withdrawals));
+      }
+      // Fallback to calculating from transactions
+      else if (financialData.transactions) {
+        console.log('Calculating monthly expenses from transactions');
+        const calculatedExpenses = calculateMonthlyExpenses(financialData.transactions);
+        console.log('Calculated monthly expenses:', calculatedExpenses);
+        setMonthlyExpenses(calculatedExpenses);
+      } else {
+        console.log('No expense data available, setting to 0');
+        setMonthlyExpenses(0);
       }
     }
   }, [financialData]);
@@ -70,8 +83,8 @@ const Dashboard = () => {
         },
         (payload) => {
           console.log('Monthly summary updated:', payload);
-          if (payload.new) {
-            setMonthlyExpenses(payload.new.total_expenses || 0);
+          if (payload.new && 'total_expenses' in payload.new) {
+            setMonthlyExpenses(Math.abs(payload.new.total_expenses));
           }
         }
       )

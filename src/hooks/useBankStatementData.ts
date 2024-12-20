@@ -7,6 +7,7 @@ export const useBankStatementData = () => {
     queryFn: async () => {
       console.log('Fetching latest monthly summary data');
       
+      // First try to get the latest monthly summary
       const { data: summaryData, error: summaryError } = await supabase
         .from("monthly_financial_summaries")
         .select("*")
@@ -48,6 +49,8 @@ export const useBankStatementData = () => {
 
       console.log('Fetched bank statement data:', data);
       return data;
-    }
+    },
+    refetchOnWindowFocus: true,
+    staleTime: 0
   });
 };
