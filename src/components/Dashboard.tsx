@@ -71,7 +71,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (bankStatementData?.transactions) {
       const expenses = calculateMonthlyExpenses(bankStatementData.transactions);
-      console.log('Calculated monthly expenses:', expenses);
+      console.log('Initial monthly expenses calculation:', expenses);
       setMonthlyExpenses(expenses);
     }
   }, [bankStatementData]);

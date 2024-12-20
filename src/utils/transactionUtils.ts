@@ -11,7 +11,6 @@ export const convertJsonToTransaction = (json: Json): Transaction => {
       balance: Number((json as { balance?: Json }).balance || 0)
     };
   }
-  // Return a default transaction if conversion fails
   return {
     date: '',
     description: '',
@@ -27,10 +26,16 @@ export const calculateMonthlyExpenses = (transactions: Json | null): number => {
   }
 
   const transactionsArray = transactions.map(convertJsonToTransaction);
-  return transactionsArray.reduce((total: number, transaction: Transaction) => {
+  
+  // Calculate total expenses (negative amounts)
+  const totalExpenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
+    // Only include negative amounts (expenses)
     if (transaction.amount < 0) {
       return total + Math.abs(transaction.amount);
     }
     return total;
   }, 0);
+
+  console.log('Total monthly expenses calculated:', totalExpenses);
+  return totalExpenses;
 };
