@@ -21,3 +21,20 @@ export interface BankStatement {
     status: string;
   };
 }
+
+export interface MonthlyFinancialSummary {
+  id: string;
+  user_id: string;
+  month_year: string;
+  total_income: number;
+  total_expenses: number;
+  total_deposits: number;
+  total_withdrawals: number;
+  ending_balance: number;
+  transactions: Transaction[];
+  transaction_categories: Record<string, number>;
+  created_at: string;
+  updated_at: string;
+}
+
+export type FinancialData = MonthlyFinancialSummary | BankStatement;

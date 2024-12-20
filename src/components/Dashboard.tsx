@@ -47,22 +47,22 @@ const Dashboard = () => {
     if (financialData) {
       console.log('Processing financial data:', financialData);
       
-      if ('total_expenses' in financialData && typeof financialData.total_expenses === 'number') {
-        console.log('Setting monthly expenses from summary:', financialData.total_expenses);
-        setMonthlyExpenses(Math.abs(financialData.total_expenses));
-      }
-      else if ('total_withdrawals' in financialData && typeof financialData.total_withdrawals === 'number') {
+      if ('total_withdrawals' in financialData && typeof financialData.total_withdrawals === 'number') {
         console.log('Setting monthly expenses from withdrawals:', Math.abs(financialData.total_withdrawals));
         setMonthlyExpenses(Math.abs(financialData.total_withdrawals));
       }
-      else if ('transactions' in financialData && financialData.transactions) {
+      else if ('total_expenses' in financialData && typeof financialData.total_expenses === 'number') {
+        console.log('Setting monthly expenses from summary:', financialData.total_expenses);
+        setMonthlyExpenses(Math.abs(financialData.total_expenses));
+      }
+      else if ('transactions' in financialData && Array.isArray(financialData.transactions)) {
         console.log('Calculating monthly expenses from transactions');
-        const calculatedExpenses = calculateMonthlyExpenses(financialData.transactions);
-        console.log('Calculated monthly expenses:', calculatedExpenses);
-        setMonthlyExpenses(calculatedExpenses);
-      } else {
-        console.log('No expense data available, setting to 0');
-        setMonthlyExpenses(0);
+        const totalExpenses = financialData.transactions.reduce((sum, transaction) => {
+          const amount = typeof transaction.amount === 'number' ? transaction.amount : 0;
+          return amount < 0 ? sum + Math.abs(amount) : sum;
+        }, 0);
+        console.log('Calculated monthly expenses:', totalExpenses);
+        setMonthlyExpenses(totalExpenses);
       }
     }
   }, [financialData]);
