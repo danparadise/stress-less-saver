@@ -4,7 +4,7 @@ export function processFinancialData(
   bankStatements: BankStatement[],
   paystubs: PaystubData[]
 ): FinancialMetrics {
-  console.log('Processing financial data:', { bankStatements, paystubs });
+  console.log('Processing financial data. Bank statements:', bankStatements, 'Paystubs:', paystubs);
 
   // Calculate monthly net income from paystubs
   const monthlyNetIncome = paystubs?.reduce((total, stub) => 
@@ -17,12 +17,22 @@ export function processFinancialData(
   // Calculate monthly expenses from transactions
   let monthlyExpenses = 0;
   if (latestStatement?.transactions && Array.isArray(latestStatement.transactions)) {
+    console.log('Processing transactions:', latestStatement.transactions);
     monthlyExpenses = latestStatement.transactions.reduce((total, transaction: Transaction) => {
-      // Only sum negative amounts (expenses)
-      return transaction.amount < 0 ? total + Math.abs(transaction.amount) : total;
+      if (transaction.amount < 0) {
+        const expense = Math.abs(transaction.amount);
+        console.log(`Adding expense: ${expense} from transaction:`, transaction);
+        return total + expense;
+      }
+      return total;
     }, 0);
+  } else {
+    console.log('No valid transactions found in latest statement');
+    // Fallback to total_withdrawals if transactions are not available
+    monthlyExpenses = Math.abs(latestStatement?.total_withdrawals || 0);
+    console.log('Using total_withdrawals as fallback:', monthlyExpenses);
   }
-  console.log('Calculated monthly expenses:', monthlyExpenses);
+  console.log('Final calculated monthly expenses:', monthlyExpenses);
 
   // Calculate savings rate
   const savingsRate = monthlyNetIncome > 0 
@@ -31,14 +41,14 @@ export function processFinancialData(
 
   // Analyze spending categories
   const spendingCategories = new Map();
-  if (latestStatement?.transactions) {
+  if (latestStatement?.transactions && Array.isArray(latestStatement.transactions)) {
     latestStatement.transactions.forEach((transaction: Transaction) => {
       if (transaction.amount < 0) {
         const category = transaction.category || 'Uncategorized';
-        spendingCategories.set(
-          category, 
-          (spendingCategories.get(category) || 0) + Math.abs(transaction.amount)
-        );
+        const currentAmount = spendingCategories.get(category) || 0;
+        const newAmount = currentAmount + Math.abs(transaction.amount);
+        console.log(`Category ${category}: ${currentAmount} + ${Math.abs(transaction.amount)} = ${newAmount}`);
+        spendingCategories.set(category, newAmount);
       }
     });
   }
@@ -68,6 +78,6 @@ export function processFinancialData(
     incomeChanges
   };
 
-  console.log('Processed financial metrics:', metrics);
+  console.log('Final processed financial metrics:', metrics);
   return metrics;
 }
