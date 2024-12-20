@@ -17,7 +17,10 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
         'x-api-key': pdfCoApiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ url: pdfUrl })
+      body: JSON.stringify({ 
+        url: pdfUrl,
+        async: false
+      })
     });
 
     if (!pdfInfoResponse.ok) {
@@ -29,10 +32,12 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     const pdfInfo = await pdfInfoResponse.json();
     console.log('PDF info retrieved:', pdfInfo);
 
-    const pageCount = pdfInfo.pageCount;
-    if (!pageCount || pageCount < 1) {
-      throw new Error('Invalid page count retrieved from PDF info.');
+    if (!pdfInfo.pageCount && pdfInfo.error) {
+      throw new Error(`PDF.co error: ${pdfInfo.message || 'Unknown error getting PDF info'}`);
     }
+
+    const pageCount = pdfInfo.pageCount || 1; // Default to 1 if pageCount is not available
+    console.log(`PDF has ${pageCount} pages`);
 
     // Step 2: Convert PDF to PNG Asynchronously
     console.log(`Submitting conversion job for all ${pageCount} pages to PNG...`);
@@ -61,12 +66,16 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     const pdfCoData = await pdfCoResponse.json();
     console.log('PDF.co job submission response:', pdfCoData);
 
+    if (pdfCoData.error) {
+      throw new Error(`PDF.co conversion error: ${pdfCoData.message || 'Unknown error during conversion'}`);
+    }
+
     const jobId = pdfCoData.jobId;
     if (!jobId) {
       throw new Error('No jobId returned from PDF.co.');
     }
 
-    // Step 3: Poll for Job Status and get results
+    // Step 3: Poll for Job Status
     console.log(`Polling job status for jobId: ${jobId}`);
     const convertedUrls = await pollJobStatus(pdfCoApiKey, jobId);
     console.log(`Successfully converted ${convertedUrls.length} pages to PNG:`, convertedUrls);
