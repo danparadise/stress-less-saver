@@ -4,15 +4,19 @@ export function processFinancialData(
   bankStatements: BankStatement[],
   paystubs: PaystubData[]
 ): FinancialMetrics {
-  console.log('Processing financial data. Bank statements:', bankStatements, 'Paystubs:', paystubs);
+  console.log('Starting financial data processing');
 
   // Calculate monthly net income from paystubs
   const monthlyNetIncome = paystubs?.reduce((total, stub) => 
     total + (stub.net_pay || 0), 0) / 3 || 0;
 
-  // Get latest statement's transactions
+  // Get latest statement's transactions and expenses
   const latestStatement = bankStatements?.[0];
-  console.log('Latest statement:', latestStatement);
+  console.log('Latest statement data:', {
+    month: latestStatement?.statement_month,
+    totalExpenses: latestStatement?.total_withdrawals,
+    transactionCount: latestStatement?.transactions?.length
+  });
 
   // Calculate monthly expenses from transactions
   let monthlyExpenses = 0;
@@ -20,10 +24,14 @@ export function processFinancialData(
 
   if (latestStatement?.transactions) {
     try {
-      // Handle case where transactions might be a string
       transactions = typeof latestStatement.transactions === 'string' 
         ? JSON.parse(latestStatement.transactions) 
         : latestStatement.transactions;
+      
+      console.log('Processing transactions:', {
+        count: transactions.length,
+        sampleTransaction: transactions[0]
+      });
     } catch (error) {
       console.error('Error parsing transactions:', error);
       transactions = [];
@@ -31,7 +39,6 @@ export function processFinancialData(
   }
 
   if (Array.isArray(transactions) && transactions.length > 0) {
-    console.log('Processing transactions:', transactions);
     monthlyExpenses = transactions.reduce((total, transaction) => {
       if (transaction.amount < 0) {
         const expense = Math.abs(transaction.amount);
@@ -41,11 +48,10 @@ export function processFinancialData(
       return total;
     }, 0);
   } else {
-    console.log('No valid transactions found in latest statement');
-    // Fallback to total_withdrawals if transactions are not available
+    console.log('No valid transactions found, using total_withdrawals');
     monthlyExpenses = Math.abs(latestStatement?.total_withdrawals || 0);
-    console.log('Using total_withdrawals as fallback:', monthlyExpenses);
   }
+  
   console.log('Final calculated monthly expenses:', monthlyExpenses);
 
   // Calculate savings rate
@@ -61,7 +67,6 @@ export function processFinancialData(
         const category = transaction.category || 'Uncategorized';
         const currentAmount = spendingCategories.get(category) || 0;
         const newAmount = currentAmount + Math.abs(transaction.amount);
-        console.log(`Category ${category}: ${currentAmount} + ${Math.abs(transaction.amount)} = ${newAmount}`);
         spendingCategories.set(category, newAmount);
       }
     });
@@ -72,6 +77,8 @@ export function processFinancialData(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([category, amount]) => ({ category, amount }));
+
+  console.log('Top expense categories:', topExpenseCategories);
 
   // Calculate income trends
   const incomeChanges = [];
