@@ -10,7 +10,8 @@ import FinancialChatbot from "./dashboard/FinancialChatbot";
 import TransactionsPopup from "./analytics/TransactionsPopup";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
-import { supabase } from "@/integrations/supabase/client";
+import { Transaction } from "@/types/bankStatement";
+import { convertJsonToTransaction } from "@/utils/transactionUtils";
 
 const mockData = {
   savings: 450,
@@ -39,7 +40,7 @@ const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
   const [monthlyExpenses, setMonthlyExpenses] = useState(0);
   const [isTransactionsOpen, setIsTransactionsOpen] = useState(false);
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
   const { data: paystubData, isLoading: isPaystubLoading, error } = usePaystubTrends();
@@ -49,15 +50,18 @@ const Dashboard = () => {
     if (financialData) {
       console.log('Processing financial data:', financialData);
       
+      // Set monthly expenses from total_withdrawals
       if ('total_withdrawals' in financialData && typeof financialData.total_withdrawals === 'number') {
         const withdrawals = Math.abs(financialData.total_withdrawals);
         console.log('Setting monthly expenses from withdrawals:', withdrawals);
         setMonthlyExpenses(withdrawals);
-        
-        // Set transactions if available
-        if ('transactions' in financialData && Array.isArray(financialData.transactions)) {
-          setTransactions(financialData.transactions);
-        }
+      }
+      
+      // Convert and set transactions if available
+      if ('transactions' in financialData && Array.isArray(financialData.transactions)) {
+        const convertedTransactions = financialData.transactions.map(convertJsonToTransaction);
+        console.log('Setting transactions:', convertedTransactions);
+        setTransactions(convertedTransactions);
       }
     }
   }, [financialData]);
@@ -152,7 +156,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {transactions && (
+        {transactions && transactions.length > 0 && (
           <TransactionsPopup
             isOpen={isTransactionsOpen}
             onClose={() => setIsTransactionsOpen(false)}
