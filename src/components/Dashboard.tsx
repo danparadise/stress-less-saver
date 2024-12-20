@@ -43,6 +43,16 @@ const Dashboard = () => {
 
   // Subscribe to bank statement changes and update monthly expenses
   useEffect(() => {
+    if (!bankStatementData?.transactions) {
+      console.log('No transactions data available');
+      return;
+    }
+
+    console.log('Processing bank statement data:', bankStatementData);
+    const expenses = calculateMonthlyExpenses(bankStatementData.transactions);
+    console.log('Setting monthly expenses to:', expenses);
+    setMonthlyExpenses(expenses);
+
     const channel = supabase
       .channel('bank-statement-changes')
       .on(
@@ -65,15 +75,6 @@ const Dashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [bankStatementData]);
-
-  // Initial calculation of monthly expenses
-  useEffect(() => {
-    if (bankStatementData?.transactions) {
-      const expenses = calculateMonthlyExpenses(bankStatementData.transactions);
-      console.log('Initial monthly expenses calculation:', expenses);
-      setMonthlyExpenses(expenses);
-    }
   }, [bankStatementData]);
 
   useEffect(() => {

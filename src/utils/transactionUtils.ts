@@ -22,20 +22,25 @@ export const convertJsonToTransaction = (json: Json): Transaction => {
 
 export const calculateMonthlyExpenses = (transactions: Json | null): number => {
   if (!transactions || !Array.isArray(transactions)) {
+    console.log('No transactions found or invalid format');
     return 0;
   }
 
+  console.log('Raw transactions:', transactions);
+  
   const transactionsArray = transactions.map(convertJsonToTransaction);
+  console.log('Converted transactions:', transactionsArray);
   
   // Calculate total expenses (negative amounts)
   const totalExpenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
-    // Only include negative amounts (expenses)
     if (transaction.amount < 0) {
-      return total + Math.abs(transaction.amount);
+      const expense = Math.abs(transaction.amount);
+      console.log(`Adding expense: ${expense} from transaction:`, transaction);
+      return total + expense;
     }
     return total;
   }, 0);
 
-  console.log('Total monthly expenses calculated:', totalExpenses);
+  console.log('Final total monthly expenses:', totalExpenses);
   return totalExpenses;
 };
