@@ -7,8 +7,7 @@ import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
-import { Json } from "@/integrations/supabase/types";
-import { Transaction } from "@/types/bankStatement";
+import { supabase } from "@/integrations/supabase/client";
 
 const mockData = {
   savings: 450,
@@ -32,27 +31,6 @@ const mockData = {
   ]
 };
 
-// Helper function to convert Json to Transaction
-const convertJsonToTransaction = (jsonData: Json): Transaction => {
-  if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
-    return {
-      date: String(jsonData.date || ''),
-      description: String(jsonData.description || ''),
-      category: String(jsonData.category || ''),
-      amount: Number(jsonData.amount || 0),
-      balance: Number(jsonData.balance || 0)
-    };
-  }
-  // Return a default transaction if conversion fails
-  return {
-    date: '',
-    description: '',
-    category: '',
-    amount: 0,
-    balance: 0
-  };
-};
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
@@ -61,22 +39,49 @@ const Dashboard = () => {
   const { data: bankStatementData } = useBankStatementData();
   const { data: paystubData, isLoading, error } = usePaystubTrends();
 
-  // Calculate monthly expenses from transactions
+  // Subscribe to bank statement changes and update monthly expenses
+  useEffect(() => {
+    const channel = supabase
+      .channel('bank-statement-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bank_statement_data'
+        },
+        () => {
+          // Refresh the monthly expenses when bank statement data changes
+          if (bankStatementData?.transactions) {
+            const expenses = bankStatementData.transactions.reduce((total: number, transaction: any) => {
+              if (transaction.amount < 0) {
+                return total + Math.abs(transaction.amount);
+              }
+              return total;
+            }, 0);
+            
+            console.log('Updated monthly expenses:', expenses);
+            setMonthlyExpenses(expenses);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [bankStatementData]);
+
+  // Initial calculation of monthly expenses
   useEffect(() => {
     if (bankStatementData?.transactions) {
-      // Type guard to ensure transactions is an array and convert to Transaction type
-      const transactionsArray = Array.isArray(bankStatementData.transactions) 
-        ? (bankStatementData.transactions as Json[]).map(convertJsonToTransaction)
-        : [];
-
-      const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
-        // Only sum negative amounts (expenses)
+      const expenses = bankStatementData.transactions.reduce((total: number, transaction: any) => {
         if (transaction.amount < 0) {
           return total + Math.abs(transaction.amount);
         }
         return total;
       }, 0);
-
+      
       console.log('Calculated monthly expenses:', expenses);
       setMonthlyExpenses(expenses);
     }
