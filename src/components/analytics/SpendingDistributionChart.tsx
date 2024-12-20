@@ -28,31 +28,35 @@ const SpendingDistributionChart = ({
     }).format(value);
   };
 
+  // Log the total spending to verify the calculation
+  console.log('Total spending:', totalSpending);
+  console.log('Formatted total spending:', formatCurrency(totalSpending));
+
   // Enhanced color palette for better visual distinction
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      'Transfer': '#8B5CF6', // Vivid Purple
-      'Financial': '#0EA5E9', // Ocean Blue
-      'Shopping': '#D946EF', // Magenta Pink
-      'Entertainment': '#F97316', // Bright Orange
-      'Food & Dining': '#34D399', // Emerald
-      'Groceries': '#A7F3D0', // Mint
-      'Fast Food': '#FCD34D', // Amber
-      'Restaurants': '#FB923C', // Orange
-      'Credit Card Payment': '#818CF8', // Indigo
-      'Electronics & Software': '#6366F1', // Blue
-      'Gas': '#F472B6', // Pink
-      'Personal Care': '#E879F9', // Fuchsia
-      'Clothing': '#C084FC', // Purple
-      'Television': '#2DD4BF', // Teal
-      'Hair': '#F9A8D4', // Rose
-      'Sporting Goods': '#4ADE80', // Green
-      'Coffee Shops': '#BEF264', // Lime
-      'Sports': '#38BDF8', // Sky
-      'Service & Parts': '#94A3B8', // Gray
-      'Gym': '#67E8F9', // Cyan
-      'Business Services': '#A5B4FC', // Violet
-      'Uncategorized': '#94A3B8', // Gray
+      'Transfer': '#8B5CF6',
+      'Financial': '#0EA5E9',
+      'Shopping': '#D946EF',
+      'Entertainment': '#F97316',
+      'Food & Dining': '#34D399',
+      'Groceries': '#A7F3D0',
+      'Fast Food': '#FCD34D',
+      'Restaurants': '#FB923C',
+      'Credit Card Payment': '#818CF8',
+      'Electronics & Software': '#6366F1',
+      'Gas': '#F472B6',
+      'Personal Care': '#E879F9',
+      'Clothing': '#C084FC',
+      'Television': '#2DD4BF',
+      'Hair': '#F9A8D4',
+      'Sporting Goods': '#4ADE80',
+      'Coffee Shops': '#BEF264',
+      'Sports': '#38BDF8',
+      'Service & Parts': '#94A3B8',
+      'Gym': '#67E8F9',
+      'Business Services': '#A5B4FC',
+      'Uncategorized': '#94A3B8',
     };
     return colors[category] || '#94A3B8';
   };
