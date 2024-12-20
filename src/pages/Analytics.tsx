@@ -25,7 +25,8 @@ const Analytics = () => {
             status
           )
         `)
-        .not('transactions', 'is', null) // Only fetch statements with transactions
+        .not('transactions', 'is', null) // Filter out null transactions
+        .not('transactions', '@@', '[]') // Filter out empty arrays
         .order('statement_month', { ascending: false });
 
       if (error) throw error;
