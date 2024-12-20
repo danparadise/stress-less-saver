@@ -5,7 +5,6 @@ import { Transaction } from "@/types/bankStatement";
 import TransactionsPopup from "@/components/analytics/TransactionsPopup";
 import MonthSelector from "@/components/analytics/MonthSelector";
 import SpendingDistributionChart from "@/components/analytics/SpendingDistributionChart";
-import { format } from "date-fns";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -25,8 +24,8 @@ const Analytics = () => {
             status
           )
         `)
-        .not('transactions', 'is', null) // Filter out null transactions
-        .not('transactions', '@@', '[]') // Filter out empty arrays
+        .not('transactions', 'is', null)
+        .neq('transactions', '[]') // Changed to use neq instead of @@ operator
         .order('statement_month', { ascending: false });
 
       if (error) throw error;
