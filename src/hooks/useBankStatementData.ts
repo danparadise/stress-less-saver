@@ -6,6 +6,31 @@ export const useBankStatementData = () => {
     queryKey: ["latest-bank-statement"],
     queryFn: async () => {
       console.log('Fetching latest bank statement data');
+      
+      // First try to get data from monthly_financial_summaries
+      const { data: summaryData, error: summaryError } = await supabase
+        .from("monthly_financial_summaries")
+        .select("*")
+        .order('month_year', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (summaryData) {
+        console.log('Found monthly summary data:', summaryData);
+        return {
+          transactions: summaryData.transactions,
+          statement_month: summaryData.month_year,
+          total_deposits: summaryData.total_deposits,
+          total_withdrawals: summaryData.total_withdrawals,
+          ending_balance: summaryData.ending_balance,
+          financial_documents: {
+            status: 'completed',
+            upload_date: summaryData.updated_at
+          }
+        };
+      }
+
+      // Fallback to bank_statement_data if no summary exists
       const { data, error } = await supabase
         .from("bank_statement_data")
         .select(`

@@ -86,6 +86,54 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_financial_summaries: {
+        Row: {
+          created_at: string | null
+          ending_balance: number | null
+          id: string
+          month_year: string
+          paystub_data: Json | null
+          total_deposits: number | null
+          total_expenses: number | null
+          total_income: number | null
+          total_withdrawals: number | null
+          transaction_categories: Json | null
+          transactions: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          ending_balance?: number | null
+          id?: string
+          month_year: string
+          paystub_data?: Json | null
+          total_deposits?: number | null
+          total_expenses?: number | null
+          total_income?: number | null
+          total_withdrawals?: number | null
+          transaction_categories?: Json | null
+          transactions?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          ending_balance?: number | null
+          id?: string
+          month_year?: string
+          paystub_data?: Json | null
+          total_deposits?: number | null
+          total_expenses?: number | null
+          total_income?: number | null
+          total_withdrawals?: number | null
+          transaction_categories?: Json | null
+          transactions?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       paystub_data: {
         Row: {
           created_at: string
