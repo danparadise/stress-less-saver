@@ -1,10 +1,16 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 
 export const usePaystubData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Force an immediate refetch when the component mounts
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+  }, [queryClient]);
 
   const { data: paystubs, isLoading, refetch } = useQuery({
     queryKey: ["paystub-data"],
