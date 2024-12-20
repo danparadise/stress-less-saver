@@ -10,7 +10,7 @@ import { Transaction } from "@/types/bankStatement";
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data: latestStatement } = useQuery({
+  const { data: latestStatement, isLoading } = useQuery({
     queryKey: ["latest-bank-statement"],
     queryFn: async () => {
       console.log('Fetching latest bank statement data');
@@ -80,7 +80,19 @@ const Analytics = () => {
     return colors[category] || '#94A3B8'; // Default color for unknown categories
   }
 
-  if (!latestStatement) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-purple-800 dark:text-white mb-2">
+            Loading Analytics...
+          </h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (!latestStatement || !categoryData.length) {
     return (
       <div className="min-h-screen bg-background p-8">
         <div className="mb-8">
@@ -88,7 +100,7 @@ const Analytics = () => {
             Spending Analytics
           </h1>
           <p className="text-neutral-600 dark:text-neutral-300">
-            No bank statement data available
+            No transaction data available
           </p>
         </div>
       </div>
@@ -107,7 +119,7 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Spending Distribution</CardTitle>
           </CardHeader>
@@ -125,6 +137,8 @@ const Analytics = () => {
                     dataKey="value"
                     onClick={handlePieClick}
                     cursor="pointer"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
                   >
                     {categoryData.map((entry, index) => (
                       <Cell 
@@ -145,6 +159,9 @@ const Analytics = () => {
                   <Legend 
                     onClick={(entry) => handlePieClick(entry)}
                     cursor="pointer"
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
                   />
                 </PieChart>
               </ResponsiveContainer>
