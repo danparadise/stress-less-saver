@@ -51,7 +51,6 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
         url: pdfUrl,
         pages: `1-${pageCount}`,
         async: true,
-        profiles: ["document-photos"],
         renderPageFormObjects: true,
         renderOriginalPageSize: true,
         multiplePagesPerFile: false,
