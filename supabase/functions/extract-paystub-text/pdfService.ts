@@ -54,7 +54,11 @@ export async function extractTextFromPdf(pdfUrl: string): Promise<string> {
       url: uploadedFileUrl,
       async: false,
       inline: true,
-      profiles: "text-normal"
+      // Remove the profiles setting as it's causing issues
+      // Use default OCR settings which work better for paystubs
+      ocrEnabled: true,
+      ocrLanguages: "eng",
+      ocrResolution: 300
     })
   });
 
