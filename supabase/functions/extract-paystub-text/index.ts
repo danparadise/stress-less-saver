@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { corsHeaders, createErrorResponse } from "./config.ts";
+import { corsHeaders } from "./config.ts";
 import { convertPdfToPng } from "./pdfConverter.ts";
 import { extractDataFromImage } from "./openaiService.ts";
 import { parseExtractedData } from "./dataProcessor.ts";
@@ -81,13 +81,14 @@ serve(async (req) => {
       console.log(`Processing text extraction from page ${i + 1}`);
       try {
         const extractedData = await extractDataFromImage(uploadedPngUrls[i]);
+        const parsedData = parseExtractedData(extractedData);
         
         // Simple confidence score based on number of non-null values
-        const confidence = Object.values(extractedData).filter(v => v !== null).length;
+        const confidence = Object.values(parsedData).filter(v => v !== null).length;
         
         if (confidence > highestConfidence) {
           highestConfidence = confidence;
-          bestResult = extractedData;
+          bestResult = parsedData;
         }
       } catch (error) {
         console.warn(`Failed to extract data from page ${i + 1}:`, error);
@@ -135,6 +136,15 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in PDF conversion process:', error);
-    return createErrorResponse(error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString()
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    );
   }
 });
