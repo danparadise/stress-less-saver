@@ -9,7 +9,13 @@ export const usePaystubData = () => {
 
   // Force an immediate refetch when the component mounts
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+    const fetchData = async () => {
+      console.log('Forcing initial data fetch');
+      await queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+      await queryClient.refetchQueries({ queryKey: ["paystub-data"] });
+    };
+    
+    fetchData();
   }, [queryClient]);
 
   const { data: paystubs, isLoading, refetch } = useQuery({
@@ -41,7 +47,8 @@ export const usePaystubData = () => {
       return filteredData;
     },
     refetchOnWindowFocus: true,
-    staleTime: 0
+    staleTime: 0,
+    cacheTime: 0 // Disable caching to ensure fresh data on every mount
   });
 
   const deleteMutation = useMutation({

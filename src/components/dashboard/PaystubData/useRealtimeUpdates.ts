@@ -8,6 +8,9 @@ export const useRealtimeUpdates = () => {
   useEffect(() => {
     console.log('Setting up real-time subscriptions');
     
+    // Immediately invalidate the query when the subscription is set up
+    queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+    
     const channel = supabase
       .channel('paystub-updates')
       .on(
@@ -36,6 +39,10 @@ export const useRealtimeUpdates = () => {
       )
       .subscribe((status) => {
         console.log('Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          // Force a refresh when subscription is established
+          queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+        }
       });
 
     return () => {
