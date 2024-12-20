@@ -17,15 +17,16 @@ export const useBankStatementData = () => {
           )
         `)
         .eq('financial_documents.status', 'completed')
-        .order('financial_documents.upload_date', { ascending: false })
+        .order('statement_month', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching bank statement data:', error);
         throw error;
       }
 
+      console.log('Fetched bank statement data:', data);
       return data;
     }
   });
