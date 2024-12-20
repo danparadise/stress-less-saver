@@ -2,74 +2,99 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import TransactionsPopup from "@/components/analytics/TransactionsPopup";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Transaction } from "@/types/bankStatement";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Mock data - this will be replaced with real data from your backend
-  const data = [
-    { 
-      name: "Transportation", 
-      value: 342, 
-      color: "#60A5FA",
-      transactions: [
-        { date: "2024-01-15", description: "Uber Ride", amount: 25.50, category: "Transportation" },
-        { date: "2024-01-14", description: "Gas Station", amount: 45.00, category: "Transportation" },
-        { date: "2024-01-12", description: "Train Ticket", amount: 12.50, category: "Transportation" },
-      ]
-    },
-    { 
-      name: "Business", 
-      value: 362, 
-      color: "#67E8F9",
-      transactions: [
-        { date: "2024-01-15", description: "Office Supplies", amount: 89.99, category: "Business" },
-        { date: "2024-01-13", description: "Software Subscription", amount: 29.99, category: "Business" },
-      ]
-    },
-    { 
-      name: "Food & Dining", 
-      value: 521, 
-      color: "#86EFAC",
-      transactions: [
-        { date: "2024-01-15", description: "Restaurant", amount: 65.00, category: "Food & Dining" },
-        { date: "2024-01-14", description: "Grocery Store", amount: 120.50, category: "Food & Dining" },
-      ]
-    },
-    { 
-      name: "Miscellaneous", 
-      value: 279, 
-      color: "#F87171",
-      transactions: [
-        { date: "2024-01-15", description: "General Store", amount: 45.00, category: "Miscellaneous" },
-        { date: "2024-01-12", description: "Online Purchase", amount: 34.99, category: "Miscellaneous" },
-      ]
-    },
-    { 
-      name: "Entertainment", 
-      value: 178, 
-      color: "#FB923C",
-      transactions: [
-        { date: "2024-01-14", description: "Movie Tickets", amount: 32.00, category: "Entertainment" },
-        { date: "2024-01-13", description: "Streaming Service", amount: 14.99, category: "Entertainment" },
-      ]
-    },
-    { 
-      name: "Shopping", 
-      value: 164, 
-      color: "#F472B6",
-      transactions: [
-        { date: "2024-01-15", description: "Clothing Store", amount: 89.99, category: "Shopping" },
-        { date: "2024-01-12", description: "Online Shopping", amount: 74.01, category: "Shopping" },
-      ]
-    },
-  ];
+  const { data: bankStatements, isLoading } = useQuery({
+    queryKey: ["bank-statement-analytics"],
+    queryFn: async () => {
+      console.log('Fetching bank statements for analytics');
+      const { data, error } = await supabase
+        .from("bank_statement_data")
+        .select(`
+          *,
+          financial_documents(
+            file_name,
+            upload_date,
+            status
+          )
+        `)
+        .order('statement_month', { ascending: false });
 
-  const selectedData = data.find(item => item.name === selectedCategory);
+      if (error) throw error;
+      return data;
+    }
+  });
 
-  const handlePieClick = (data: any, index: number) => {
-    setSelectedCategory(data.name);
+  // Process transactions data
+  const processTransactionsData = () => {
+    if (!bankStatements || bankStatements.length === 0) return [];
+
+    // Combine all transactions from all statements
+    const allTransactions = bankStatements.reduce((acc: Transaction[], statement) => {
+      const transactions = statement.transactions as unknown as Transaction[] || [];
+      return [...acc, ...transactions];
+    }, []);
+
+    // Group transactions by category and calculate totals (only expenses)
+    const categoryTotals = allTransactions.reduce((acc: { [key: string]: number }, transaction) => {
+      if (transaction.amount < 0) { // Only include expenses
+        const category = transaction.category || 'Uncategorized';
+        acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
+      }
+      return acc;
+    }, {});
+
+    // Convert to chart data format and sort by amount
+    return Object.entries(categoryTotals)
+      .map(([category, value]) => ({
+        name: category,
+        value,
+        color: getCategoryColor(category),
+        transactions: allTransactions.filter(t => t.category === category && t.amount < 0)
+      }))
+      .sort((a, b) => b.value - a.value);
   };
+
+  const getCategoryColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      'Transportation': '#60A5FA',
+      'Food & Dining': '#34D399',
+      'Shopping': '#F472B6',
+      'Entertainment': '#FB923C',
+      'Bills & Utilities': '#A78BFA',
+      'Business': '#67E8F9',
+      'Uncategorized': '#94A3B8'
+    };
+    return colors[category] || '#94A3B8';
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const data = processTransactionsData();
+  const selectedData = data.find(item => item.name === selectedCategory);
+  const totalSpending = data.reduce((sum, item) => sum + item.value, 0);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="flex items-center justify-center h-[500px]">
+          <p>Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -78,7 +103,7 @@ const Analytics = () => {
           Spending Analytics
         </h1>
         <p className="text-neutral-600 dark:text-neutral-300">
-          Analyze your spending patterns and financial trends
+          Total Spending: {formatCurrency(totalSpending)}
         </p>
       </div>
 
@@ -99,8 +124,36 @@ const Analytics = () => {
                     outerRadius="80%"
                     paddingAngle={2}
                     dataKey="value"
-                    onClick={handlePieClick}
+                    onClick={(data) => setSelectedCategory(data.name)}
                     cursor="pointer"
+                    label={({
+                      cx,
+                      cy,
+                      midAngle,
+                      innerRadius,
+                      outerRadius,
+                      value,
+                      index
+                    }) => {
+                      const RADIAN = Math.PI / 180;
+                      const radius = 25 + innerRadius + (outerRadius - innerRadius);
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      const percent = ((value / totalSpending) * 100).toFixed(0);
+
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill="#888888"
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          className="text-xs"
+                        >
+                          {`${percent}%`}
+                        </text>
+                      );
+                    }}
                   >
                     {data.map((entry, index) => (
                       <Cell 
@@ -111,7 +164,7 @@ const Analytics = () => {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: number) => `$${value}`}
+                    formatter={(value: number) => formatCurrency(value)}
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
@@ -119,8 +172,16 @@ const Analytics = () => {
                     }}
                   />
                   <Legend 
-                    onClick={(entry) => handlePieClick(entry, 0)}
-                    cursor="pointer"
+                    layout="vertical"
+                    align="right"
+                    verticalAlign="middle"
+                    formatter={(value, entry) => {
+                      const item = data.find(d => d.name === value);
+                      if (item) {
+                        return `${value} (${formatCurrency(item.value)})`;
+                      }
+                      return value;
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
