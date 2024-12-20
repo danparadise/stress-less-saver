@@ -14,6 +14,10 @@ interface MonthSelectorProps {
 }
 
 const MonthSelector = ({ statements, selectedMonth, onMonthSelect }: MonthSelectorProps) => {
+  // Remove duplicate months and sort them from newest to oldest
+  const uniqueMonths = Array.from(new Set(statements.map(s => s.statement_month)))
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
   return (
     <div className="w-[200px]">
       <Select
@@ -24,16 +28,14 @@ const MonthSelector = ({ statements, selectedMonth, onMonthSelect }: MonthSelect
           <SelectValue placeholder="Select month" />
         </SelectTrigger>
         <SelectContent>
-          {statements
-            .sort((a, b) => new Date(b.statement_month).getTime() - new Date(a.statement_month).getTime())
-            .map((statement) => (
-              <SelectItem 
-                key={statement.statement_month} 
-                value={statement.statement_month}
-              >
-                {format(new Date(statement.statement_month), "MMMM yyyy")}
-              </SelectItem>
-            ))}
+          {uniqueMonths.map((month) => (
+            <SelectItem 
+              key={month} 
+              value={month}
+            >
+              {format(new Date(month), "MMMM yyyy")}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
