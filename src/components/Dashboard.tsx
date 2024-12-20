@@ -5,11 +5,11 @@ import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
+import DashboardHeader from "./dashboard/DashboardHeader";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { supabase } from "@/integrations/supabase/client";
-import { Transaction } from "@/types/bankStatement";
-import { Json } from "@/integrations/supabase/types";
+import { calculateMonthlyExpenses } from "@/utils/transactionUtils";
 
 const mockData = {
   savings: 450,
@@ -33,27 +33,6 @@ const mockData = {
   ]
 };
 
-// Helper function to safely convert Json to Transaction
-const convertJsonToTransaction = (json: Json): Transaction => {
-  if (typeof json === 'object' && json !== null) {
-    return {
-      date: String(json.date || ''),
-      description: String(json.description || ''),
-      category: String(json.category || ''),
-      amount: Number(json.amount || 0),
-      balance: Number(json.balance || 0)
-    };
-  }
-  // Return a default transaction if conversion fails
-  return {
-    date: '',
-    description: '',
-    category: '',
-    amount: 0,
-    balance: 0
-  };
-};
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
@@ -74,19 +53,8 @@ const Dashboard = () => {
           table: 'bank_statement_data'
         },
         () => {
-          // Refresh the monthly expenses when bank statement data changes
           if (bankStatementData?.transactions) {
-            const transactionsArray = Array.isArray(bankStatementData.transactions) 
-              ? bankStatementData.transactions.map(convertJsonToTransaction)
-              : [];
-              
-            const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
-              if (transaction.amount < 0) {
-                return total + Math.abs(transaction.amount);
-              }
-              return total;
-            }, 0);
-            
+            const expenses = calculateMonthlyExpenses(bankStatementData.transactions);
             console.log('Updated monthly expenses:', expenses);
             setMonthlyExpenses(expenses);
           }
@@ -102,17 +70,7 @@ const Dashboard = () => {
   // Initial calculation of monthly expenses
   useEffect(() => {
     if (bankStatementData?.transactions) {
-      const transactionsArray = Array.isArray(bankStatementData.transactions)
-        ? bankStatementData.transactions.map(convertJsonToTransaction)
-        : [];
-        
-      const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
-        if (transaction.amount < 0) {
-          return total + Math.abs(transaction.amount);
-        }
-        return total;
-      }, 0);
-      
+      const expenses = calculateMonthlyExpenses(bankStatementData.transactions);
       console.log('Calculated monthly expenses:', expenses);
       setMonthlyExpenses(expenses);
     }
@@ -138,7 +96,6 @@ const Dashboard = () => {
   };
 
   if (error) {
-    console.error('Dashboard error:', error);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -152,14 +109,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-purple-800 dark:text-white mb-2">
-            Welcome back!
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-300">
-            Take a look at your financial overview
-          </p>
-        </div>
+        <DashboardHeader isDark={isDark} />
 
         <div className="space-y-8">
           <SearchBar onSearch={handleSearch} />
