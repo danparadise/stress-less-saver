@@ -40,7 +40,6 @@ export const usePaystubData = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ paystubId, documentId }: { paystubId: string, documentId: string }) => {
-      // First delete the paystub data
       const { error: paystubError } = await supabase
         .from("paystub_data")
         .delete()
@@ -48,7 +47,6 @@ export const usePaystubData = () => {
       
       if (paystubError) throw paystubError;
 
-      // Then delete the financial document
       const { error: documentError } = await supabase
         .from("financial_documents")
         .delete()
