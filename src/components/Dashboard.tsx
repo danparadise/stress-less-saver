@@ -8,6 +8,28 @@ import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import { Transaction } from "@/types/bankStatement";
+import { Json } from "@/integrations/supabase/types";
+
+// Helper function to convert Json to Transaction
+const convertJsonToTransaction = (jsonData: Json): Transaction => {
+  if (typeof jsonData === 'object' && jsonData !== null) {
+    return {
+      date: String(jsonData?.date || ''),
+      description: String(jsonData?.description || ''),
+      category: String(jsonData?.category || ''),
+      amount: Number(jsonData?.amount || 0),
+      balance: Number(jsonData?.balance || 0)
+    };
+  }
+  // Return a default transaction if conversion fails
+  return {
+    date: '',
+    description: '',
+    category: '',
+    amount: 0,
+    balance: 0
+  };
+};
 
 const mockData = {
   savings: 450,
@@ -65,9 +87,9 @@ const Dashboard = () => {
   // Calculate monthly expenses from transactions
   useEffect(() => {
     if (bankStatementData?.transactions) {
-      // Type guard to ensure transactions is an array
+      // Type guard to ensure transactions is an array and convert to Transaction type
       const transactionsArray = Array.isArray(bankStatementData.transactions) 
-        ? bankStatementData.transactions as Transaction[]
+        ? (bankStatementData.transactions as Json[]).map(convertJsonToTransaction)
         : [];
 
       const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
