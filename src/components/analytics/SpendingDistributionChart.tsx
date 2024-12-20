@@ -76,7 +76,7 @@ const SpendingDistributionChart = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[600px] w-full">
+        <div className="h-[600px] w-full relative">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -126,13 +126,14 @@ const SpendingDistributionChart = ({
                   />
                 ))}
               </Pie>
-              {/* Center text for total spending */}
+              {/* Center text for total spending with increased z-index */}
               <Text
                 x="50%"
                 y="50%"
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="fill-purple-200 text-4xl font-bold"
+                style={{ zIndex: 1000 }}
               >
                 {formatCurrency(totalSpending)}
               </Text>
