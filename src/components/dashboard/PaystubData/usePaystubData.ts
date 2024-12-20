@@ -10,7 +10,7 @@ export const usePaystubData = () => {
   // Force an immediate refetch when the component mounts
   useEffect(() => {
     const fetchData = async () => {
-      console.log('Forcing initial data fetch');
+      console.log('Forcing initial data fetch for paystubs');
       await queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
       await queryClient.refetchQueries({ queryKey: ["paystub-data"] });
     };
@@ -37,7 +37,10 @@ export const usePaystubData = () => {
         .eq('financial_documents.document_type', 'paystub')
         .order("pay_period_start", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching paystub data:', error);
+        throw error;
+      }
       
       const filteredData = data?.filter(item => 
         item.financial_documents?.document_type === 'paystub'
@@ -48,7 +51,9 @@ export const usePaystubData = () => {
     },
     refetchOnWindowFocus: true,
     staleTime: 0,
-    gcTime: 0 // Changed from cacheTime to gcTime for TanStack Query v5
+    gcTime: 0,
+    refetchOnMount: true,
+    enabled: true // Ensure the query runs on mount
   });
 
   const deleteMutation = useMutation({

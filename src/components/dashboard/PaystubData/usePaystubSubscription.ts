@@ -6,7 +6,10 @@ export const usePaystubSubscription = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    console.log('Setting up real-time subscriptions');
+    console.log('Setting up real-time subscriptions for paystubs');
+    
+    // Force an immediate invalidation when subscription is set up
+    queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
     
     const channel = supabase
       .channel('paystub-updates')
@@ -36,10 +39,14 @@ export const usePaystubSubscription = () => {
       )
       .subscribe((status) => {
         console.log('Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          // Force a refresh when subscription is established
+          queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+        }
       });
 
     return () => {
-      console.log('Cleaning up subscription');
+      console.log('Cleaning up paystub subscription');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
