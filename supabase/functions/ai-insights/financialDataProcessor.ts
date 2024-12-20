@@ -16,9 +16,23 @@ export function processFinancialData(
 
   // Calculate monthly expenses from transactions
   let monthlyExpenses = 0;
-  if (latestStatement?.transactions && Array.isArray(latestStatement.transactions)) {
-    console.log('Processing transactions:', latestStatement.transactions);
-    monthlyExpenses = latestStatement.transactions.reduce((total, transaction: Transaction) => {
+  let transactions: Transaction[] = [];
+
+  if (latestStatement?.transactions) {
+    try {
+      // Handle case where transactions might be a string
+      transactions = typeof latestStatement.transactions === 'string' 
+        ? JSON.parse(latestStatement.transactions) 
+        : latestStatement.transactions;
+    } catch (error) {
+      console.error('Error parsing transactions:', error);
+      transactions = [];
+    }
+  }
+
+  if (Array.isArray(transactions) && transactions.length > 0) {
+    console.log('Processing transactions:', transactions);
+    monthlyExpenses = transactions.reduce((total, transaction) => {
       if (transaction.amount < 0) {
         const expense = Math.abs(transaction.amount);
         console.log(`Adding expense: ${expense} from transaction:`, transaction);
@@ -41,8 +55,8 @@ export function processFinancialData(
 
   // Analyze spending categories
   const spendingCategories = new Map();
-  if (latestStatement?.transactions && Array.isArray(latestStatement.transactions)) {
-    latestStatement.transactions.forEach((transaction: Transaction) => {
+  if (Array.isArray(transactions) && transactions.length > 0) {
+    transactions.forEach((transaction) => {
       if (transaction.amount < 0) {
         const category = transaction.category || 'Uncategorized';
         const currentAmount = spendingCategories.get(category) || 0;

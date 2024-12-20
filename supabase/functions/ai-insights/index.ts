@@ -24,7 +24,7 @@ serve(async (req) => {
 
     console.log('Fetching financial data for user:', userId);
 
-    // Fetch last 3 months of bank statements
+    // Fetch last 3 months of bank statements with transactions
     const { data: bankStatements, error: bankError } = await supabase
       .from('bank_statement_data')
       .select(`
@@ -32,6 +32,7 @@ serve(async (req) => {
         financial_documents!inner(*)
       `)
       .eq('financial_documents.user_id', userId)
+      .eq('financial_documents.status', 'completed')
       .order('statement_month', { ascending: false })
       .limit(3);
 
@@ -39,6 +40,8 @@ serve(async (req) => {
       console.error('Error fetching bank statements:', bankError);
       throw new Error('Failed to fetch bank statements');
     }
+
+    console.log('Fetched bank statements:', bankStatements);
 
     // Fetch last 3 months of paystubs
     const { data: paystubs, error: paystubError } = await supabase
@@ -48,6 +51,7 @@ serve(async (req) => {
         financial_documents!inner(*)
       `)
       .eq('financial_documents.user_id', userId)
+      .eq('financial_documents.status', 'completed')
       .order('pay_period_start', { ascending: false })
       .limit(6); // Assuming bi-weekly pay
 
@@ -55,6 +59,8 @@ serve(async (req) => {
       console.error('Error fetching paystubs:', paystubError);
       throw new Error('Failed to fetch paystub data');
     }
+
+    console.log('Fetched paystubs:', paystubs);
 
     // Process financial data
     const metrics = processFinancialData(bankStatements, paystubs);
@@ -72,7 +78,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           {
             role: 'system',
