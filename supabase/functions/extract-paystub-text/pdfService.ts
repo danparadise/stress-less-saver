@@ -30,17 +30,17 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     }
 
     const pdfInfo = await pdfInfoResponse.json();
-    console.log('PDF info retrieved:', pdfInfo);
+    console.log('PDF info retrieved:', JSON.stringify(pdfInfo, null, 2));
 
-    if (!pdfInfo.pageCount && pdfInfo.error) {
+    if (pdfInfo.error) {
       throw new Error(`PDF.co error: ${pdfInfo.message || 'Unknown error getting PDF info'}`);
     }
 
-    const pageCount = pdfInfo.pageCount || 1; // Default to 1 if pageCount is not available
+    const pageCount = pdfInfo.info?.pagecount || 1;
     console.log(`PDF has ${pageCount} pages`);
 
-    // Step 2: Convert PDF to PNG Asynchronously
-    console.log(`Submitting conversion job for all ${pageCount} pages to PNG...`);
+    // Step 2: Convert PDF to PNG
+    console.log('Starting PDF to PNG conversion...');
     const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
       method: 'POST',
       headers: {
@@ -49,11 +49,13 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
       },
       body: JSON.stringify({
         url: pdfUrl,
-        pages: "*", // Convert all pages
-        async: true, // Asynchronous conversion
+        pages: `1-${pageCount}`,
+        async: true,
+        profiles: ["document-photos"],
         renderPageFormObjects: true,
         renderOriginalPageSize: true,
-        multiplePagesPerFile: false // Ensure separate file per page
+        multiplePagesPerFile: false,
+        timeout: 120 // Increase timeout for larger files
       })
     });
 
@@ -64,20 +66,19 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     }
 
     const pdfCoData = await pdfCoResponse.json();
-    console.log('PDF.co job submission response:', pdfCoData);
+    console.log('PDF.co conversion response:', JSON.stringify(pdfCoData, null, 2));
 
     if (pdfCoData.error) {
       throw new Error(`PDF.co conversion error: ${pdfCoData.message || 'Unknown error during conversion'}`);
     }
 
-    const jobId = pdfCoData.jobId;
-    if (!jobId) {
-      throw new Error('No jobId returned from PDF.co.');
+    if (!pdfCoData.jobId) {
+      throw new Error('No jobId returned from PDF.co');
     }
 
     // Step 3: Poll for Job Status
-    console.log(`Polling job status for jobId: ${jobId}`);
-    const convertedUrls = await pollJobStatus(pdfCoApiKey, jobId);
+    console.log(`Polling job status for jobId: ${pdfCoData.jobId}`);
+    const convertedUrls = await pollJobStatus(pdfCoApiKey, pdfCoData.jobId);
     console.log(`Successfully converted ${convertedUrls.length} pages to PNG:`, convertedUrls);
     return convertedUrls;
 
@@ -87,9 +88,10 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
   }
 }
 
-async function pollJobStatus(apiKey: string, jobId: string, interval: number = 5000, maxAttempts: number = 20): Promise<string[]> {
+async function pollJobStatus(apiKey: string, jobId: string, interval: number = 3000, maxAttempts: number = 40): Promise<string[]> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    console.log(`Polling job status: Attempt ${attempt}/${maxAttempts}...`);
+    console.log(`Polling job status: Attempt ${attempt}/${maxAttempts}`);
+    
     const statusResponse = await fetch(`https://api.pdf.co/v1/job/check?jobid=${jobId}`, {
       method: 'GET',
       headers: {
@@ -104,20 +106,23 @@ async function pollJobStatus(apiKey: string, jobId: string, interval: number = 5
     }
 
     const statusData = await statusResponse.json();
-    console.log('Job status:', statusData.status);
+    console.log('Job status response:', JSON.stringify(statusData, null, 2));
 
     if (statusData.status === 'success') {
       if (!statusData.urls || statusData.urls.length === 0) {
-        throw new Error('No PNG URLs returned after job completion.');
+        throw new Error('No PNG URLs returned after job completion');
       }
       return statusData.urls;
     } else if (statusData.status === 'working') {
-      console.log(`Job is still processing. Waiting for ${interval / 1000} seconds...`);
+      console.log(`Job is still processing. Waiting ${interval/1000} seconds...`);
       await new Promise(resolve => setTimeout(resolve, interval));
+    } else if (statusData.status === 'failed') {
+      console.error('Job failed. Full response:', JSON.stringify(statusData, null, 2));
+      throw new Error(`Job failed: ${statusData.error || 'Unknown error'}`);
     } else {
-      throw new Error(`Job failed with status: ${statusData.status}`);
+      throw new Error(`Unexpected job status: ${statusData.status}`);
     }
   }
 
-  throw new Error('Polling timed out. The conversion job did not complete within the expected time.');
+  throw new Error(`Conversion timed out after ${maxAttempts} attempts`);
 }
