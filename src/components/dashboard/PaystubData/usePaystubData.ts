@@ -48,7 +48,7 @@ export const usePaystubData = () => {
     },
     refetchOnWindowFocus: true,
     staleTime: 0,
-    cacheTime: 0 // Disable caching to ensure fresh data on every mount
+    gcTime: 0 // Changed from cacheTime to gcTime for TanStack Query v5
   });
 
   const deleteMutation = useMutation({
