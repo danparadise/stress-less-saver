@@ -8,8 +8,8 @@ export const useBankStatementData = () => {
     queryFn: async () => {
       console.log('Fetching latest bank statement data');
       
-      // First try to get the latest bank statement
-      const { data: statementData, error: statementError } = await supabase
+      // Get all completed bank statements, ordered by date descending
+      const { data: statements, error: statementError } = await supabase
         .from("bank_statement_data")
         .select(`
           *,
@@ -20,20 +20,22 @@ export const useBankStatementData = () => {
           )
         `)
         .eq('financial_documents.status', 'completed')
-        .order('statement_month', { ascending: false })
-        .single();
+        .order('statement_month', { ascending: false });
 
       if (statementError) {
         console.error('Error fetching bank statement:', statementError);
         throw statementError;
       }
 
-      if (statementData) {
-        console.log('Found latest bank statement:', statementData);
+      // Get the most recent statement
+      const latestStatement = statements && statements.length > 0 ? statements[0] : null;
+
+      if (latestStatement) {
+        console.log('Found latest bank statement:', latestStatement);
         
         // Ensure transactions are properly typed
-        const typedTransactions = Array.isArray(statementData.transactions) 
-          ? statementData.transactions.map((t: any): Transaction => ({
+        const typedTransactions = Array.isArray(latestStatement.transactions) 
+          ? latestStatement.transactions.map((t: any): Transaction => ({
               date: t.date,
               description: t.description,
               category: t.category,
@@ -43,7 +45,7 @@ export const useBankStatementData = () => {
           : [];
           
         return {
-          ...statementData,
+          ...latestStatement,
           transactions: typedTransactions
         } as BankStatement;
       }
