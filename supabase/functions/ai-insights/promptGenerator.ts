@@ -1,4 +1,4 @@
-import { FinancialMetrics } from './types';
+import { FinancialMetrics } from './types.ts';
 
 export function generateSystemPrompt(metrics: FinancialMetrics): string {
   return `You are PayGuard AI Assistant, an expert in accounting, personalized financial advice, and growth coaching. Your mission is to provide users with the most accurate insights derived directly from their financial data.

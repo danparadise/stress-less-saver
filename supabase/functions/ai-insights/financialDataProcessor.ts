@@ -1,22 +1,8 @@
-interface Transaction {
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
-  balance: number;
-}
-
-interface FinancialMetrics {
-  monthlyNetIncome: number;
-  monthlyExpenses: number;
-  savingsRate: number;
-  topExpenseCategories: { category: string; amount: number }[];
-  incomeChanges: number[];
-}
+import { BankStatement, PaystubData, FinancialMetrics, Transaction } from './types.ts';
 
 export function processFinancialData(
-  bankStatements: any[],
-  paystubs: any[]
+  bankStatements: BankStatement[],
+  paystubs: PaystubData[]
 ): FinancialMetrics {
   console.log('Processing financial data:', { bankStatements, paystubs });
 
