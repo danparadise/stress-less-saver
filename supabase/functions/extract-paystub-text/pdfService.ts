@@ -28,7 +28,7 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
   const pdfInfo = await pdfInfoResponse.json();
   console.log('PDF info:', pdfInfo);
 
-  // Convert PDF to PNG with the "General" profile
+  // Convert PDF to PNG with explicit page range and profile settings
   console.log(`Converting ${pdfInfo.pageCount} pages to PNG`);
   const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
     method: 'POST',
@@ -38,9 +38,12 @@ export async function convertPdfToImages(pdfUrl: string): Promise<string[]> {
     },
     body: JSON.stringify({
       url: pdfUrl,
-      pages: `1-${pdfInfo.pageCount}`, // Convert all pages
+      pages: `1-${pdfInfo.pageCount}`,  // Explicitly specify all pages
       async: false,
-      profile: "General" // Using the "General" profile which is widely supported
+      profiles: "document-photos",       // Use document-photos profile for better quality
+      renderPageFormObjects: true,       // Ensure form objects are rendered
+      renderOriginalPageSize: true,      // Maintain original page dimensions
+      multiplePagesPerFile: false        // Generate separate file for each page
     })
   });
 
