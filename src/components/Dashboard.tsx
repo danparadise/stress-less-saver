@@ -12,13 +12,13 @@ import { Json } from "@/integrations/supabase/types";
 
 // Helper function to convert Json to Transaction
 const convertJsonToTransaction = (jsonData: Json): Transaction => {
-  if (typeof jsonData === 'object' && jsonData !== null) {
+  if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
     return {
-      date: String(jsonData?.date || ''),
-      description: String(jsonData?.description || ''),
-      category: String(jsonData?.category || ''),
-      amount: Number(jsonData?.amount || 0),
-      balance: Number(jsonData?.balance || 0)
+      date: String(jsonData.date || ''),
+      description: String(jsonData.description || ''),
+      category: String(jsonData.category || ''),
+      amount: Number(jsonData.amount || 0),
+      balance: Number(jsonData.balance || 0)
     };
   }
   // Return a default transaction if conversion fails
