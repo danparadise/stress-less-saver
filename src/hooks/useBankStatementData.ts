@@ -22,7 +22,7 @@ export const useBankStatementData = () => {
         .eq('financial_documents.status', 'completed')
         .order('statement_month', { ascending: false })
         .limit(1)
-        .maybeSingle();
+        .single();
 
       if (statementError) {
         console.error('Error fetching bank statement:', statementError);

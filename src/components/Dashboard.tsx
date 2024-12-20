@@ -11,7 +11,6 @@ import TransactionsPopup from "./analytics/TransactionsPopup";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { Transaction } from "@/types/bankStatement";
-import { convertJsonToTransaction } from "@/utils/transactionUtils";
 
 const mockData = {
   savings: 450,
@@ -51,18 +50,10 @@ const Dashboard = () => {
       console.log('Processing financial data:', financialData);
       
       // Set monthly expenses from total_withdrawals
-      if ('total_withdrawals' in financialData && typeof financialData.total_withdrawals === 'number') {
-        const withdrawals = Math.abs(financialData.total_withdrawals);
-        console.log('Setting monthly expenses from withdrawals:', withdrawals);
-        setMonthlyExpenses(withdrawals);
-      }
+      setMonthlyExpenses(Math.abs(financialData.total_withdrawals || 0));
       
-      // Convert and set transactions if available
-      if ('transactions' in financialData && Array.isArray(financialData.transactions)) {
-        const convertedTransactions = financialData.transactions.map(convertJsonToTransaction);
-        console.log('Setting transactions:', convertedTransactions);
-        setTransactions(convertedTransactions);
-      }
+      // Set transactions
+      setTransactions(financialData.transactions || []);
     }
   }, [financialData]);
 
