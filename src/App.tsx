@@ -11,6 +11,7 @@ import AppSidebar from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Paystubs from "./pages/Paystubs";
+import Analytics from "./pages/Analytics";
 import BankStatements from "./pages/BankStatements";
 import BankStatementAnalytics from "./pages/BankStatementAnalytics";
 
@@ -54,6 +55,21 @@ const App = () => (
                       <AppSidebar />
                       <main className="flex-1">
                         <Index />
+                      </main>
+                    </div>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full">
+                      <AppSidebar />
+                      <main className="flex-1">
+                        <Analytics />
                       </main>
                     </div>
                   </SidebarProvider>

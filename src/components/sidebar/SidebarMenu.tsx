@@ -1,4 +1,4 @@
-import { Grid, Activity, BarChart2, FileText, Database, Settings } from "lucide-react";
+import { Grid, BarChart2, FileText } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -11,12 +11,9 @@ import { useNavigate } from "react-router-dom";
 
 const menuItems = [
   { title: "Dashboard", icon: Grid, path: "/" },
-  { title: "Overview", icon: Activity, path: "/" },
-  { title: "Analytics", icon: BarChart2, path: "/" },
+  { title: "Analytics", icon: BarChart2, path: "/analytics" },
   { title: "Paystubs", icon: FileText, path: "/paystubs" },
   { title: "Bank Statements", icon: FileText, path: "/bank-statements" },
-  { title: "Database", icon: Database, path: "/" },
-  { title: "Settings", icon: Settings, path: "/" },
 ];
 
 const SidebarMenu = () => {
