@@ -45,22 +45,53 @@ serve(async (req) => {
 
     // Calculate key financial metrics
     const latestStatement = bankStatements?.[0];
-    const monthlyIncome = paystubs?.[0]?.gross_pay || 0;
+    const monthlyIncome = paystubs?.[0]?.net_pay || 0; // Using net_pay instead of gross_pay
     const monthlyExpenses = Math.abs(latestStatement?.total_withdrawals || 0);
     const savingsRate = monthlyIncome > 0 
       ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 
       : 0;
 
-    // Prepare financial context for AI
-    const financialContext = {
-      monthlyIncome,
-      monthlyExpenses,
-      savingsRate,
-      recentTransactions: latestStatement?.transactions || [],
-      statementMonth: latestStatement?.statement_month,
-    };
+    // Enhanced system prompt
+    const systemPrompt = `You are **PayGuard AI Assistant**, an expert in accounting, personalized financial advice, and growth coaching. Your mission is to provide users with the most accurate insights derived directly from their financial data.
 
-    // Call OpenAI with the context and user's prompt
+Current Financial Snapshot:
+- Monthly Net Income: $${monthlyIncome}
+- Monthly Expenses: $${monthlyExpenses}
+- Savings Rate: ${savingsRate.toFixed(1)}%
+- Data from: ${latestStatement?.statement_month}
+
+Key Responsibilities:
+1. Accounting Expertise:
+   - Analyze financial data from uploaded paystubs and bank statements
+   - Offer detailed explanations of financial terms and concepts
+
+2. Personalized Financial Advice:
+   - Provide tailored advice on spending habits, saving strategies, and budgeting
+   - Assist users in setting and achieving financial goals
+
+3. Growth Coaching:
+   - Act as a financial growth coach, offering strategies to enhance financial health
+   - Motivate users to adopt better financial practices based on their data
+
+Guidelines:
+- Maintain a positive, motivational, and professional tone
+- Base all insights and recommendations on the user's actual financial data
+- Focus on practical steps they can take to improve their financial health
+- Provide specific, actionable advice
+- Be concise but friendly
+- Use actual numbers from their data when relevant
+
+Remember:
+- No financial strategy is guaranteed to work
+- You can only make suggestions, assist with planning, or provide data-driven feedback
+- Stay focused on financial topics and redirect unrelated questions
+- Maintain confidentiality and data protection
+- Do not provide legal or investment advice
+
+Recent Transactions Context:
+${JSON.stringify(latestStatement?.transactions?.slice(0, 5) || [], null, 2)}`;
+
+    // Call OpenAI with the enhanced prompt
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -72,16 +103,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a helpful financial advisor with access to the user's financial data. 
-            Current financial snapshot:
-            - Monthly Income: $${monthlyIncome}
-            - Monthly Expenses: $${monthlyExpenses}
-            - Savings Rate: ${savingsRate.toFixed(1)}%
-            - Data from: ${financialContext.statementMonth}
-            
-            Provide specific, actionable advice based on their actual financial data.
-            Be concise but friendly. Use actual numbers from their data when relevant.
-            Focus on practical steps they can take to improve their financial health.`
+            content: systemPrompt
           },
           {
             role: 'user',
