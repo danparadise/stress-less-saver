@@ -10,7 +10,6 @@ import FinancialChatbot from "./dashboard/FinancialChatbot";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateMonthlyExpenses } from "@/utils/transactionUtils";
 
 const mockData = {
   savings: 450,
@@ -37,37 +36,42 @@ const mockData = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
-  const [monthlyExpenses, setMonthlyExpenses] = useState(7599.23); // Set initial value to match Analytics
+  const [monthlyExpenses, setMonthlyExpenses] = useState(0);
 
-  const { data: bankStatementData } = useBankStatementData();
-  const { data: paystubData, isLoading, error } = usePaystubTrends();
+  const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
+  const { data: paystubData, isLoading: isPaystubLoading, error } = usePaystubTrends();
 
-  // Subscribe to bank statement changes and update monthly expenses
+  // Update monthly expenses when financial data changes
   useEffect(() => {
-    if (!bankStatementData?.transactions) {
-      console.log('No transactions data available');
-      return;
+    if (financialData) {
+      // If we have monthly summary data
+      if ('total_expenses' in financialData) {
+        console.log('Setting monthly expenses from summary:', financialData.total_expenses);
+        setMonthlyExpenses(financialData.total_expenses || 0);
+      }
+      // Fallback to total_withdrawals from bank statement
+      else if ('total_withdrawals' in financialData) {
+        console.log('Setting monthly expenses from withdrawals:', Math.abs(financialData.total_withdrawals || 0));
+        setMonthlyExpenses(Math.abs(financialData.total_withdrawals || 0));
+      }
     }
+  }, [financialData]);
 
-    console.log('Processing bank statement data:', bankStatementData);
-    const expenses = calculateMonthlyExpenses(bankStatementData.transactions);
-    console.log('Setting monthly expenses to:', expenses);
-    setMonthlyExpenses(expenses || 7599.23); // Fallback to known value if calculation fails
-
+  // Subscribe to financial summary changes
+  useEffect(() => {
     const channel = supabase
-      .channel('bank-statement-changes')
+      .channel('monthly-summary-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'bank_statement_data'
+          table: 'monthly_financial_summaries'
         },
-        () => {
-          if (bankStatementData?.transactions) {
-            const expenses = calculateMonthlyExpenses(bankStatementData.transactions);
-            console.log('Updated monthly expenses:', expenses);
-            setMonthlyExpenses(expenses || 7599.23); // Fallback to known value if calculation fails
+        (payload) => {
+          console.log('Monthly summary updated:', payload);
+          if (payload.new) {
+            setMonthlyExpenses(payload.new.total_expenses || 0);
           }
         }
       )
@@ -76,7 +80,7 @@ const Dashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [bankStatementData]);
+  }, []);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -139,7 +143,7 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              {isLoading ? (
+              {isPaystubLoading ? (
                 <div className="w-full h-[300px] bg-card rounded-lg animate-pulse" />
               ) : (
                 <IncomeChart data={paystubData || []} />

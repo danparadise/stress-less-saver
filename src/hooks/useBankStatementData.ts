@@ -3,11 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const useBankStatementData = () => {
   return useQuery({
-    queryKey: ["latest-bank-statement"],
+    queryKey: ["latest-monthly-summary"],
     queryFn: async () => {
-      console.log('Fetching latest bank statement data');
+      console.log('Fetching latest monthly summary data');
       
-      // First try to get data from monthly_financial_summaries
       const { data: summaryData, error: summaryError } = await supabase
         .from("monthly_financial_summaries")
         .select("*")
@@ -17,23 +16,16 @@ export const useBankStatementData = () => {
 
       if (summaryError) {
         console.error('Error fetching monthly summary:', summaryError);
+        throw summaryError;
       }
 
       if (summaryData) {
         console.log('Found monthly summary data:', summaryData);
-        return {
-          transactions: summaryData.transactions,
-          statement_month: summaryData.month_year,
-          total_deposits: summaryData.total_deposits,
-          total_withdrawals: summaryData.total_withdrawals,
-          ending_balance: summaryData.ending_balance,
-          financial_documents: {
-            status: 'completed',
-            upload_date: summaryData.updated_at
-          }
-        };
+        return summaryData;
       }
 
+      console.log('No monthly summary found, falling back to bank statement data');
+      
       // Fallback to bank_statement_data if no summary exists
       const { data, error } = await supabase
         .from("bank_statement_data")
