@@ -14,6 +14,10 @@ serve(async (req) => {
     const { documentId, pdfUrl } = await req.json();
     console.log('Processing document:', documentId, 'URL:', pdfUrl);
 
+    if (!documentId || !pdfUrl) {
+      throw new Error('Missing required parameters: documentId or pdfUrl');
+    }
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

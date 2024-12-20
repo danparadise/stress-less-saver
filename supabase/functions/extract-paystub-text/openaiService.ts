@@ -1,7 +1,5 @@
-import { corsHeaders } from "./config.ts";
-
 export async function extractDataFromText(text: string): Promise<any> {
-  console.log('Processing text with OpenAI:', text.substring(0, 200) + '...');
+  console.log('Processing text with OpenAI, text length:', text.length);
   
   const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -10,7 +8,7 @@ export async function extractDataFromText(text: string): Promise<any> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -27,6 +25,7 @@ export async function extractDataFromText(text: string): Promise<any> {
           4. Look for "Period Beginning" and "Period Ending" for dates
           5. For Gross Pay, look for "Gross Pay" or total earnings
           6. For Net Pay, look for "Net Pay" or final amount
+          7. Remove any whitespace or special characters from numbers
           
           Return ONLY a JSON object with these fields:
           {
