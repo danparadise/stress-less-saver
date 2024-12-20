@@ -1,35 +1,13 @@
 import { useEffect, useState } from "react";
 import { ArrowDownRight, PiggyBank } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
-import { Transaction } from "@/types/bankStatement";
+import { useBankStatementData } from "@/hooks/useBankStatementData";
+import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { Json } from "@/integrations/supabase/types";
-
-// Helper function to convert Json to Transaction
-const convertJsonToTransaction = (jsonData: Json): Transaction => {
-  if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
-    return {
-      date: String(jsonData.date || ''),
-      description: String(jsonData.description || ''),
-      category: String(jsonData.category || ''),
-      amount: Number(jsonData.amount || 0),
-      balance: Number(jsonData.balance || 0)
-    };
-  }
-  // Return a default transaction if conversion fails
-  return {
-    date: '',
-    description: '',
-    category: '',
-    amount: 0,
-    balance: 0
-  };
-};
 
 const mockData = {
   savings: 450,
@@ -58,31 +36,8 @@ const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
   const [monthlyExpenses, setMonthlyExpenses] = useState(0);
 
-  // Fetch latest bank statement data
-  const { data: bankStatementData } = useQuery({
-    queryKey: ["latest-bank-statement"],
-    queryFn: async () => {
-      console.log('Fetching latest bank statement data');
-      const { data, error } = await supabase
-        .from("bank_statement_data")
-        .select(`
-          transactions,
-          statement_month,
-          financial_documents!inner(status)
-        `)
-        .eq('financial_documents.status', 'completed')
-        .order('statement_month', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) {
-        console.error('Error fetching bank statement data:', error);
-        throw error;
-      }
-
-      return data;
-    }
-  });
+  const { data: bankStatementData } = useBankStatementData();
+  const { data: paystubData, isLoading, error } = usePaystubTrends();
 
   // Calculate monthly expenses from transactions
   useEffect(() => {
@@ -92,7 +47,7 @@ const Dashboard = () => {
         ? (bankStatementData.transactions as Json[]).map(convertJsonToTransaction)
         : [];
 
-      const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
+      const expenses = transactionsArray.reduce((total: number, transaction) => {
         // Only sum negative amounts (expenses)
         if (transaction.amount < 0) {
           return total + Math.abs(transaction.amount);
@@ -104,45 +59,6 @@ const Dashboard = () => {
       setMonthlyExpenses(expenses);
     }
   }, [bankStatementData]);
-
-  const { data: paystubData, isLoading, error } = useQuery({
-    queryKey: ["paystub-data"],
-    queryFn: async () => {
-      console.log('Fetching paystub data for income trend');
-      const { data, error } = await supabase
-        .from("paystub_data")
-        .select(`
-          gross_pay,
-          pay_period_start,
-          financial_documents!inner(
-            status,
-            document_type
-          )
-        `)
-        .eq('financial_documents.status', 'completed')
-        .eq('financial_documents.document_type', 'paystub')
-        .order('pay_period_start', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching paystub data:', error);
-        throw error;
-      }
-      
-      // Transform and validate data for the chart
-      const chartData = data?.map(item => ({
-        date: item.pay_period_start,
-        amount: Number(item.gross_pay)
-      })).filter(item => 
-        !isNaN(item.amount) && 
-        item.date // Ensure we have a valid date
-      ) || [];
-      
-      console.log('Transformed paystub data for chart:', chartData);
-      return chartData;
-    },
-    retry: 1,
-    refetchOnWindowFocus: false
-  });
 
   useEffect(() => {
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
