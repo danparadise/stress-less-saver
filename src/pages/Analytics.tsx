@@ -2,74 +2,95 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import TransactionsPopup from "@/components/analytics/TransactionsPopup";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
-  // Mock data - this will be replaced with real data from your backend
-  const data = [
-    { 
-      name: "Transportation", 
-      value: 342, 
-      color: "#60A5FA",
-      transactions: [
-        { date: "2024-01-15", description: "Uber Ride", amount: 25.50, category: "Transportation" },
-        { date: "2024-01-14", description: "Gas Station", amount: 45.00, category: "Transportation" },
-        { date: "2024-01-12", description: "Train Ticket", amount: 12.50, category: "Transportation" },
-      ]
-    },
-    { 
-      name: "Business", 
-      value: 362, 
-      color: "#67E8F9",
-      transactions: [
-        { date: "2024-01-15", description: "Office Supplies", amount: 89.99, category: "Business" },
-        { date: "2024-01-13", description: "Software Subscription", amount: 29.99, category: "Business" },
-      ]
-    },
-    { 
-      name: "Food & Dining", 
-      value: 521, 
-      color: "#86EFAC",
-      transactions: [
-        { date: "2024-01-15", description: "Restaurant", amount: 65.00, category: "Food & Dining" },
-        { date: "2024-01-14", description: "Grocery Store", amount: 120.50, category: "Food & Dining" },
-      ]
-    },
-    { 
-      name: "Miscellaneous", 
-      value: 279, 
-      color: "#F87171",
-      transactions: [
-        { date: "2024-01-15", description: "General Store", amount: 45.00, category: "Miscellaneous" },
-        { date: "2024-01-12", description: "Online Purchase", amount: 34.99, category: "Miscellaneous" },
-      ]
-    },
-    { 
-      name: "Entertainment", 
-      value: 178, 
-      color: "#FB923C",
-      transactions: [
-        { date: "2024-01-14", description: "Movie Tickets", amount: 32.00, category: "Entertainment" },
-        { date: "2024-01-13", description: "Streaming Service", amount: 14.99, category: "Entertainment" },
-      ]
-    },
-    { 
-      name: "Shopping", 
-      value: 164, 
-      color: "#F472B6",
-      transactions: [
-        { date: "2024-01-15", description: "Clothing Store", amount: 89.99, category: "Shopping" },
-        { date: "2024-01-12", description: "Online Shopping", amount: 74.01, category: "Shopping" },
-      ]
-    },
-  ];
 
-  const selectedData = data.find(item => item.name === selectedCategory);
+  const { data: latestStatement } = useQuery({
+    queryKey: ["latest-bank-statement"],
+    queryFn: async () => {
+      console.log('Fetching latest bank statement data');
+      const { data, error } = await supabase
+        .from("bank_statement_data")
+        .select(`
+          *,
+          financial_documents!inner(
+            file_name,
+            upload_date,
+            status
+          )
+        `)
+        .order('statement_month', { ascending: false })
+        .limit(1)
+        .single();
 
-  const handlePieClick = (data: any, index: number) => {
+      if (error) throw error;
+      console.log('Latest statement data:', data);
+      return data;
+    }
+  });
+
+  // Process transactions into category data for the chart
+  const categoryData = latestStatement?.transactions?.reduce((acc: any[], transaction: any) => {
+    if (transaction.amount < 0) { // Only include expenses (negative amounts)
+      const category = transaction.category || 'Uncategorized';
+      const existingCategory = acc.find(item => item.name === category);
+      
+      if (existingCategory) {
+        existingCategory.value += Math.abs(transaction.amount);
+        existingCategory.transactions.push(transaction);
+      } else {
+        acc.push({
+          name: category,
+          value: Math.abs(transaction.amount),
+          color: getColorForCategory(category),
+          transactions: [transaction]
+        });
+      }
+    }
+    return acc;
+  }, []) || [];
+
+  const selectedData = categoryData.find(item => item.name === selectedCategory);
+
+  const handlePieClick = (data: any) => {
     setSelectedCategory(data.name);
   };
+
+  // Get a consistent color for each category
+  function getColorForCategory(category: string) {
+    const colors: Record<string, string> = {
+      'Transportation': '#60A5FA',
+      'Business': '#67E8F9',
+      'Food & Dining': '#86EFAC',
+      'Shopping': '#F472B6',
+      'Entertainment': '#FB923C',
+      'Utilities': '#818CF8',
+      'Housing': '#A78BFA',
+      'Healthcare': '#34D399',
+      'Insurance': '#F87171',
+      'Uncategorized': '#94A3B8'
+    };
+    return colors[category] || '#94A3B8'; // Default color for unknown categories
+  }
+
+  if (!latestStatement) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-purple-800 dark:text-white mb-2">
+            Spending Analytics
+          </h1>
+          <p className="text-neutral-600 dark:text-neutral-300">
+            No bank statement data available
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -78,7 +99,7 @@ const Analytics = () => {
           Spending Analytics
         </h1>
         <p className="text-neutral-600 dark:text-neutral-300">
-          Analyze your spending patterns and financial trends
+          Statement Period: {format(new Date(latestStatement.statement_month), "MMMM yyyy")}
         </p>
       </div>
 
@@ -92,7 +113,7 @@ const Analytics = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={data}
+                    data={categoryData}
                     cx="50%"
                     cy="50%"
                     innerRadius="60%"
@@ -102,7 +123,7 @@ const Analytics = () => {
                     onClick={handlePieClick}
                     cursor="pointer"
                   >
-                    {data.map((entry, index) => (
+                    {categoryData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color}
@@ -111,7 +132,7 @@ const Analytics = () => {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: number) => `$${value}`}
+                    formatter={(value: number) => `$${value.toFixed(2)}`}
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
                       border: '1px solid hsl(var(--border))',
@@ -119,7 +140,7 @@ const Analytics = () => {
                     }}
                   />
                   <Legend 
-                    onClick={(entry) => handlePieClick(entry, 0)}
+                    onClick={(entry) => handlePieClick(entry)}
                     cursor="pointer"
                   />
                 </PieChart>
