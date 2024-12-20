@@ -1,6 +1,5 @@
-export async function extractDataFromText(text: string): Promise<any> {
-  console.log('Processing text with OpenAI, text length:', text.length);
-  
+export async function extractDataFromImage(imageUrl: string): Promise<any> {
+  console.log('Calling OpenAI API for text extraction');
   const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -8,39 +7,53 @@ export async function extractDataFromText(text: string): Promise<any> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: `You are a specialized paystub data extractor. Extract the following fields from the paystub text:
-          - Gross Pay (total earnings before deductions)
-          - Net Pay (final take-home amount)
-          - Pay Period Start Date (in YYYY-MM-DD format)
-          - Pay Period End Date (in YYYY-MM-DD format)
+          content: `You are a paystub data extractor. Extract the following information from paystubs:
+          - Gross pay (before deductions)
+          - Net pay (take-home amount)
+          - Pay period start date
+          - Pay period end date
           
-          Rules:
-          1. Return numbers as plain numbers without currency symbols or commas
-          2. Format all dates as YYYY-MM-DD
-          3. If a value cannot be found, return null
-          4. Look for "Period Beginning" and "Period Ending" for dates
-          5. For Gross Pay, look for "Gross Pay" or total earnings
-          6. For Net Pay, look for "Net Pay" or final amount
-          7. Remove any whitespace or special characters from numbers
+          Format rules:
+          1. For monetary values (gross_pay and net_pay):
+             - Remove any currency symbols ($)
+             - Remove any commas
+             - Convert to plain numbers (e.g., $1,234.56 → 1234.56)
+          2. For dates:
+             - Format as YYYY-MM-DD
+          3. Response format:
+             - Return ONLY a valid JSON object
+             - Use these exact field names: gross_pay, net_pay, pay_period_start, pay_period_end
+             - Use null for any values you cannot extract
           
-          Return ONLY a JSON object with these fields:
+          Example response:
           {
-            "gross_pay": number or null,
-            "net_pay": number or null,
-            "pay_period_start": "YYYY-MM-DD" or null,
-            "pay_period_end": "YYYY-MM-DD" or null
+            "gross_pay": 1234.56,
+            "net_pay": 987.65,
+            "pay_period_start": "2024-01-01",
+            "pay_period_end": "2024-01-15"
           }`
         },
         {
           role: "user",
-          content: text
+          content: [
+            {
+              type: "text",
+              text: "Extract the paystub information following the format rules specified above. Return ONLY a JSON object."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageUrl
+              }
+            }
+          ]
         }
       ],
-      temperature: 0
+      max_tokens: 1000
     })
   });
 
@@ -50,19 +63,67 @@ export async function extractDataFromText(text: string): Promise<any> {
     throw new Error(`OpenAI API error: ${errorData}`);
   }
 
-  const result = await openAiResponse.json();
-  console.log('OpenAI API Response:', JSON.stringify(result));
+  const aiResult = await openAiResponse.json();
+  console.log('OpenAI API Response:', JSON.stringify(aiResult));
 
-  if (!result.choices?.[0]?.message?.content) {
+  if (!aiResult.choices?.[0]?.message?.content) {
     throw new Error('Invalid response format from OpenAI');
   }
 
   try {
-    const parsedData = JSON.parse(result.choices[0].message.content.trim());
-    console.log('Successfully parsed extracted data:', parsedData);
+    const content = aiResult.choices[0].message.content.trim();
+    console.log('Raw content from OpenAI:', content);
+    
+    // Remove any markdown formatting if present
+    const jsonContent = content.replace(/```json\n|\n```|```/g, '').trim();
+    console.log('Cleaned content for parsing:', jsonContent);
+    
+    const parsedData = JSON.parse(jsonContent);
+    
+    // Validate the required fields exist
+    const requiredFields = ['gross_pay', 'net_pay', 'pay_period_start', 'pay_period_end'];
+    for (const field of requiredFields) {
+      if (!(field in parsedData)) {
+        throw new Error(`Missing required field: ${field}`);
+      }
+    }
+    
+    // Convert string numbers to actual numbers if they're not null
+    if (parsedData.gross_pay !== null) {
+      const grossPay = Number(String(parsedData.gross_pay).replace(/[^0-9.-]+/g, ''));
+      if (isNaN(grossPay)) {
+        console.warn('Invalid gross_pay value, setting to null');
+        parsedData.gross_pay = null;
+      } else {
+        parsedData.gross_pay = grossPay;
+      }
+    }
+    
+    if (parsedData.net_pay !== null) {
+      const netPay = Number(String(parsedData.net_pay).replace(/[^0-9.-]+/g, ''));
+      if (isNaN(netPay)) {
+        console.warn('Invalid net_pay value, setting to null');
+        parsedData.net_pay = null;
+      } else {
+        parsedData.net_pay = netPay;
+      }
+    }
+    
+    // Validate dates if they're not null
+    for (const dateField of ['pay_period_start', 'pay_period_end']) {
+      if (parsedData[dateField] !== null) {
+        const date = new Date(parsedData[dateField]);
+        if (isNaN(date.getTime())) {
+          console.warn(`Invalid ${dateField} value, setting to null`);
+          parsedData[dateField] = null;
+        }
+      }
+    }
+    
+    console.log('Parsed and validated data:', parsedData);
     return parsedData;
   } catch (error) {
-    console.error('Failed to parse OpenAI response:', error);
+    console.error('Failed to parse or validate OpenAI response:', error);
     throw new Error('Failed to parse extracted data');
   }
 }
