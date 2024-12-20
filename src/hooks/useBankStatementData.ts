@@ -21,7 +21,6 @@ export const useBankStatementData = () => {
         `)
         .eq('financial_documents.status', 'completed')
         .order('statement_month', { ascending: false })
-        .limit(1)
         .single();
 
       if (statementError) {
@@ -31,7 +30,8 @@ export const useBankStatementData = () => {
 
       if (statementData) {
         console.log('Found latest bank statement:', statementData);
-        // Convert transactions from Json to Transaction[]
+        
+        // Ensure transactions are properly typed
         const typedTransactions = Array.isArray(statementData.transactions) 
           ? statementData.transactions.map((t: any): Transaction => ({
               date: t.date,
