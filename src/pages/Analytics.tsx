@@ -2,12 +2,14 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import TransactionsPopup from "@/components/analytics/TransactionsPopup";
+import MonthSelector from "@/components/analytics/MonthSelector";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/types/bankStatement";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   
   const { data: bankStatements, isLoading } = useQuery({
     queryKey: ["bank-statement-analytics"],
@@ -30,18 +32,21 @@ const Analytics = () => {
     }
   });
 
-  // Process transactions data
+  // Process transactions data for the selected month
   const processTransactionsData = () => {
     if (!bankStatements || bankStatements.length === 0) return [];
 
-    // Combine all transactions from all statements
-    const allTransactions = bankStatements.reduce((acc: Transaction[], statement) => {
-      const transactions = statement.transactions as unknown as Transaction[] || [];
-      return [...acc, ...transactions];
-    }, []);
+    // Filter statement by selected month
+    const selectedStatement = selectedMonth 
+      ? bankStatements.find(statement => statement.statement_month === selectedMonth)
+      : bankStatements[0]; // Default to most recent if none selected
+
+    if (!selectedStatement) return [];
+
+    const transactions = selectedStatement.transactions as unknown as Transaction[] || [];
 
     // Group transactions by category and calculate totals (only expenses)
-    const categoryTotals = allTransactions.reduce((acc: { [key: string]: number }, transaction) => {
+    const categoryTotals = transactions.reduce((acc: { [key: string]: number }, transaction) => {
       if (transaction.amount < 0) { // Only include expenses
         const category = transaction.category || 'Uncategorized';
         acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
@@ -55,7 +60,7 @@ const Analytics = () => {
         name: category,
         value,
         color: getCategoryColor(category),
-        transactions: allTransactions.filter(t => t.category === category && t.amount < 0)
+        transactions: transactions.filter(t => t.category === category && t.amount < 0)
       }))
       .sort((a, b) => b.value - a.value);
   };
@@ -96,21 +101,41 @@ const Analytics = () => {
     );
   }
 
+  const currentStatement = selectedMonth 
+    ? bankStatements?.find(statement => statement.statement_month === selectedMonth)
+    : bankStatements?.[0];
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-purple-800 dark:text-white mb-2">
           Spending Analytics
         </h1>
-        <p className="text-neutral-600 dark:text-neutral-300">
-          Total Spending: {formatCurrency(totalSpending)}
-        </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <p className="text-neutral-600 dark:text-neutral-300">
+            Total Spending: {formatCurrency(totalSpending)}
+          </p>
+          {bankStatements && bankStatements.length > 0 && (
+            <MonthSelector
+              statements={bankStatements}
+              selectedMonth={selectedMonth}
+              onMonthSelect={setSelectedMonth}
+            />
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Spending Distribution</CardTitle>
+            <CardTitle>
+              Spending Distribution
+              {currentStatement && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  for {format(new Date(currentStatement.statement_month), "MMMM yyyy")}
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[500px] w-full">
