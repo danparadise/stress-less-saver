@@ -36,7 +36,7 @@ const Analytics = () => {
 
   // Process transactions into category data for the chart
   const categoryData = latestStatement?.transactions 
-    ? (latestStatement.transactions as Transaction[]).reduce((acc: any[], transaction: Transaction) => {
+    ? (latestStatement.transactions as unknown as Transaction[]).reduce((acc: any[], transaction: Transaction) => {
         if (transaction.amount < 0) { // Only include expenses (negative amounts)
           const category = transaction.category || 'Uncategorized';
           const existingCategory = acc.find(item => item.name === category);
