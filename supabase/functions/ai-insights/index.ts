@@ -20,6 +20,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    console.log('Fetching financial data for user:', userId);
+
     // Fetch last 3 months of bank statements
     const { data: bankStatements, error: bankError } = await supabase
       .from('bank_statement_data')
@@ -31,6 +33,11 @@ serve(async (req) => {
       .order('statement_month', { ascending: false })
       .limit(3);
 
+    if (bankError) {
+      console.error('Error fetching bank statements:', bankError);
+      throw new Error('Failed to fetch bank statements');
+    }
+
     // Fetch last 3 months of paystubs
     const { data: paystubs, error: paystubError } = await supabase
       .from('paystub_data')
@@ -40,13 +47,14 @@ serve(async (req) => {
       `)
       .eq('financial_documents.user_id', userId)
       .order('pay_period_start', { ascending: false })
-      .limit(6); // Assuming bi-weekly pay, this gives us 3 months
+      .limit(6); // Assuming bi-weekly pay
 
-    if (bankError || paystubError) {
-      throw new Error('Error fetching financial data');
+    if (paystubError) {
+      console.error('Error fetching paystubs:', paystubError);
+      throw new Error('Failed to fetch paystub data');
     }
 
-    // Calculate key financial metrics
+    // Process and analyze the financial data
     const latestStatement = bankStatements?.[0];
     const monthlyExpenses = Math.abs(latestStatement?.total_withdrawals || 0);
     
