@@ -8,8 +8,8 @@ export async function extractTextFromPdf(pdfUrl: string): Promise<string> {
     throw new Error('PDF_CO_API_KEY is not set');
   }
 
-  // First, get a presigned URL for the job
-  const presignedResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/text', {
+  // Get the text content directly
+  const response = await fetch('https://api.pdf.co/v1/pdf/convert/to/text', {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -18,34 +18,26 @@ export async function extractTextFromPdf(pdfUrl: string): Promise<string> {
     body: JSON.stringify({
       url: pdfUrl,
       async: false,
-      inline: false
+      inline: true
     })
   });
 
-  if (!presignedResponse.ok) {
-    const errorData = await presignedResponse.text();
+  if (!response.ok) {
+    const errorData = await response.text();
     console.error('PDF.co API error:', errorData);
-    throw new Error(`Failed to start PDF conversion job: ${errorData}`);
+    throw new Error(`Failed to extract text from PDF: ${errorData}`);
   }
 
-  const result = await presignedResponse.json();
+  const result = await response.json();
   console.log('PDF.co conversion response:', result);
   
   if (result.error) {
     throw new Error(`PDF.co processing error: ${result.message}`);
   }
 
-  if (!result.url) {
-    throw new Error('No text content URL returned from PDF.co');
+  if (!result.text) {
+    throw new Error('No text content returned from PDF.co');
   }
 
-  // Download the text content
-  const textResponse = await fetch(result.url);
-  if (!textResponse.ok) {
-    throw new Error('Failed to download converted text');
-  }
-
-  const text = await textResponse.text();
-  console.log('Successfully extracted text from PDF');
-  return text;
+  return result.text;
 }
