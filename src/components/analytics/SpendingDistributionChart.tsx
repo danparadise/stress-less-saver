@@ -122,13 +122,13 @@ const SpendingDistributionChart = ({
                   />
                 ))}
               </Pie>
-              {/* Add center text for total spending */}
+              {/* Center text for total spending */}
               <Text
                 x="50%"
                 y="50%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="fill-purple-200 text-2xl font-bold"
+                className="fill-purple-200 text-4xl font-bold"
               >
                 {formatCurrency(totalSpending)}
               </Text>
