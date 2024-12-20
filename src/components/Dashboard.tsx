@@ -8,6 +8,7 @@ import AiInsights from "./dashboard/AiInsights";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { Json } from "@/integrations/supabase/types";
+import { Transaction } from "@/types/bankStatement";
 
 const mockData = {
   savings: 450,
@@ -31,6 +32,27 @@ const mockData = {
   ]
 };
 
+// Helper function to convert Json to Transaction
+const convertJsonToTransaction = (jsonData: Json): Transaction => {
+  if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
+    return {
+      date: String(jsonData.date || ''),
+      description: String(jsonData.description || ''),
+      category: String(jsonData.category || ''),
+      amount: Number(jsonData.amount || 0),
+      balance: Number(jsonData.balance || 0)
+    };
+  }
+  // Return a default transaction if conversion fails
+  return {
+    date: '',
+    description: '',
+    category: '',
+    amount: 0,
+    balance: 0
+  };
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
@@ -47,7 +69,7 @@ const Dashboard = () => {
         ? (bankStatementData.transactions as Json[]).map(convertJsonToTransaction)
         : [];
 
-      const expenses = transactionsArray.reduce((total: number, transaction) => {
+      const expenses = transactionsArray.reduce((total: number, transaction: Transaction) => {
         // Only sum negative amounts (expenses)
         if (transaction.amount < 0) {
           return total + Math.abs(transaction.amount);
