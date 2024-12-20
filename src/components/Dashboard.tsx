@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, ArrowDownRight, Wallet, PiggyBank } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
@@ -11,12 +13,6 @@ const mockData = {
   expenses: 1850,
   savings: 450,
   savingsGoal: 1000,
-  transactions: [
-    { date: "2024-01", amount: 3200 },
-    { date: "2024-02", amount: 3400 },
-    { date: "2024-03", amount: 3100 },
-    { date: "2024-04", amount: 3600 },
-  ],
   aiSuggestions: [
     {
       id: 1,
@@ -38,6 +34,35 @@ const mockData = {
 
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
+
+  const { data: paystubData } = useQuery({
+    queryKey: ["paystub-data"],
+    queryFn: async () => {
+      console.log('Fetching paystub data for income trend');
+      const { data, error } = await supabase
+        .from("paystub_data")
+        .select(`
+          gross_pay,
+          pay_period_start,
+          financial_documents!inner(
+            status
+          )
+        `)
+        .eq('financial_documents.status', 'completed')
+        .order('pay_period_start', { ascending: true });
+
+      if (error) throw error;
+      
+      // Transform data for the chart
+      const chartData = data?.map(item => ({
+        date: item.pay_period_start,
+        amount: Number(item.gross_pay)
+      })) || [];
+      
+      console.log('Transformed paystub data for chart:', chartData);
+      return chartData;
+    }
+  });
 
   useEffect(() => {
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -111,7 +136,7 @@ const Dashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <IncomeChart data={mockData.transactions} />
+              <IncomeChart data={paystubData || []} />
             </div>
             <div className="lg:col-span-1">
               <AiInsights suggestions={mockData.aiSuggestions} />
