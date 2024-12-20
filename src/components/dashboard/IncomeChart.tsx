@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 interface IncomeChartProps {
   data: Array<{ date: string; amount: number }>;
@@ -8,7 +8,17 @@ interface IncomeChartProps {
 
 const IncomeChart = ({ data }: IncomeChartProps) => {
   const formatDate = (dateStr: string) => {
-    return format(new Date(dateStr), "MMM yyyy");
+    try {
+      const parsedDate = parseISO(dateStr);
+      if (!isValid(parsedDate)) {
+        console.error('Invalid date:', dateStr);
+        return 'Invalid Date';
+      }
+      return format(parsedDate, "MMM yyyy");
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid Date';
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -20,12 +30,22 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
     }).format(value);
   };
 
+  // Validate and clean data before rendering
+  const validData = data.filter(item => {
+    try {
+      const parsedDate = parseISO(item.date);
+      return isValid(parsedDate) && !isNaN(item.amount);
+    } catch {
+      return false;
+    }
+  });
+
   return (
     <Card className="col-span-2 p-6 glass-card">
-      <h3 className="text-lg font-semibold text-purple-800 mb-4">Income Trend</h3>
+      <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-4">Income Trend</h3>
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={validData}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis 
               dataKey="date" 
