@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { BankStatement, MonthlyFinancialSummary, FinancialData } from "@/types/bankStatement";
+import { BankStatement, Transaction } from "@/types/bankStatement";
 
 export const useBankStatementData = () => {
   return useQuery({
@@ -31,24 +31,24 @@ export const useBankStatementData = () => {
 
       if (statementData) {
         console.log('Found latest bank statement:', statementData);
-        return statementData as BankStatement;
+        // Convert transactions from Json to Transaction[]
+        const typedTransactions = Array.isArray(statementData.transactions) 
+          ? statementData.transactions.map((t: any): Transaction => ({
+              date: t.date,
+              description: t.description,
+              category: t.category,
+              amount: t.amount,
+              balance: t.balance
+            }))
+          : [];
+          
+        return {
+          ...statementData,
+          transactions: typedTransactions
+        } as BankStatement;
       }
 
-      // Fallback to monthly summary if no bank statement exists
-      const { data: summaryData, error: summaryError } = await supabase
-        .from("monthly_financial_summaries")
-        .select("*")
-        .order('month_year', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (summaryError) {
-        console.error('Error fetching monthly summary:', summaryError);
-        throw summaryError;
-      }
-
-      console.log('Found monthly summary data:', summaryData);
-      return summaryData as MonthlyFinancialSummary;
+      return null;
     },
     refetchOnWindowFocus: true,
     staleTime: 0

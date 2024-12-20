@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowDownRight, PiggyBank } from "lucide-react";
+import { ArrowDownRight, PiggyBank, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
@@ -7,10 +7,10 @@ import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import FinancialChatbot from "./dashboard/FinancialChatbot";
+import TransactionsPopup from "./analytics/TransactionsPopup";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateMonthlyExpenses } from "@/utils/transactionUtils";
 
 const mockData = {
   savings: 450,
@@ -38,6 +38,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
   const [monthlyExpenses, setMonthlyExpenses] = useState(0);
+  const [isTransactionsOpen, setIsTransactionsOpen] = useState(false);
+  const [transactions, setTransactions] = useState([]);
 
   const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
   const { data: paystubData, isLoading: isPaystubLoading, error } = usePaystubTrends();
@@ -48,49 +50,17 @@ const Dashboard = () => {
       console.log('Processing financial data:', financialData);
       
       if ('total_withdrawals' in financialData && typeof financialData.total_withdrawals === 'number') {
-        console.log('Setting monthly expenses from withdrawals:', Math.abs(financialData.total_withdrawals));
-        setMonthlyExpenses(Math.abs(financialData.total_withdrawals));
-      }
-      else if ('total_expenses' in financialData && typeof financialData.total_expenses === 'number') {
-        console.log('Setting monthly expenses from summary:', financialData.total_expenses);
-        setMonthlyExpenses(Math.abs(financialData.total_expenses));
-      }
-      else if ('transactions' in financialData && Array.isArray(financialData.transactions)) {
-        console.log('Calculating monthly expenses from transactions');
-        const totalExpenses = financialData.transactions.reduce((sum, transaction) => {
-          const amount = typeof transaction.amount === 'number' ? transaction.amount : 0;
-          return amount < 0 ? sum + Math.abs(amount) : sum;
-        }, 0);
-        console.log('Calculated monthly expenses:', totalExpenses);
-        setMonthlyExpenses(totalExpenses);
+        const withdrawals = Math.abs(financialData.total_withdrawals);
+        console.log('Setting monthly expenses from withdrawals:', withdrawals);
+        setMonthlyExpenses(withdrawals);
+        
+        // Set transactions if available
+        if ('transactions' in financialData && Array.isArray(financialData.transactions)) {
+          setTransactions(financialData.transactions);
+        }
       }
     }
   }, [financialData]);
-
-  // Subscribe to financial summary changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('monthly-summary-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'monthly_financial_summaries'
-        },
-        (payload) => {
-          console.log('Monthly summary updated:', payload);
-          if (payload.new && 'total_expenses' in payload.new && typeof payload.new.total_expenses === 'number') {
-            setMonthlyExpenses(Math.abs(payload.new.total_expenses));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -109,6 +79,10 @@ const Dashboard = () => {
 
   const handleExpensesClick = () => {
     navigate('/analytics');
+  };
+
+  const handleTransactionsClick = () => {
+    setIsTransactionsOpen(true);
   };
 
   if (error) {
@@ -131,15 +105,24 @@ const Dashboard = () => {
           <SearchBar onSearch={handleSearch} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <StatsCard
-              title="Monthly Expenses"
-              value={`-$${monthlyExpenses.toLocaleString()}`}
-              icon={ArrowDownRight}
-              iconBgColor="bg-destructive/10"
-              iconColor="text-destructive"
-              valueColor="text-destructive"
-              onClick={handleExpensesClick}
-            />
+            <div className="flex flex-col gap-4">
+              <StatsCard
+                title="Monthly Expenses"
+                value={`-$${monthlyExpenses.toLocaleString()}`}
+                icon={ArrowDownRight}
+                iconBgColor="bg-destructive/10"
+                iconColor="text-destructive"
+                valueColor="text-destructive"
+                onClick={handleExpensesClick}
+              />
+              <button
+                onClick={handleTransactionsClick}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <List className="h-4 w-4" />
+                View Transactions
+              </button>
+            </div>
             <StatsCard
               title="Monthly Savings"
               value={`+$${mockData.savings.toLocaleString()}`}
@@ -168,6 +151,16 @@ const Dashboard = () => {
             <FinancialChatbot />
           </div>
         </div>
+
+        {transactions && (
+          <TransactionsPopup
+            isOpen={isTransactionsOpen}
+            onClose={() => setIsTransactionsOpen(false)}
+            category="All Transactions"
+            transactions={transactions}
+            color="#ef4444"
+          />
+        )}
       </main>
     </div>
   );
