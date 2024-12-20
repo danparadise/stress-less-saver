@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ArrowDownRight, Wallet, PiggyBank } from "lucide-react";
+import { ArrowDownRight, PiggyBank } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
-import { Skeleton } from "./ui/skeleton";
 
 const mockData = {
-  balance: 5240.50,
-  income: 3200,
   expenses: 1850,
   savings: 450,
   savingsGoal: 1000,
@@ -34,6 +32,7 @@ const mockData = {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
 
   const { data: paystubData, isLoading, error } = useQuery({
@@ -71,8 +70,8 @@ const Dashboard = () => {
       console.log('Transformed paystub data for chart:', chartData);
       return chartData;
     },
-    retry: 1, // Only retry once to prevent infinite loading
-    refetchOnWindowFocus: false // Prevent unnecessary refetches
+    retry: 1,
+    refetchOnWindowFocus: false
   });
 
   useEffect(() => {
@@ -82,17 +81,16 @@ const Dashboard = () => {
     }
   }, []);
 
-  const toggleDarkMode = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
-  };
-
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("Searching:", e.target.value);
   };
 
   const calculateSavingsProgress = () => {
     return (mockData.savings / mockData.savingsGoal) * 100;
+  };
+
+  const handleExpensesClick = () => {
+    navigate('/analytics');
   };
 
   if (error) {
@@ -122,22 +120,7 @@ const Dashboard = () => {
         <div className="space-y-8">
           <SearchBar onSearch={handleSearch} />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatsCard
-              title="Current Balance"
-              value={`$${mockData.balance.toLocaleString()}`}
-              icon={Wallet}
-              iconBgColor="bg-sage-100"
-              iconColor="text-sage-500"
-            />
-            <StatsCard
-              title="Monthly Income"
-              value={`+$${mockData.income.toLocaleString()}`}
-              icon={ArrowUpRight}
-              iconBgColor="bg-sage-100"
-              iconColor="text-sage-500"
-              valueColor="text-sage-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatsCard
               title="Monthly Expenses"
               value={`-$${mockData.expenses.toLocaleString()}`}
@@ -145,6 +128,7 @@ const Dashboard = () => {
               iconBgColor="bg-destructive/10"
               iconColor="text-destructive"
               valueColor="text-destructive"
+              onClick={handleExpensesClick}
             />
             <StatsCard
               title="Monthly Savings"

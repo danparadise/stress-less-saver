@@ -9,6 +9,7 @@ interface StatsCardProps {
   iconColor: string;
   valueColor?: string;
   progress?: number;
+  onClick?: () => void;
 }
 
 const StatsCard = ({
@@ -18,10 +19,14 @@ const StatsCard = ({
   iconBgColor,
   iconColor,
   valueColor = "text-purple-800",
-  progress
+  progress,
+  onClick
 }: StatsCardProps) => {
   return (
-    <Card className="p-6 glass-card animate-fadeIn hover:translate-y-[-4px] transition-transform duration-200">
+    <Card 
+      className={`p-6 glass-card animate-fadeIn hover:translate-y-[-4px] transition-transform duration-200 ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <div className="flex justify-between items-start">
         <div>
           <p className="text-sm font-medium text-purple-600">{title}</p>
