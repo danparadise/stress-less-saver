@@ -9,7 +9,7 @@ export const usePaystubTrends = () => {
       const { data, error } = await supabase
         .from("paystub_data")
         .select(`
-          gross_pay,
+          net_pay,
           pay_period_start,
           financial_documents!inner(
             status,
@@ -27,7 +27,7 @@ export const usePaystubTrends = () => {
       
       const chartData = data?.map(item => ({
         date: item.pay_period_start,
-        amount: Number(item.gross_pay)
+        amount: Number(item.net_pay)
       })).filter(item => 
         !isNaN(item.amount) && 
         item.date

@@ -49,7 +49,7 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
 
   return (
     <Card className="col-span-2 p-6 glass-card">
-      <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-4">Income Trend</h3>
+      <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-4">Net Income Trend</h3>
       <div className="h-[300px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={sortedData}>
@@ -64,7 +64,7 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
               tickFormatter={formatCurrency}
             />
             <Tooltip 
-              formatter={(value: number) => [formatCurrency(value), "Gross Pay"]}
+              formatter={(value: number) => [formatCurrency(value), "Net Pay"]}
               labelFormatter={(label) => {
                 const date = parseISO(label as string);
                 return isValid(date) ? format(date, "MMM d, yyyy") : label;
