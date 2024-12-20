@@ -52,8 +52,8 @@ export const usePaystubData = () => {
     refetchOnWindowFocus: true,
     staleTime: 0,
     gcTime: 0,
-    refetchOnMount: true,
-    enabled: true // Ensure the query runs on mount
+    refetchOnMount: "always" as const, // Force refetch on every mount
+    enabled: true
   });
 
   const deleteMutation = useMutation({

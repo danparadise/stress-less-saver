@@ -5,10 +5,22 @@ import PaystubLoading from "../../paystubs/PaystubLoading";
 import { usePaystubData } from "./usePaystubData";
 import { usePaystubSubscription } from "./usePaystubSubscription";
 import PaystubDataHeader from "./PaystubDataHeader";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 const PaystubData = () => {
   const { paystubs, isLoading, handleRefresh, deleteMutation } = usePaystubData();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   usePaystubSubscription();
+
+  // Force data refresh on route change
+  useEffect(() => {
+    console.log('Route changed to Paystubs, forcing data refresh');
+    queryClient.invalidateQueries({ queryKey: ["paystub-data"] });
+    queryClient.refetchQueries({ queryKey: ["paystub-data"] });
+  }, [location.pathname, queryClient]);
 
   if (isLoading) {
     return (
