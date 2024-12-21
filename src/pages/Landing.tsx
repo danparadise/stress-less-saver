@@ -50,6 +50,10 @@ const Landing = () => {
     }).format(value);
   };
 
+  const handleSignIn = () => {
+    navigate("/login");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       <div className="container mx-auto px-4 py-16">
@@ -73,7 +77,7 @@ const Landing = () => {
               Get Started Free
             </Button>
             <Button
-              onClick={() => navigate("/login")}
+              onClick={handleSignIn}
               size="lg"
               variant="outline"
               className="px-8 py-6 text-lg border-purple-600 text-purple-600 hover:bg-purple-50"
