@@ -50,10 +50,6 @@ const Footer = () => {
               <li>
                 <a href="mailto:support@payguard.ai" className="hover:text-purple-900">support@payguard.ai</a>
               </li>
-              <li>
-                123 Finance Street<br />
-                San Francisco, CA 94105
-              </li>
             </ul>
           </div>
         </div>
