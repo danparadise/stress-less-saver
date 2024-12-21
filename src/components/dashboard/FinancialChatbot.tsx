@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,15 @@ const FinancialChatbot = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     const welcomeMessage: Message = {
@@ -26,19 +35,16 @@ const FinancialChatbot = () => {
   }, []);
 
   const formatMessageContent = (content: string) => {
-    // Split content into sections
     const sections = content.split('\n');
     
     return sections.map((section, index) => {
       if (section.startsWith('Step')) {
-        // Style step headers
         return (
           <div key={index} className="mt-4 mb-2">
             <h3 className="font-semibold text-purple-900">{section}</h3>
           </div>
         );
       } else if (section.startsWith('-')) {
-        // Style bullet points
         return (
           <div key={index} className="ml-4 my-1 flex items-start">
             <span className="mr-2 text-purple-600">•</span>
@@ -46,28 +52,24 @@ const FinancialChatbot = () => {
           </div>
         );
       } else if (section.startsWith("Here's your financial snapshot:")) {
-        // Style the snapshot header
         return (
           <div key={index} className="font-semibold text-lg text-purple-900 mb-2">
             {section}
           </div>
         );
       } else if (section.startsWith("Let's take action:")) {
-        // Style the action header
         return (
           <div key={index} className="font-semibold text-lg text-purple-900 my-2">
             {section}
           </div>
         );
       } else if (section.startsWith("Would you like")) {
-        // Style the closing question
         return (
           <div key={index} className="mt-4 text-purple-900 font-medium">
             {section}
           </div>
         );
       } else if (section.trim() !== '') {
-        // Style regular text
         return <p key={index} className="my-2">{section}</p>;
       }
       return null;
@@ -153,6 +155,7 @@ const FinancialChatbot = () => {
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="flex gap-3 mt-auto">
