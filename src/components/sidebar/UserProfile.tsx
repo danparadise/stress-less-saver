@@ -11,14 +11,13 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Settings, User } from "lucide-react";
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const UserProfile = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [username, setUsername] = useState("");
+  const navigate = useNavigate();
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -32,41 +31,30 @@ const UserProfile = () => {
         .eq("id", user.id)
         .single();
       
-      if (profile) {
-        setUsername(profile.username || "");
-      }
       return profile;
     },
   });
 
-  const handleUpdateProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  useEffect(() => {
+    const checkFirstLogin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ username })
-      .eq("id", user.id);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
 
-    if (error) {
-      toast.error("Failed to update profile");
-    } else {
-      toast.success("Profile updated successfully");
-      setIsOpen(false);
-    }
-  };
+      if (!profile?.username) {
+        setShowNamePrompt(true);
+        navigate("/profile");
+        toast.info("Please set your display name");
+      }
+    };
 
-  const handleResetPassword = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) return;
-
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email);
-    if (error) {
-      toast.error("Failed to send reset password email");
-    } else {
-      toast.success("Password reset email sent");
-    }
-  };
+    checkFirstLogin();
+  }, [navigate]);
 
   return (
     <div className="p-4">
@@ -94,35 +82,16 @@ const UserProfile = () => {
         <DropdownMenuContent className="w-56">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setIsOpen(true)}>
+          <DropdownMenuItem onClick={() => navigate("/profile")}>
             <User className="mr-2 h-4 w-4" />
             Edit Profile
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleResetPassword}>
+          <DropdownMenuItem onClick={() => navigate("/settings")}>
             <Settings className="mr-2 h-4 w-4" />
-            Reset Password
+            Settings
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Username</label>
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-              />
-            </div>
-            <Button onClick={handleUpdateProfile}>Save Changes</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

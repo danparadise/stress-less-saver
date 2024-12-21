@@ -16,6 +16,8 @@ import Analytics from "./pages/Analytics";
 import BankStatements from "./pages/BankStatements";
 import BankStatementAnalytics from "./pages/BankStatementAnalytics";
 import Audit from "./pages/Audit";
+import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 
 // Legal Pages
 import Privacy from "./pages/legal/Privacy";
@@ -49,7 +51,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="dark" storageKey="app-theme">
+    <ThemeProvider defaultTheme="light" storageKey="app-theme">
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -76,6 +78,36 @@ const App = () => (
                       <AppSidebar />
                       <main className="flex-1">
                         <Index />
+                      </main>
+                    </div>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full">
+                      <AppSidebar />
+                      <main className="flex-1">
+                        <Settings />
+                      </main>
+                    </div>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full">
+                      <AppSidebar />
+                      <main className="flex-1">
+                        <Profile />
                       </main>
                     </div>
                   </SidebarProvider>
