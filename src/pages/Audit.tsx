@@ -7,7 +7,7 @@ import AuditAlerts from "@/components/audit/AuditAlerts";
 import AuditCharts from "@/components/audit/AuditCharts";
 import AuditDocuments from "@/components/audit/AuditDocuments";
 import MonthSelector from "@/components/analytics/MonthSelector";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Audit = () => {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
@@ -26,6 +26,24 @@ const Audit = () => {
       return data;
     }
   });
+
+  // Set the most recent month with data as the default selection
+  useEffect(() => {
+    if (statements && statements.length > 0 && !selectedMonth) {
+      // Find the most recent month that has meaningful data
+      const monthWithData = statements.find(statement => 
+        (statement.total_income && statement.total_income > 0) ||
+        (statement.total_expenses && statement.total_expenses > 0) ||
+        (statement.total_deposits && statement.total_deposits > 0) ||
+        (statement.ending_balance && statement.ending_balance !== 0)
+      );
+
+      if (monthWithData) {
+        console.log('Setting default month:', monthWithData.month_year);
+        setSelectedMonth(monthWithData.month_year);
+      }
+    }
+  }, [statements]);
 
   if (isLoading) {
     return (
