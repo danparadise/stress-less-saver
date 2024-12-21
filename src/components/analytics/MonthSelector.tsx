@@ -7,8 +7,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface Statement {
+  month_year: string;
+  total_income: number;
+  total_expenses: number;
+  total_deposits: number;
+  ending_balance: number;
+}
+
 interface MonthSelectorProps {
-  statements: Array<{ month_year: string }>;
+  statements: Statement[];
   selectedMonth: string | null;
   onMonthSelect: (month: string) => void;
 }
