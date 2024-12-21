@@ -14,6 +14,7 @@ import Paystubs from "./pages/Paystubs";
 import Analytics from "./pages/Analytics";
 import BankStatements from "./pages/BankStatements";
 import BankStatementAnalytics from "./pages/BankStatementAnalytics";
+import Audit from "./pages/Audit";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,21 @@ const App = () => (
                       <AppSidebar />
                       <main className="flex-1">
                         <Analytics />
+                      </main>
+                    </div>
+                  </SidebarProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/audit"
+              element={
+                <ProtectedRoute>
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full">
+                      <AppSidebar />
+                      <main className="flex-1">
+                        <Audit />
                       </main>
                     </div>
                   </SidebarProvider>
