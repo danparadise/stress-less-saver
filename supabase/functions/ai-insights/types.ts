@@ -1,3 +1,4 @@
+// Transaction Types
 export interface Transaction {
   date: string;
   description: string;
@@ -6,14 +7,17 @@ export interface Transaction {
   balance: number;
 }
 
+export interface CategoryTotal {
+  category: string;
+  amount: number;
+}
+
+// Financial Metrics Types
 export interface FinancialMetrics {
   monthlyNetIncome: number;
   monthlyExpenses: number;
   savingsRate: number;
   transactions: Transaction[];
-  topExpenseCategories: Array<{
-    category: string;
-    amount: number;
-  }>;
+  topExpenseCategories: CategoryTotal[];
   transactionCategories: Record<string, number>;
 }
