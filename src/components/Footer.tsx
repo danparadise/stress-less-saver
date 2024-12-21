@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import DiscordLink from "./common/DiscordLink";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -49,6 +50,9 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-purple-700">
               <li>
                 <a href="mailto:support@payguard.ai" className="hover:text-purple-900">support@payguard.ai</a>
+              </li>
+              <li>
+                <DiscordLink variant="link" className="p-0 h-auto font-normal text-sm text-purple-700 hover:text-purple-900" />
               </li>
             </ul>
           </div>
