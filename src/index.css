@@ -59,9 +59,8 @@
   }
 }
 
-  .dark body {
-    background: linear-gradient(135deg, #1E1533 0%, #2D1B4B 100%);
-  }
+.dark body {
+  background: linear-gradient(135deg, #1E1533 0%, #2D1B4B 100%);
 }
 
 .glass-card {
