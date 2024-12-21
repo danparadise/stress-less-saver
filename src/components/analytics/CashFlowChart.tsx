@@ -51,6 +51,22 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
     return dateA.getTime() - dateB.getTime();
   });
 
+  // Custom tooltip component for better visibility
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const amount = payload[0].value;
+      return (
+        <div className="bg-[#1A1F2C] border border-purple-400/20 rounded-lg p-3 shadow-xl">
+          <p className="text-white font-medium mb-1">{label}</p>
+          <p className="text-emerald-400 font-mono font-bold">
+            Net Flow: {formatCurrency(amount)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <Card className="dark:bg-purple-800/10 backdrop-blur-lg border-purple-300/20">
       <CardHeader>
@@ -82,14 +98,8 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
                 fontSize={12}
                 tickLine={false}
               />
-              <Tooltip
-                formatter={(value: number) => [formatCurrency(value), "Net Flow"]}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '0.5rem',
-                  padding: '0.75rem',
-                }}
+              <Tooltip 
+                content={<CustomTooltip />}
                 cursor={{ fill: 'rgba(167, 139, 250, 0.1)' }}
               />
               <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
