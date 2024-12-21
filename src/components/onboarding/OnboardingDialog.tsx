@@ -66,9 +66,9 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-white">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-center mb-4">
+          <DialogTitle className="text-2xl font-semibold text-purple-900 text-center mb-4">
             {currentQuestion.title}
           </DialogTitle>
         </DialogHeader>
@@ -81,10 +81,13 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
             {currentQuestion.options.map((option) => (
               <div
                 key={option}
-                className="flex items-center space-x-3 rounded-lg border p-4 cursor-pointer hover:bg-accent"
+                className="flex items-center space-x-3 rounded-lg border border-purple-100 p-4 cursor-pointer hover:bg-purple-50 transition-colors"
               >
-                <RadioGroupItem value={option} id={option} />
-                <Label htmlFor={option} className="flex-grow cursor-pointer">
+                <RadioGroupItem value={option} id={option} className="text-purple-600" />
+                <Label 
+                  htmlFor={option} 
+                  className="flex-grow cursor-pointer text-purple-900 font-medium"
+                >
                   {option}
                 </Label>
               </div>
@@ -96,13 +99,14 @@ export function OnboardingDialog({ open, onOpenChange }: OnboardingDialogProps) 
             variant="outline"
             onClick={() => setStep(Math.max(0, step - 1))}
             disabled={step === 0}
+            className="border-purple-200 text-purple-700 hover:bg-purple-50"
           >
             Back
           </Button>
           <Button
             onClick={handleNext}
             disabled={!answers[step]}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             {step === questions.length - 1 ? "Complete" : "Next"}
           </Button>
