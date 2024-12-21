@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface CashFlowChartProps {
@@ -24,6 +24,17 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
 
   // Process data to show daily net cash flow
   const processedData = data.reduce((acc: any[], transaction) => {
+    // Only process transactions within the selected month
+    if (currentMonth) {
+      const transactionDate = new Date(transaction.date);
+      const monthStart = startOfMonth(new Date(currentMonth));
+      const monthEnd = endOfMonth(new Date(currentMonth));
+
+      if (!isWithinInterval(transactionDate, { start: monthStart, end: monthEnd })) {
+        return acc;
+      }
+    }
+
     const date = format(new Date(transaction.date), 'MMM dd');
     const existingDay = acc.find(item => item.date === date);
 
