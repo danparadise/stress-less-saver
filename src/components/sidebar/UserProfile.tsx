@@ -69,40 +69,41 @@ const UserProfile = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full flex items-center space-x-3">
-              <Avatar>
-                <AvatarFallback className="bg-sage-100">
-                  {profile?.username?.[0]?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium text-purple-800 dark:text-white">
-                  {profile?.username || "User"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {profile?.subscription_status === "pro" ? "Pro Member" : "Free Plan"}
-                </span>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setIsOpen(true)}>
-              <User className="mr-2 h-4 w-4" />
-              Edit Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleResetPassword}>
-              <Settings className="mr-2 h-4 w-4" />
-              Reset Password
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <div className="p-4">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className="w-full flex items-center space-x-3 p-3 rounded-xl bg-purple-900/20 border border-purple-500/20 hover:bg-purple-900/30 transition-all"
+          >
+            <Avatar className="h-10 w-10 border-2 border-purple-500/20">
+              <AvatarFallback className="bg-purple-900/40 text-purple-100">
+                {profile?.username?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col items-start">
+              <span className="text-base font-medium text-purple-100">
+                {profile?.username || "User"}
+              </span>
+              <span className="text-sm text-purple-300/80">
+                {profile?.subscription_status === "pro" ? "Pro Plan" : "Free Plan"}
+              </span>
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setIsOpen(true)}>
+            <User className="mr-2 h-4 w-4" />
+            Edit Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleResetPassword}>
+            <Settings className="mr-2 h-4 w-4" />
+            Reset Password
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
