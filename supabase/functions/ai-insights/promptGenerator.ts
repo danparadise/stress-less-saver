@@ -8,9 +8,40 @@ export function generateSystemPrompt(metrics: FinancialMetrics): string {
 
   // Extract recurring transactions/subscriptions from transactions
   const transactions = metrics.transactions || [];
+  
+  // Analyze vendors by category
+  const vendorAnalysis = new Map();
+  transactions.forEach((t: any) => {
+    const category = (t.category || '').toLowerCase();
+    const description = (t.description || '').toLowerCase();
+    const amount = Math.abs(Number(t.amount));
+
+    if (!vendorAnalysis.has(category)) {
+      vendorAnalysis.set(category, new Map());
+    }
+    
+    const categoryVendors = vendorAnalysis.get(category);
+    categoryVendors.set(description, (categoryVendors.get(description) || 0) + amount);
+  });
+
+  // Format vendor analysis for each category
+  const formattedVendorAnalysis = Array.from(vendorAnalysis.entries())
+    .map(([category, vendors]) => {
+      const sortedVendors = Array.from(vendors.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([vendor, amount]) => `  - ${vendor}: $${amount.toFixed(2)}`);
+
+      return sortedVendors.length > 0
+        ? `${category}:\n${sortedVendors.join('\n')}`
+        : null;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+
+  // Extract subscriptions
   const subscriptions = transactions
     .filter((t: any) => {
-      // Look for common subscription keywords in descriptions
       const description = (t.description || '').toLowerCase();
       return description.includes('subscription') || 
              description.includes('recurring') || 
@@ -37,6 +68,9 @@ Current Financial Data:
 Top Expense Categories:
 ${metrics.topExpenseCategories.map(cat => `- ${cat.category}: $${cat.amount.toFixed(2)}`).join('\n')}
 
+Top Vendors by Category:
+${formattedVendorAnalysis || '- No vendor analysis available for this period'}
+
 Recurring Subscriptions:
 ${subscriptions.length > 0 
   ? subscriptions.map(sub => `- ${sub.description}: $${sub.amount.toFixed(2)}`).join('\n')
@@ -46,13 +80,18 @@ Income Trends:
 ${incomeTrends}
 
 Response Guidelines:
-1. For questions about specific transactions, subscriptions, or bills:
+1. For questions about specific vendors or spending patterns:
+   - If asking about specific vendors (e.g., "Which gas station do I use most?"), provide the top 3 vendors in that category with exact amounts
+   - If no data is found for that category, clearly state "No transaction data found for [category] in this period"
+   - Include the total spent in that category when relevant
+
+2. For questions about specific transactions, subscriptions, or bills:
    - If subscription-related query, list ALL detected subscriptions with exact amounts
    - If no subscriptions found, clearly state "No recurring subscriptions detected in recent transactions"
    - Provide exact amounts and dates when available
    - No need for additional steps or recommendations unless specifically asked
 
-2. For questions about financial advice or improvements:
+3. For questions about financial advice or improvements:
    - Start with "Here's your financial snapshot:"
    - Provide a one-sentence summary of their situation
    - Then say "Let's take action:"
