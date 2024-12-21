@@ -64,6 +64,9 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
+      subscription_data: {
+        trial_period_days: 7, // Add 7-day free trial
+      },
       success_url: `${req.headers.get('origin')}/dashboard?success=true`,
       cancel_url: `${req.headers.get('origin')}/dashboard?success=false`,
     })
