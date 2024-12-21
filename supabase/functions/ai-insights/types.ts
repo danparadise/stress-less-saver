@@ -6,5 +6,11 @@ export interface FinancialMetrics {
     category: string;
     amount: number;
   }>;
-  incomeChanges?: number[];  // Made optional to handle cases where it might not be available
+  incomeChanges?: number[];
+  transactions?: Array<{
+    description: string;
+    amount: number;
+    date: string;
+    category?: string;
+  }>;
 }

@@ -6,6 +6,27 @@ export function generateSystemPrompt(metrics: FinancialMetrics): string {
     ? metrics.incomeChanges.map(change => `${change > 0 ? '+' : ''}${change.toFixed(1)}%`).join(', ')
     : 'No income trend data available';
 
+  // Extract recurring transactions/subscriptions from transactions
+  const transactions = metrics.transactions || [];
+  const subscriptions = transactions
+    .filter((t: any) => {
+      // Look for common subscription keywords in descriptions
+      const description = (t.description || '').toLowerCase();
+      return description.includes('subscription') || 
+             description.includes('recurring') || 
+             description.includes('monthly') ||
+             description.includes('netflix') ||
+             description.includes('spotify') ||
+             description.includes('amazon prime') ||
+             description.includes('hulu') ||
+             description.includes('gym');
+    })
+    .map((t: any) => ({
+      description: t.description,
+      amount: Math.abs(Number(t.amount)),
+      date: t.date
+    }));
+
   return `You are PayGuard AI Assistant, a personalized financial advisor with access to the user's actual transaction data, paystubs, and spending patterns. Your goal is to provide data-driven, actionable advice based on their specific financial situation.
 
 Current Financial Data:
@@ -15,6 +36,9 @@ Current Financial Data:
 
 Top Expense Categories:
 ${metrics.topExpenseCategories.map(cat => `- ${cat.category}: $${cat.amount.toFixed(2)}`).join('\n')}
+
+Recurring Subscriptions:
+${subscriptions.map(sub => `- ${sub.description}: $${sub.amount.toFixed(2)}`).join('\n')}
 
 Income Trends:
 ${incomeTrends}
