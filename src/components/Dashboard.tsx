@@ -96,6 +96,17 @@ const Dashboard = () => {
     );
   }
 
+  if (isFinancialDataLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Loading financial data...</h2>
+          <p className="text-muted-foreground">Please wait</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-8">
@@ -131,23 +142,31 @@ const Dashboard = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {financialData?.transactions?.map((transaction, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            {format(new Date(transaction.date), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell>{transaction.description}</TableCell>
-                          <TableCell>{transaction.category}</TableCell>
-                          <TableCell className={`text-right ${
-                            transaction.amount < 0 ? 'text-destructive' : 'text-sage-500'
-                          }`}>
-                            {formatCurrency(transaction.amount)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(transaction.balance)}
+                      {financialData?.transactions && financialData.transactions.length > 0 ? (
+                        financialData.transactions.map((transaction, index) => (
+                          <TableRow key={index}>
+                            <TableCell>
+                              {format(new Date(transaction.date), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>{transaction.description}</TableCell>
+                            <TableCell>{transaction.category}</TableCell>
+                            <TableCell className={`text-right ${
+                              transaction.amount < 0 ? 'text-destructive' : 'text-sage-500'
+                            }`}>
+                              {formatCurrency(transaction.amount)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(transaction.balance)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-4">
+                            No transactions found
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </ScrollArea>

@@ -9,28 +9,22 @@ export const useBankStatementData = () => {
       console.log('Fetching latest bank statement data');
       
       const { data: statements, error: statementError } = await supabase
-        .from("bank_statement_data")
-        .select(`
-          *,
-          financial_documents!inner(
-            status,
-            upload_date,
-            file_name
-          )
-        `)
-        .eq('financial_documents.status', 'completed')
-        .order('statement_month', { ascending: false });
+        .from("monthly_financial_summaries")
+        .select("*")
+        .order('month_year', { ascending: false })
+        .limit(1);
 
       if (statementError) {
-        console.error('Error fetching bank statement:', statementError);
+        console.error('Error fetching monthly summary:', statementError);
         throw statementError;
       }
 
-      // Get the most recent statement
+      console.log('Monthly summary data:', statements);
+
       const latestStatement = statements && statements.length > 0 ? statements[0] : null;
 
       if (latestStatement) {
-        console.log('Found latest bank statement:', latestStatement);
+        console.log('Found latest monthly summary:', latestStatement);
         
         // Ensure transactions are properly typed
         const typedTransactions = Array.isArray(latestStatement.transactions) 
