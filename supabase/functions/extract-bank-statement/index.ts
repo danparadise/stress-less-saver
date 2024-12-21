@@ -3,13 +3,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 import { extractDataFromImage } from './openaiService.ts'
 import { parseOpenAIResponse } from './openaiParser.ts'
-import { processPDFPages } from './pdfProcessor.ts'
-import { aggregatePageResults } from './dataAggregator.ts'
-import { FinalData, ProcessingResult } from './types.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
@@ -34,46 +32,108 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Process PDF pages
-    const { pageUrls, pageCount } = await processPDFPages(pdfUrl, pdfCoApiKey)
+    // 1. Get PDF info
+    console.log('Getting PDF info')
+    const pdfInfoResponse = await fetch('https://api.pdf.co/v1/pdf/info', {
+      method: 'POST',
+      headers: {
+        'x-api-key': pdfCoApiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: pdfUrl })
+    })
 
-    // Process pages in parallel
-    const pagePromises = pageUrls.map(async (pageUrl: string, index: number) => {
-      console.log(`Processing page ${index + 1} of ${pageCount}`)
+    if (!pdfInfoResponse.ok) {
+      const errorText = await pdfInfoResponse.text()
+      console.error('PDF info error:', errorText)
+      throw new Error(`Failed to get PDF info: ${errorText}`)
+    }
+
+    const pdfInfo = await pdfInfoResponse.json()
+    console.log('PDF info:', pdfInfo)
+
+    // 2. Convert PDF to PNG
+    console.log('Converting PDF pages to PNG')
+    const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
+      method: 'POST',
+      headers: {
+        'x-api-key': pdfCoApiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: pdfUrl,
+        pages: `1-${pdfInfo.pageCount}`,
+        async: false
+      })
+    })
+
+    if (!pdfCoResponse.ok) {
+      const errorText = await pdfCoResponse.text()
+      console.error('PDF conversion error:', errorText)
+      throw new Error(`Failed to convert PDF: ${errorText}`)
+    }
+
+    const pdfCoData = await pdfCoResponse.json()
+    if (!pdfCoData.urls || pdfCoData.urls.length === 0) {
+      throw new Error('No PNG URLs returned from PDF.co')
+    }
+
+    console.log(`Successfully converted ${pdfCoData.urls.length} pages to PNG`)
+
+    // 3. Process each page
+    let allTransactions: any[] = []
+    let statementMonth = ''
+    let totalDeposits = 0
+    let totalWithdrawals = 0
+    let endingBalance = 0
+    let successfulPages = 0
+
+    for (let i = 0; i < pdfCoData.urls.length; i++) {
+      console.log(`Processing page ${i + 1} of ${pdfCoData.urls.length}`)
       try {
-        const openAiResponse = await extractDataFromImage(pageUrl)
+        const openAiResponse = await extractDataFromImage(pdfCoData.urls[i])
         const aiResult = await openAiResponse.json()
         
         if (!aiResult.choices?.[0]?.message?.content) {
-          throw new Error('No content in OpenAI response')
+          console.error(`No content in OpenAI response for page ${i + 1}`)
+          continue
         }
 
-        console.log(`Raw OpenAI response for page ${index + 1}:`, aiResult.choices[0].message.content)
+        console.log(`Raw OpenAI response for page ${i + 1}:`, aiResult.choices[0].message.content)
+        
         const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
-        console.log(`Extracted data from page ${index + 1}:`, extractedData)
+        console.log(`Extracted data from page ${i + 1}:`, extractedData)
 
-        return { data: extractedData }
+        if (extractedData.transactions && extractedData.transactions.length > 0) {
+          successfulPages++
+          // Update statement month if not set (take from first successful page)
+          if (!statementMonth && extractedData.statement_month) {
+            statementMonth = extractedData.statement_month
+          }
+
+          // Merge transactions
+          allTransactions = [...allTransactions, ...extractedData.transactions]
+
+          // Update totals
+          if (extractedData.total_deposits) totalDeposits += extractedData.total_deposits
+          if (extractedData.total_withdrawals) totalWithdrawals += extractedData.total_withdrawals
+          if (extractedData.ending_balance) endingBalance = extractedData.ending_balance // Take the last one
+        }
       } catch (error) {
-        console.error(`Error processing page ${index + 1}:`, error)
-        return { error: error.message }
+        console.error(`Error processing page ${i + 1}:`, error)
+        continue
       }
-    })
+    }
 
-    const pageResults = await Promise.all(pagePromises) as ProcessingResult[]
-    
-    // Aggregate results from all pages
-    const {
-      statementMonth,
-      totalDeposits,
-      totalWithdrawals,
-      endingBalance,
-      allTransactions,
-      successfulPages
-    } = aggregatePageResults(pageResults)
+    console.log('Processing complete. Successful pages:', successfulPages)
+    console.log('Total transactions extracted:', allTransactions.length)
 
     if (allTransactions.length === 0) {
       throw new Error('No transactions extracted from any page')
     }
+
+    // Sort transactions by date
+    allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
     // Update document status
     const { error: updateError } = await supabase
@@ -87,7 +147,7 @@ serve(async (req) => {
     }
 
     // Store combined extracted data
-    const finalData: FinalData = {
+    const finalData = {
       document_id: documentId,
       statement_month: statementMonth,
       total_deposits: totalDeposits,
@@ -112,9 +172,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: finalData,
-        pages_processed: successfulPages,
-        total_pages: pageCount
+        data: finalData
       }),
       { 
         headers: { 

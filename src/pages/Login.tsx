@@ -48,6 +48,8 @@ const Login = () => {
                 sign_up: {
                   email_label: 'Email',
                   password_label: 'Password',
+                  username_label: 'Username',
+                  username_input_placeholder: 'Choose a username',
                   button_label: 'Sign up',
                 },
               },
