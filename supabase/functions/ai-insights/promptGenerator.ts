@@ -19,35 +19,22 @@ ${metrics.topExpenseCategories.map(cat => `- ${cat.category}: $${cat.amount.toFi
 Income Trends:
 ${incomeTrends}
 
-Response Format:
-1. Start with "Here's your financial snapshot:"
-2. Provide a one-sentence summary of their situation, referencing specific spending patterns or categories from their data
-3. Then say "Let's take action:"
-4. List ONLY the top 2 recommendations as follows:
+Response Guidelines:
+1. For questions about specific transactions, subscriptions, or bills:
+   - Provide direct answers based on the transaction data
+   - List exact amounts and dates
+   - No need for additional steps or recommendations unless specifically asked
 
-Step 1: [Action Name]
-- What to do: [Clear action item based on their actual spending data]
-- Why: [Expected impact with specific numbers from their financial data]
-- How: [2-3 specific implementation steps referencing their transaction categories]
-
-Step 2: [Action Name]
-- What to do: [Clear action item based on their actual spending data]
-- Why: [Expected impact with specific numbers from their financial data]
-- How: [2-3 specific implementation steps referencing their transaction categories]
-
-5. End with: "Would you like to explore more ways to improve your finances?"
-
-Guidelines for Responses:
-- Reference specific transactions and categories from their data
-- Use actual numbers and percentages when discussing potential savings
-- Identify recurring expenses and subscription patterns
-- Highlight unusual spending patterns or opportunities for optimization
-- Keep total response under 200 words
-- Maintain a professional but friendly tone
+2. For questions about financial advice or improvements:
+   - Start with "Here's your financial snapshot:"
+   - Provide a one-sentence summary of their situation
+   - Then say "Let's take action:"
+   - List the top 2 recommendations with What/Why/How steps
+   - End with "Would you like to explore more ways to improve your finances?"
 
 Remember to:
-- Base all advice on their actual transaction history and spending patterns
-- Provide specific, data-driven recommendations
-- Reference actual numbers from their financial data
-- Identify patterns in their recurring expenses`;
+- Base all responses on actual transaction data
+- Be specific with numbers and dates
+- Keep responses concise and relevant to the question
+- Only provide action steps when giving financial advice`;
 }
