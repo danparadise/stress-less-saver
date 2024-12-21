@@ -26,11 +26,23 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
   const processedData = data.reduce((acc: any[], transaction) => {
     // Only process transactions within the selected month
     if (currentMonth) {
-      const transactionDate = new Date(transaction.date);
-      const monthStart = startOfMonth(new Date(currentMonth));
-      const monthEnd = endOfMonth(new Date(currentMonth));
+      try {
+        const transactionDate = new Date(transaction.date);
+        const monthStart = startOfMonth(new Date(currentMonth));
+        const monthEnd = endOfMonth(new Date(currentMonth));
 
-      if (!isWithinInterval(transactionDate, { start: monthStart, end: monthEnd })) {
+        // Add debug logs
+        console.log('Transaction date:', transactionDate);
+        console.log('Month start:', monthStart);
+        console.log('Month end:', monthEnd);
+        console.log('Is within interval:', isWithinInterval(transactionDate, { start: monthStart, end: monthEnd }));
+
+        if (!isWithinInterval(transactionDate, { start: monthStart, end: monthEnd })) {
+          return acc;
+        }
+      } catch (error) {
+        console.error('Error processing date:', error);
+        console.error('Transaction:', transaction);
         return acc;
       }
     }
@@ -49,6 +61,9 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
 
     return acc;
   }, []);
+
+  // Add debug log for processed data
+  console.log('Processed data:', processedData);
 
   return (
     <Card className="dark:bg-purple-800/10 backdrop-blur-lg border-purple-300/20">
