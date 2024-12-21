@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
+import Footer from "@/components/Footer";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -224,6 +225,7 @@ const Landing = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
