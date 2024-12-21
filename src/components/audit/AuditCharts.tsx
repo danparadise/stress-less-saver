@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
-import { MonthlyFinancialSummary, Transaction } from "@/types/bankStatement";
+import { Transaction } from "@/types/bankStatement";
 import { convertJsonToTransaction } from "@/utils/transactionUtils";
 
 interface AuditChartsProps {
@@ -20,9 +20,10 @@ const AuditCharts = ({ selectedMonth }: AuditChartsProps) => {
         .from("monthly_financial_summaries")
         .select("*")
         .eq("month_year", selectedMonth)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return null;
 
       // Prepare category data for pie chart
       const categoryData = Object.entries(data.transaction_categories as Record<string, number>)
@@ -53,7 +54,7 @@ const AuditCharts = ({ selectedMonth }: AuditChartsProps) => {
   });
 
   if (!chartData) {
-    return <div>Select a month to view charts</div>;
+    return <div className="text-muted-foreground">No data available for the selected month</div>;
   }
 
   const formatCurrency = (value: number) => {
