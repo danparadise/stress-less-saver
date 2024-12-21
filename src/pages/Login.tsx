@@ -112,16 +112,11 @@ const Login = () => {
             }}
             theme="default"
             providers={[]}
-            additionalData={{
-              username: true
-            }}
             localization={{
               variables: {
                 sign_up: {
                   email_label: 'Email',
                   password_label: 'Password',
-                  username_label: 'Display Name',
-                  username_input_placeholder: 'Your display name',
                   email_input_placeholder: 'Your email address',
                   password_input_placeholder: 'Your password',
                   button_label: 'Sign up',
