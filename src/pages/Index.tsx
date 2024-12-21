@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import Dashboard from "@/components/Dashboard";
 
 const Index = () => {
   const { data: profile, isLoading } = useQuery({
@@ -53,6 +54,9 @@ const Index = () => {
       </div>
       <div className="mt-8">
         <SubscribeButton />
+      </div>
+      <div className="mt-8">
+        <Dashboard />
       </div>
     </div>
   );
