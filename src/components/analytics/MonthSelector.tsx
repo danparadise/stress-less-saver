@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -33,7 +33,7 @@ const MonthSelector = ({ statements, selectedMonth, onMonthSelect }: MonthSelect
               key={month} 
               value={month}
             >
-              {format(new Date(month), "MMMM yyyy")}
+              {format(parseISO(month), "MMMM yyyy")}
             </SelectItem>
           ))}
         </SelectContent>

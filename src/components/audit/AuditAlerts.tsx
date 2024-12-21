@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MonthlyFinancialSummary, Transaction } from "@/types/bankStatement";
+import { convertJsonToTransaction } from "@/utils/transactionUtils";
 
 interface AuditAlertsProps {
   selectedMonth: string | null;
@@ -55,7 +56,11 @@ const AuditAlerts = ({ selectedMonth }: AuditAlertsProps) => {
       }
 
       // Check for high-value transactions
-      const transactions = currentMonth.transactions as Transaction[];
+      const rawTransactions = Array.isArray(currentMonth.transactions) 
+        ? currentMonth.transactions 
+        : [];
+      const transactions = rawTransactions.map(convertJsonToTransaction);
+      
       const highValueTransactions = transactions
         .filter(t => Math.abs(t.amount) > 500)
         .map(t => ({

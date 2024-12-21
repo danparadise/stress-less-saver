@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { MonthlyFinancialSummary, Transaction } from "@/types/bankStatement";
+import { convertJsonToTransaction } from "@/utils/transactionUtils";
 
 interface AuditChartsProps {
   selectedMonth: string | null;
@@ -33,7 +34,9 @@ const AuditCharts = ({ selectedMonth }: AuditChartsProps) => {
         .slice(0, 5);
 
       // Prepare daily balance data
-      const transactions = data.transactions as Transaction[];
+      const rawTransactions = Array.isArray(data.transactions) ? data.transactions : [];
+      const transactions = rawTransactions.map(convertJsonToTransaction);
+      
       const balanceData = transactions
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         .map(t => ({

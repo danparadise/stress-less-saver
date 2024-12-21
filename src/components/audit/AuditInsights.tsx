@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Transaction } from "@/types/bankStatement";
+import { convertJsonToTransaction } from "@/utils/transactionUtils";
 
 interface AuditInsightsProps {
   selectedMonth: string | null;
@@ -22,7 +23,8 @@ const AuditInsights = ({ selectedMonth }: AuditInsightsProps) => {
       if (error) throw error;
 
       // Process transactions to find patterns
-      const transactions = data.transactions as Transaction[];
+      const rawTransactions = Array.isArray(data.transactions) ? data.transactions : [];
+      const transactions = rawTransactions.map(convertJsonToTransaction);
       const transactionMap = new Map();
       
       transactions.forEach((t: Transaction) => {

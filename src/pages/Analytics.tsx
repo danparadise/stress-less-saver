@@ -16,7 +16,7 @@ const Analytics = () => {
     queryFn: async () => {
       console.log('Fetching bank statements for analytics');
       const { data, error } = await supabase
-        .from("bank_statement_data")
+        .from("monthly_financial_summaries")
         .select(`
           *,
           financial_documents(
@@ -27,7 +27,7 @@ const Analytics = () => {
         `)
         .not('transactions', 'is', null)
         .neq('transactions', '[]')
-        .order('statement_month', { ascending: false });
+        .order('month_year', { ascending: false });
 
       if (error) throw error;
       console.log('Fetched bank statements:', data);
@@ -39,7 +39,7 @@ const Analytics = () => {
     if (!bankStatements || bankStatements.length === 0) return [];
 
     const selectedStatement = selectedMonth 
-      ? bankStatements.find(statement => statement.statement_month === selectedMonth)
+      ? bankStatements.find(statement => statement.month_year === selectedMonth)
       : bankStatements[0];
 
     if (!selectedStatement) return [];
@@ -68,7 +68,7 @@ const Analytics = () => {
     if (!bankStatements || bankStatements.length === 0) return [];
 
     const selectedStatement = selectedMonth 
-      ? bankStatements.find(statement => statement.statement_month === selectedMonth)
+      ? bankStatements.find(statement => statement.month_year === selectedMonth)
       : bankStatements[0];
 
     if (!selectedStatement) return [];
@@ -123,7 +123,7 @@ const Analytics = () => {
   }
 
   const currentStatement = selectedMonth 
-    ? bankStatements?.find(statement => statement.statement_month === selectedMonth)
+    ? bankStatements?.find(statement => statement.month_year === selectedMonth)
     : bankStatements?.[0];
 
   return (
@@ -150,13 +150,13 @@ const Analytics = () => {
         <SpendingDistributionChart
           data={data}
           totalSpending={totalSpending}
-          currentMonth={currentStatement?.statement_month || null}
+          currentMonth={currentStatement?.month_year || null}
           onCategoryClick={setSelectedCategory}
         />
 
         <CashFlowChart
           data={cashFlowData}
-          currentMonth={currentStatement?.statement_month || null}
+          currentMonth={currentStatement?.month_year || null}
         />
       </div>
 
