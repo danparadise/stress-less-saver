@@ -8,10 +8,62 @@ import { toast } from "sonner";
 const Login = () => {
   const navigate = useNavigate();
 
+  const checkSubscription = async (token: string) => {
+    try {
+      const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/check-subscription', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to check subscription status');
+      }
+
+      const data = await response.json();
+      return data.subscribed;
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/");
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Check if user has an active subscription
+        const isSubscribed = await checkSubscription(session.access_token);
+        
+        if (isSubscribed) {
+          toast.success('Welcome back!');
+          navigate("/dashboard");
+        } else {
+          toast.info('Please complete your subscription to continue');
+          // Create checkout session and redirect to payment
+          try {
+            const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to create checkout session');
+            }
+
+            const { url } = await response.json();
+            if (url) {
+              window.location.href = url;
+            }
+          } catch (error) {
+            console.error('Error creating checkout session:', error);
+            toast.error('Failed to process subscription. Please try again.');
+          }
+        }
       }
     });
   }, [navigate]);
