@@ -24,36 +24,42 @@ const AiInsights = () => {
   const { toast } = useToast();
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const { data: summary, isLoading, refetch } = useQuery({
-    queryKey: ["latest-monthly-summary"],
+  const { data: summaries, isLoading, refetch } = useQuery({
+    queryKey: ["monthly-summaries-for-insights"],
     queryFn: async () => {
-      console.log('Fetching latest monthly summary for insights');
+      console.log('Fetching last 3 months of financial summaries for insights');
       const { data: summaries, error } = await supabase
         .from("monthly_financial_summaries")
         .select("*")
         .order('month_year', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(3);
 
       if (error) {
-        console.error('Error fetching monthly summary:', error);
+        console.error('Error fetching monthly summaries:', error);
         throw error;
       }
 
-      console.log('Latest monthly summary:', summaries);
-      return summaries;
+      // Filter out summaries with no transactions
+      const validSummaries = summaries?.filter(summary => 
+        Array.isArray(summary.transactions) && 
+        summary.transactions.length > 0 &&
+        summary.total_expenses > 0
+      );
+
+      console.log('Valid monthly summaries for insights:', validSummaries);
+      return validSummaries;
     }
   });
 
   // Convert the data to the correct format before passing to generateInsights
-  const processedSummary = summary ? {
+  const processedSummaries = summaries?.map(summary => ({
     ...summary,
     transaction_categories: convertCategories(summary.transaction_categories),
     transactions: Array.isArray(summary.transactions) ? summary.transactions : [],
     paystub_data: Array.isArray(summary.paystub_data) ? summary.paystub_data : []
-  } : null;
+  })) || [];
 
-  const insights = processedSummary ? generateInsights(processedSummary) : [];
+  const insights = processedSummaries.length > 0 ? generateInsights(processedSummaries) : [];
   const displayInsights = insights.slice(0, Math.max(3, insights.length));
 
   const handleRefresh = async () => {
