@@ -80,10 +80,12 @@ const Analytics = () => {
 
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      'Transportation': '#60A5FA',
-      'Food & Dining': '#34D399',
-      'Shopping': '#F472B6',
-      'Entertainment': '#FB923C',
+      'Transfer': '#8B5CF6',
+      'Paycheck': '#34D399',
+      'Gas': '#F472B6',
+      'Financial': '#0EA5E9',
+      'Shopping': '#D946EF',
+      'Entertainment': '#F97316',
       'Bills & Utilities': '#A78BFA',
       'Business': '#67E8F9',
       'Uncategorized': '#94A3B8'
@@ -109,7 +111,7 @@ const Analytics = () => {
     return (
       <div className="min-h-screen bg-background p-8">
         <div className="flex items-center justify-center h-[500px]">
-          <p>Loading analytics...</p>
+          <p className="text-muted-foreground">Loading analytics...</p>
         </div>
       </div>
     );
@@ -121,47 +123,49 @@ const Analytics = () => {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-purple-800 dark:text-white mb-2">
-          Spending Analytics
-        </h1>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="text-neutral-600 dark:text-neutral-300">
-            Total Spending: {formatCurrency(totalSpending)}
-          </p>
-          {statements && statements.length > 0 && (
-            <MonthSelector
-              statements={statements}
-              selectedMonth={selectedMonth}
-              onMonthSelect={setSelectedMonth}
-            />
-          )}
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent mb-2">
+            Financial Analytics
+          </h1>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-muted-foreground">
+              Total Spending: {formatCurrency(totalSpending)}
+            </p>
+            {statements && statements.length > 0 && (
+              <MonthSelector
+                statements={statements}
+                selectedMonth={selectedMonth}
+                onMonthSelect={setSelectedMonth}
+              />
+            )}
+          </div>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SpendingDistributionChart
+            data={data}
+            totalSpending={totalSpending}
+            currentMonth={currentStatement?.month_year || null}
+            onCategoryClick={setSelectedCategory}
+          />
+
+          <CashFlowChart
+            data={cashFlowData}
+            currentMonth={currentStatement?.month_year || null}
+          />
+        </div>
+
+        {selectedData && (
+          <TransactionsPopup
+            isOpen={!!selectedCategory}
+            onClose={() => setSelectedCategory(null)}
+            category={selectedData.name}
+            transactions={selectedData.transactions}
+            color={selectedData.color}
+          />
+        )}
       </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <SpendingDistributionChart
-          data={data}
-          totalSpending={totalSpending}
-          currentMonth={currentStatement?.month_year || null}
-          onCategoryClick={setSelectedCategory}
-        />
-
-        <CashFlowChart
-          data={cashFlowData}
-          currentMonth={currentStatement?.month_year || null}
-        />
-      </div>
-
-      {selectedData && (
-        <TransactionsPopup
-          isOpen={!!selectedCategory}
-          onClose={() => setSelectedCategory(null)}
-          category={selectedData.name}
-          transactions={selectedData.transactions}
-          color={selectedData.color}
-        />
-      )}
     </div>
   );
 };

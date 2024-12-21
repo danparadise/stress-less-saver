@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface CashFlowChartProps {
@@ -29,8 +29,7 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
       return acc;
     }
 
-    // Format the date consistently
-    const date = format(parseISO(transaction.date), 'MMM dd');
+    const date = format(new Date(transaction.date), 'MMM dd');
     const existingDay = acc.find(item => item.date === date);
 
     if (existingDay) {
@@ -52,18 +51,16 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
     return dateA.getTime() - dateB.getTime();
   });
 
-  console.log('Processed data:', processedData);
-
   return (
     <Card className="dark:bg-purple-800/10 backdrop-blur-lg border-purple-300/20">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+          <span className="text-xl font-semibold text-purple-800 dark:text-purple-100">
             Cash Flow
           </span>
           {currentMonth && (
-            <span className="text-sm font-normal text-purple-300">
-              for {format(new Date(currentMonth), "MMMM yyyy")}
+            <span className="text-sm font-normal text-muted-foreground">
+              {format(new Date(currentMonth), "MMMM yyyy")}
             </span>
           )}
         </CardTitle>
@@ -76,12 +73,14 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
               <XAxis 
                 dataKey="date" 
                 stroke="#A78BFA"
-                className="text-xs"
+                fontSize={12}
+                tickLine={false}
               />
               <YAxis 
                 stroke="#A78BFA"
                 tickFormatter={formatCurrency}
-                className="text-xs"
+                fontSize={12}
+                tickLine={false}
               />
               <Tooltip
                 formatter={(value: number) => [formatCurrency(value), "Net Flow"]}
@@ -91,12 +90,14 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
                   borderRadius: '0.5rem',
                   padding: '0.75rem',
                 }}
+                cursor={{ fill: 'rgba(167, 139, 250, 0.1)' }}
               />
               <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
                 {processedData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`}
                     fill={entry.amount >= 0 ? "#34D399" : "#F87171"}
+                    className="transition-opacity hover:opacity-80"
                   />
                 ))}
               </Bar>
