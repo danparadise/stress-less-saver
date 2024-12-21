@@ -1,4 +1,4 @@
-import { PDFInfo, PDFPageData } from './types';
+import { PDFInfo, PDFPageData } from './types.ts';
 
 export async function processPDFPages(pdfUrl: string, pdfCoApiKey: string): Promise<PDFPageData> {
   // 1. Get PDF info
