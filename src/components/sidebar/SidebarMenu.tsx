@@ -1,4 +1,4 @@
-import { Grid, BarChart2, FileText, ClipboardCheck } from "lucide-react";
+import { Grid, BarChart2, FileText, ClipboardCheck, Home } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -10,7 +10,8 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const menuItems = [
-  { title: "Dashboard", icon: Grid, path: "/" },
+  { title: "Home", icon: Home, path: "/" },
+  { title: "Dashboard", icon: Grid, path: "/dashboard" },
   { title: "Analytics", icon: BarChart2, path: "/analytics" },
   { title: "Financial Audit", icon: ClipboardCheck, path: "/audit" },
   { title: "Paystubs", icon: FileText, path: "/paystubs" },
