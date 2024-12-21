@@ -17,6 +17,14 @@ import BankStatements from "./pages/BankStatements";
 import BankStatementAnalytics from "./pages/BankStatementAnalytics";
 import Audit from "./pages/Audit";
 
+// Legal Pages
+import Privacy from "./pages/legal/Privacy";
+import Terms from "./pages/legal/Terms";
+import CCPA from "./pages/legal/CCPA";
+import Accessibility from "./pages/legal/Accessibility";
+import Security from "./pages/legal/Security";
+import DataProcessing from "./pages/legal/DataProcessing";
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -49,6 +57,16 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            
+            {/* Legal Routes */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/ccpa" element={<CCPA />} />
+            <Route path="/accessibility" element={<Accessibility />} />
+            <Route path="/security" element={<Security />} />
+            <Route path="/data-processing" element={<DataProcessing />} />
+            
+            {/* Protected Routes */}
             <Route
               path="/dashboard"
               element={
