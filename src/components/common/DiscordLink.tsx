@@ -1,4 +1,4 @@
-import { Discord } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DiscordLinkProps {
@@ -13,7 +13,7 @@ const DiscordLink = ({ variant = "default", className = "" }: DiscordLinkProps) 
       className={`flex items-center gap-2 ${className}`}
       onClick={() => window.open("https://discord.gg/UwQJuxQj", "_blank")}
     >
-      <Discord className="h-5 w-5" />
+      <MessageCircle className="h-5 w-5" />
       <span>Join our Discord</span>
     </Button>
   );
