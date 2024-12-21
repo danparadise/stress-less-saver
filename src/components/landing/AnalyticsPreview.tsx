@@ -29,6 +29,29 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+const RADIAN = Math.PI / 180;
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, name, value }: any) => {
+  const radius = outerRadius * 1.2; // Increased radius for labels
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  // Determine text anchor based on position
+  const textAnchor = x > cx ? 'start' : 'end';
+
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill="#4B5563" 
+      textAnchor={textAnchor} 
+      dominantBaseline="central"
+      className="text-xs"
+    >
+      {`${name}: ${formatCurrency(value)}`}
+    </text>
+  );
+};
+
 const AnalyticsPreview = () => {
   return (
     <div className="mt-16 max-w-7xl mx-auto px-4">
@@ -36,7 +59,7 @@ const AnalyticsPreview = () => {
         {/* Spending Distribution Chart */}
         <div className="p-8 rounded-xl bg-white shadow-lg">
           <h3 className="text-xl font-semibold mb-6 text-purple-900">Total Spending Distribution</h3>
-          <div className="h-[300px] relative">
+          <div className="h-[400px] relative"> {/* Increased height for better label spacing */}
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -45,8 +68,8 @@ const AnalyticsPreview = () => {
                   cy="50%"
                   outerRadius={100}
                   dataKey="value"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
+                  labelLine={true}
+                  label={renderCustomizedLabel}
                 >
                   {spendingData.map((entry, index) => (
                     <Cell 
@@ -93,7 +116,7 @@ const AnalyticsPreview = () => {
         {/* Cash Flow Chart */}
         <div className="p-8 rounded-xl bg-white shadow-lg">
           <h3 className="text-xl font-semibold mb-6 text-purple-900">Cash Flow Analysis</h3>
-          <div className="h-[300px]">
+          <div className="h-[400px]"> {/* Matched height with other cards */}
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={cashFlowData}
