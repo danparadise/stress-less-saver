@@ -9,28 +9,6 @@ import FinancialChatbot from "./dashboard/FinancialChatbot";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 
-const mockData = {
-  savings: 450,
-  savingsGoal: 1000,
-  aiSuggestions: [
-    {
-      id: 1,
-      tip: "Based on your spending patterns, you could save an additional $200 monthly by reducing dining out expenses.",
-      category: "dining"
-    },
-    {
-      id: 2,
-      tip: "Your utility bills are 15% higher than average. Consider energy-efficient alternatives.",
-      category: "utilities"
-    },
-    {
-      id: 3,
-      tip: "You're on track to reach your savings goal by September 2024. Keep it up!",
-      category: "savings"
-    }
-  ]
-};
-
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
   const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
@@ -41,7 +19,10 @@ const Dashboard = () => {
   };
 
   const calculateSavingsProgress = () => {
-    return (mockData.savings / mockData.savingsGoal) * 100;
+    if (!financialData) return 0;
+    const savingsGoal = 1000; // This could be made dynamic in the future
+    const savings = financialData.total_income - financialData.total_expenses;
+    return (savings / savingsGoal) * 100;
   };
 
   if (error) {
@@ -66,6 +47,10 @@ const Dashboard = () => {
     );
   }
 
+  const monthlySavings = financialData 
+    ? Math.max(0, financialData.total_income - financialData.total_expenses)
+    : 0;
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-8">
@@ -79,14 +64,14 @@ const Dashboard = () => {
               <FinancialChatbot />
             </div>
             <div className="lg:col-span-1 h-[500px]">
-              <AiInsights suggestions={mockData.aiSuggestions} />
+              <AiInsights />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6">
             <StatsCard
               title="Monthly Savings"
-              value={`+$${mockData.savings.toLocaleString()}`}
+              value={`+$${monthlySavings.toLocaleString()}`}
               icon={PiggyBank}
               iconBgColor="bg-sage-100"
               iconColor="text-sage-500"
