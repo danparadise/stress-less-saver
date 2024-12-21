@@ -1,5 +1,5 @@
 interface DashboardHeaderProps {
-  isDark: boolean;
+  isDark?: boolean;
 }
 
 const DashboardHeader = ({ isDark }: DashboardHeaderProps) => {

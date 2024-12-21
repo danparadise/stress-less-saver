@@ -1,4 +1,4 @@
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { SubscribeButton } from "@/components/dashboard/SubscribeButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -28,25 +28,13 @@ const Index = () => {
       <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Paystubs</CardTitle>
+            <CardTitle className="text-sm font-medium">Documents Uploaded</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-7 w-20" />
             ) : (
-              <div className="text-2xl font-bold">{profile?.total_paystubs || 0}</div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Bank Statements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-7 w-20" />
-            ) : (
-              <div className="text-2xl font-bold">{profile?.total_bank_statements || 0}</div>
+              <div className="text-2xl font-bold">0</div>
             )}
           </CardContent>
         </Card>
