@@ -86,24 +86,6 @@ const SpendingDistributionChart = ({
             </p>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {data.map((item, index) => (
-            <div 
-              key={index}
-              className="flex items-center gap-2 text-sm cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/10 p-2 rounded-md transition-colors"
-              onClick={() => onCategoryClick(item.name)}
-            >
-              <div 
-                className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-muted-foreground">{item.name}</span>
-              <span className="ml-auto font-medium text-purple-800 dark:text-purple-100">
-                {formatCurrency(item.value)}
-              </span>
-            </div>
-          ))}
-        </div>
       </CardContent>
     </Card>
   );
