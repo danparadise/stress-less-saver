@@ -7,15 +7,23 @@ import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 const Landing = () => {
   const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const root = window.document.documentElement;
     const originalTheme = root.classList.contains('dark') ? 'dark' : 'light';
     root.classList.remove('dark');
+    
+    // Add a small delay to ensure smooth animation
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+
     return () => {
       if (originalTheme === 'dark') {
         root.classList.add('dark');
       }
+      clearTimeout(timer);
     };
   }, []);
 
@@ -55,20 +63,36 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white overflow-hidden">
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto text-center space-y-8">
-          <h1 className="text-5xl md:text-6xl font-bold text-purple-900 mb-6 animate-fadeIn">
+          <h1 
+            className={`text-5xl md:text-6xl font-bold text-purple-900 mb-6 transition-all duration-500 ease-out transform ${
+              isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+          >
             PayGuard AI
           </h1>
-          <p className="text-2xl md:text-3xl text-purple-800 mb-8 animate-fadeIn delay-100">
+          <p 
+            className={`text-2xl md:text-3xl text-purple-800 mb-8 transition-all duration-500 ease-out delay-100 transform ${
+              isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+          >
             A Simple Way To Check Your Finances
           </p>
-          <p className="text-lg md:text-xl text-purple-700 mb-12 animate-fadeIn delay-200">
+          <p 
+            className={`text-lg md:text-xl text-purple-700 mb-12 transition-all duration-500 ease-out delay-200 transform ${
+              isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+          >
             Empower your financial decisions with AI-driven insights. Track expenses, analyze patterns, and secure your financial future.
           </p>
           
-          <div className="flex justify-center gap-4 animate-fadeIn delay-300">
+          <div 
+            className={`flex justify-center gap-4 transition-all duration-500 ease-out delay-300 transform ${
+              isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+          >
             <Button
               onClick={() => setShowOnboarding(true)}
               size="lg"
@@ -80,7 +104,7 @@ const Landing = () => {
               onClick={handleSignIn}
               size="lg"
               variant="outline"
-              className="px-8 py-6 text-lg border-purple-600 text-purple-600 hover:bg-purple-50"
+              className="px-8 py-6 text-lg border-purple-600 text-purple-600 hover:bg-purple-50 bg-white hover:bg-white"
             >
               Sign In
             </Button>
@@ -92,7 +116,11 @@ const Landing = () => {
           />
 
           {/* Analytics Preview Section */}
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn delay-400">
+          <div 
+            className={`mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 transition-all duration-500 ease-out delay-400 transform ${
+              isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+          >
             {/* Spending Distribution Chart */}
             <div className="p-8 rounded-xl bg-white shadow-lg">
               <h3 className="text-xl font-semibold mb-6 text-purple-900">Total Spending Distribution</h3>
@@ -176,7 +204,11 @@ const Landing = () => {
           </div>
 
           {/* Features Section */}
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left animate-fadeIn delay-500">
+          <div 
+            className={`mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-left transition-all duration-500 ease-out delay-500 transform ${
+              isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+          >
             <div className="p-6 rounded-lg bg-white/80 shadow-lg">
               <h3 className="text-xl font-semibold mb-3 text-purple-900">AI-Powered Analysis</h3>
               <p className="text-purple-700">Smart insights and patterns detection to help you make better financial decisions.</p>
