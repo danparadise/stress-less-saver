@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,15 @@ const FinancialChatbot = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Add initial welcome message when component mounts
+    const welcomeMessage: Message = {
+      role: 'assistant',
+      content: "Hello! I'm your financial assistant. I can help you analyze your spending, track your savings, or answer any questions about your financial data. How can I assist you today?"
+    };
+    setMessages([welcomeMessage]);
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
