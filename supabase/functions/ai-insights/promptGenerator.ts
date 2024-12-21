@@ -9,7 +9,7 @@ export function generateSystemPrompt(metrics: FinancialMetrics): string {
   // Extract recurring transactions/subscriptions from transactions
   const transactions = metrics.transactions || [];
   
-  // Analyze spending by category
+  // Analyze spending by category with case-insensitive matching
   const categorySpending = new Map();
   transactions.forEach((t: any) => {
     if (t.amount < 0) { // Only consider expenses (negative amounts)
@@ -24,7 +24,7 @@ export function generateSystemPrompt(metrics: FinancialMetrics): string {
     .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`)
     .join('\n');
 
-  // Analyze vendors by category
+  // Analyze vendors by category with case-insensitive matching
   const vendorAnalysis = new Map();
   transactions.forEach((t: any) => {
     if (t.amount < 0) { // Only analyze expenses
@@ -74,12 +74,12 @@ ${incomeTrends}
 
 Response Guidelines:
 1. For questions about specific categories or vendors:
-   - First check if there's data for the specified category
-   - If no transactions found, respond with "No transaction data found for [category] in this period"
+   - First check if there's data for the specified category using case-insensitive matching
    - If transactions exist, provide:
      a) Total amount spent in that category
      b) Top 3 vendors if available
      c) Date range of the transactions
+   - Only say "No transaction data found" if there are truly no matching transactions
 
 2. For questions about spending patterns:
    - Use actual numbers from the transaction data
@@ -93,8 +93,8 @@ Response Guidelines:
    - End with a specific question about their preferences or habits
 
 Remember to:
-- Only report on categories that have actual transaction data
-- Be consistent in your responses about data availability
+- Use case-insensitive matching when searching for categories
+- Only report "No transaction data found" when there are truly no matching transactions
 - Use exact amounts from the transaction data
-- Clearly state when data is not available for a specific category`;
+- Be consistent in your responses about data availability`;
 }
