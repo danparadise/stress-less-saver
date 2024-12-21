@@ -182,6 +182,8 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          subscription_status: string | null
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -189,6 +191,8 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          subscription_status?: string | null
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -196,6 +200,8 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          subscription_status?: string | null
+          username?: string | null
         }
         Relationships: []
       }

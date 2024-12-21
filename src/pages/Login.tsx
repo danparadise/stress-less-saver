@@ -9,7 +9,6 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         navigate("/");
@@ -47,18 +46,15 @@ const Login = () => {
             localization={{
               variables: {
                 sign_up: {
-                  password_label: 'Password (minimum 6 characters)',
-                  password_input_placeholder: 'Enter a secure password',
+                  email_label: 'Email',
+                  password_label: 'Password',
+                  username_label: 'Username',
+                  username_input_placeholder: 'Choose a username',
+                  button_label: 'Sign up',
                 },
               },
             }}
           />
-        </div>
-        <div className="text-center text-sm text-muted-foreground">
-          <p>Password requirements:</p>
-          <ul className="list-disc list-inside mt-1">
-            <li>Minimum 6 characters</li>
-          </ul>
         </div>
       </div>
     </div>
