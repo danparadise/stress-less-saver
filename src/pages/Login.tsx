@@ -8,7 +8,12 @@ import { toast } from "sonner";
 const Login = () => {
   const navigate = useNavigate();
 
-  const checkSubscription = async (token: string) => {
+  const checkSubscription = async (token: string, email: string) => {
+    // Special handling for admin email
+    if (email === 'dannielparadise@gmail.com') {
+      return true;
+    }
+
     try {
       const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/check-subscription', {
         method: 'GET',
@@ -33,8 +38,8 @@ const Login = () => {
   useEffect(() => {
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Check if user has an active subscription
-        const isSubscribed = await checkSubscription(session.access_token);
+        // Check if user has an active subscription or is admin
+        const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
         
         if (isSubscribed) {
           toast.success('Welcome back!');
