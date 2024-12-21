@@ -74,18 +74,18 @@ const UserProfile = () => {
         <DropdownMenuTrigger asChild>
           <Button 
             variant="ghost" 
-            className="w-full flex items-center space-x-3 p-3 rounded-xl bg-purple-900/20 border border-purple-500/20 hover:bg-purple-900/30 transition-all"
+            className="w-full flex items-center gap-3 p-3 rounded-full bg-white/90 dark:bg-purple-900/20 border border-purple-500/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all"
           >
-            <Avatar className="h-10 w-10 border-2 border-purple-500/20">
+            <Avatar className="h-9 w-9 border-2 border-purple-500/20">
               <AvatarFallback className="bg-purple-900/40 text-purple-100">
                 {profile?.username?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start">
-              <span className="text-base font-medium text-purple-100">
+              <span className="text-base font-medium text-purple-900 dark:text-purple-100">
                 {profile?.username || "User"}
               </span>
-              <span className="text-sm text-purple-300/80">
+              <span className="text-sm text-purple-600/90 dark:text-purple-300/80">
                 {profile?.subscription_status === "pro" ? "Pro Plan" : "Free Plan"}
               </span>
             </div>
