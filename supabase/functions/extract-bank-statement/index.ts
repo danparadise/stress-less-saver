@@ -7,7 +7,6 @@ import { parseOpenAIResponse } from './openaiParser.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
@@ -87,6 +86,7 @@ serve(async (req) => {
     let totalWithdrawals = 0
     let endingBalance = 0
     let successfulPages = 0
+    let errors: string[] = []
 
     for (let i = 0; i < pdfCoData.urls.length; i++) {
       console.log(`Processing page ${i + 1} of ${pdfCoData.urls.length}`)
@@ -96,6 +96,7 @@ serve(async (req) => {
         
         if (!aiResult.choices?.[0]?.message?.content) {
           console.error(`No content in OpenAI response for page ${i + 1}`)
+          errors.push(`Page ${i + 1}: No content in OpenAI response`)
           continue
         }
 
@@ -106,30 +107,31 @@ serve(async (req) => {
 
         if (extractedData.transactions && extractedData.transactions.length > 0) {
           successfulPages++
-          // Update statement month if not set (take from first successful page)
           if (!statementMonth && extractedData.statement_month) {
             statementMonth = extractedData.statement_month
           }
 
-          // Merge transactions
           allTransactions = [...allTransactions, ...extractedData.transactions]
 
-          // Update totals
           if (extractedData.total_deposits) totalDeposits += extractedData.total_deposits
           if (extractedData.total_withdrawals) totalWithdrawals += extractedData.total_withdrawals
-          if (extractedData.ending_balance) endingBalance = extractedData.ending_balance // Take the last one
+          if (extractedData.ending_balance) endingBalance = extractedData.ending_balance
+        } else {
+          errors.push(`Page ${i + 1}: No transactions found`)
         }
       } catch (error) {
         console.error(`Error processing page ${i + 1}:`, error)
+        errors.push(`Page ${i + 1}: ${error.message}`)
         continue
       }
     }
 
     console.log('Processing complete. Successful pages:', successfulPages)
     console.log('Total transactions extracted:', allTransactions.length)
+    console.log('Errors encountered:', errors)
 
     if (allTransactions.length === 0) {
-      throw new Error('No transactions extracted from any page')
+      throw new Error(`Failed to extract any transactions. Errors: ${errors.join(', ')}`)
     }
 
     // Sort transactions by date
