@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface CashFlowChartProps {
@@ -24,30 +24,13 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
 
   // Process data to show daily net cash flow
   const processedData = data.reduce((acc: any[], transaction) => {
-    // Only process transactions within the selected month
-    if (currentMonth) {
-      try {
-        const transactionDate = new Date(transaction.date);
-        const monthStart = startOfMonth(new Date(currentMonth));
-        const monthEnd = endOfMonth(new Date(currentMonth));
-
-        // Add debug logs
-        console.log('Transaction date:', transactionDate);
-        console.log('Month start:', monthStart);
-        console.log('Month end:', monthEnd);
-        console.log('Is within interval:', isWithinInterval(transactionDate, { start: monthStart, end: monthEnd }));
-
-        if (!isWithinInterval(transactionDate, { start: monthStart, end: monthEnd })) {
-          return acc;
-        }
-      } catch (error) {
-        console.error('Error processing date:', error);
-        console.error('Transaction:', transaction);
-        return acc;
-      }
+    if (!transaction.date) {
+      console.warn('Transaction missing date:', transaction);
+      return acc;
     }
 
-    const date = format(new Date(transaction.date), 'MMM dd');
+    // Format the date consistently
+    const date = format(parseISO(transaction.date), 'MMM dd');
     const existingDay = acc.find(item => item.date === date);
 
     if (existingDay) {
@@ -62,7 +45,13 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
     return acc;
   }, []);
 
-  // Add debug log for processed data
+  // Sort data by date
+  processedData.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA.getTime() - dateB.getTime();
+  });
+
   console.log('Processed data:', processedData);
 
   return (
