@@ -16,10 +16,12 @@ const FinancialChatbot = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -134,7 +136,10 @@ const FinancialChatbot = () => {
   return (
     <Card className="bg-white h-full p-6 rounded-xl shadow-md">
       <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 scroll-smooth"
+        >
           {messages.map((message, index) => (
             <div
               key={index}
@@ -155,7 +160,6 @@ const FinancialChatbot = () => {
               </div>
             </div>
           ))}
-          <div ref={messagesEndRef} />
         </div>
 
         <div className="flex gap-3 mt-auto">
