@@ -1,13 +1,24 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, RefreshCw } from "lucide-react";
 import InsightCard from "./InsightCard";
 import { generateInsights } from "@/utils/insightGenerator";
+import { Json } from "@/integrations/supabase/types";
+
+// Helper function to convert Json to Record<string, number>
+const convertCategories = (categories: Json): Record<string, number> => {
+  if (typeof categories === 'object' && categories !== null && !Array.isArray(categories)) {
+    return Object.entries(categories).reduce((acc, [key, value]) => {
+      acc[key] = typeof value === 'number' ? value : 0;
+      return acc;
+    }, {} as Record<string, number>);
+  }
+  return {};
+};
 
 const AiInsights = () => {
-  const queryClient = useQueryClient();
   const { data: summary, isLoading, refetch } = useQuery({
     queryKey: ["latest-monthly-summary"],
     queryFn: async () => {
@@ -29,7 +40,15 @@ const AiInsights = () => {
     }
   });
 
-  const insights = generateInsights(summary);
+  // Convert the data to the correct format before passing to generateInsights
+  const processedSummary = summary ? {
+    ...summary,
+    transaction_categories: convertCategories(summary.transaction_categories),
+    transactions: Array.isArray(summary.transactions) ? summary.transactions : [],
+    paystub_data: Array.isArray(summary.paystub_data) ? summary.paystub_data : []
+  } : null;
+
+  const insights = processedSummary ? generateInsights(processedSummary) : [];
   const displayInsights = insights.slice(0, Math.max(3, insights.length));
 
   const handleRefresh = async () => {
