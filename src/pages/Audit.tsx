@@ -5,7 +5,6 @@ import AuditSummary from "@/components/audit/AuditSummary";
 import AuditInsights from "@/components/audit/AuditInsights";
 import AuditAlerts from "@/components/audit/AuditAlerts";
 import AuditCharts from "@/components/audit/AuditCharts";
-import AuditDocuments from "@/components/audit/AuditDocuments";
 import MonthSelector from "@/components/analytics/MonthSelector";
 import { useState, useEffect } from "react";
 
@@ -107,15 +106,6 @@ const Audit = () => {
             </CardHeader>
             <CardContent>
               <AuditCharts selectedMonth={selectedMonth} />
-            </CardContent>
-          </Card>
-
-          <Card className="backdrop-blur-lg bg-card/50 border-purple-200/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-purple-800 dark:text-purple-100">Documents</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <AuditDocuments selectedMonth={selectedMonth} />
             </CardContent>
           </Card>
         </div>
