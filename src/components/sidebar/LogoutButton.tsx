@@ -11,7 +11,7 @@ const LogoutButton = () => {
     try {
       await supabase.auth.signOut();
       toast.success("Logged out successfully");
-      navigate("/login");
+      navigate("/");
     } catch (error) {
       toast.error("Error logging out");
     }
