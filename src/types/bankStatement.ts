@@ -33,6 +33,7 @@ export interface MonthlyFinancialSummary {
   ending_balance: number;
   transactions: Transaction[];
   transaction_categories: Record<string, number>;
+  paystub_data: any[];
   created_at: string;
   updated_at: string;
 }

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { BankStatement, Transaction } from "@/types/bankStatement";
+import { MonthlyFinancialSummary, Transaction } from "@/types/bankStatement";
 
 export const useBankStatementData = () => {
   return useQuery({
@@ -40,7 +40,7 @@ export const useBankStatementData = () => {
         return {
           ...latestStatement,
           transactions: typedTransactions
-        } as BankStatement;
+        } as MonthlyFinancialSummary;
       }
 
       return null;
