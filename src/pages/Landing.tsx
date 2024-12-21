@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -39,6 +39,15 @@ const Landing = () => {
   ];
 
   const COLORS = ['#8B5CF6', '#34D399', '#F472B6', '#0EA5E9', '#D946EF'];
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
@@ -78,18 +87,24 @@ const Landing = () => {
                       cy="50%"
                       outerRadius={100}
                       dataKey="value"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: $${value}`}
+                      labelLine={true}
+                      label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
                     >
                       {spendingData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={COLORS[index % COLORS.length]} 
+                        />
                       ))}
                     </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-900">$5,780</div>
+                  <div className="text-center bg-white/80 px-3 py-1 rounded-lg shadow-sm">
+                    <div className="text-2xl font-bold text-purple-900">{formatCurrency(5780)}</div>
                     <div className="text-sm text-purple-600">Total</div>
                   </div>
                 </div>
@@ -101,11 +116,30 @@ const Landing = () => {
               <h3 className="text-xl font-semibold mb-6 text-purple-900">Cash Flow Analysis</h3>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={cashFlowData}>
-                    <XAxis dataKey="date" />
+                  <BarChart 
+                    data={cashFlowData}
+                    margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
+                  >
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fill: '#6B7280' }}
+                      tickLine={false}
+                    />
                     <YAxis 
-                      tickFormatter={(value) => `$${value}`}
+                      tickFormatter={formatCurrency}
+                      tick={{ fill: '#6B7280' }}
+                      tickLine={false}
                       domain={[-400, 400]}
+                    />
+                    <Tooltip
+                      formatter={(value: number) => formatCurrency(value)}
+                      labelStyle={{ color: '#374151' }}
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '0.5rem',
+                        padding: '0.5rem',
+                      }}
                     />
                     <Bar 
                       dataKey="amount"
