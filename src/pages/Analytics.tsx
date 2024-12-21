@@ -11,36 +11,29 @@ const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   
-  const { data: bankStatements, isLoading } = useQuery({
+  const { data: statements, isLoading } = useQuery({
     queryKey: ["bank-statement-analytics"],
     queryFn: async () => {
-      console.log('Fetching bank statements for analytics');
+      console.log('Fetching monthly summaries for analytics');
       const { data, error } = await supabase
         .from("monthly_financial_summaries")
-        .select(`
-          *,
-          financial_documents(
-            file_name,
-            upload_date,
-            status
-          )
-        `)
+        .select("*")
         .not('transactions', 'is', null)
         .neq('transactions', '[]')
         .order('month_year', { ascending: false });
 
       if (error) throw error;
-      console.log('Fetched bank statements:', data);
+      console.log('Fetched monthly summaries:', data);
       return data;
     }
   });
 
   const processTransactionsData = () => {
-    if (!bankStatements || bankStatements.length === 0) return [];
+    if (!statements || statements.length === 0) return [];
 
     const selectedStatement = selectedMonth 
-      ? bankStatements.find(statement => statement.month_year === selectedMonth)
-      : bankStatements[0];
+      ? statements.find(statement => statement.month_year === selectedMonth)
+      : statements[0];
 
     if (!selectedStatement) return [];
 
@@ -65,11 +58,11 @@ const Analytics = () => {
   };
 
   const processCashFlowData = () => {
-    if (!bankStatements || bankStatements.length === 0) return [];
+    if (!statements || statements.length === 0) return [];
 
     const selectedStatement = selectedMonth 
-      ? bankStatements.find(statement => statement.month_year === selectedMonth)
-      : bankStatements[0];
+      ? statements.find(statement => statement.month_year === selectedMonth)
+      : statements[0];
 
     if (!selectedStatement) return [];
 
@@ -123,8 +116,8 @@ const Analytics = () => {
   }
 
   const currentStatement = selectedMonth 
-    ? bankStatements?.find(statement => statement.month_year === selectedMonth)
-    : bankStatements?.[0];
+    ? statements?.find(statement => statement.month_year === selectedMonth)
+    : statements?.[0];
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -136,9 +129,9 @@ const Analytics = () => {
           <p className="text-neutral-600 dark:text-neutral-300">
             Total Spending: {formatCurrency(totalSpending)}
           </p>
-          {bankStatements && bankStatements.length > 0 && (
+          {statements && statements.length > 0 && (
             <MonthSelector
-              statements={bankStatements}
+              statements={statements}
               selectedMonth={selectedMonth}
               onMonthSelect={setSelectedMonth}
             />
