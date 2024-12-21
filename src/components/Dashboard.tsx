@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { PiggyBank } from "lucide-react";
 import SearchBar from "./dashboard/SearchBar";
-import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import DashboardHeader from "./dashboard/DashboardHeader";
@@ -16,13 +14,6 @@ const Dashboard = () => {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("Searching:", e.target.value);
-  };
-
-  const calculateSavingsProgress = () => {
-    if (!financialData) return 0;
-    const savingsGoal = 1000; // This could be made dynamic in the future
-    const savings = financialData.total_income - financialData.total_expenses;
-    return (savings / savingsGoal) * 100;
   };
 
   if (error) {
@@ -47,10 +38,6 @@ const Dashboard = () => {
     );
   }
 
-  const monthlySavings = financialData 
-    ? Math.max(0, financialData.total_income - financialData.total_expenses)
-    : 0;
-
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-8">
@@ -69,16 +56,6 @@ const Dashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-6">
-            <StatsCard
-              title="Monthly Savings"
-              value={`+$${monthlySavings.toLocaleString()}`}
-              icon={PiggyBank}
-              iconBgColor="bg-sage-100"
-              iconColor="text-sage-500"
-              valueColor="text-sage-500"
-              progress={calculateSavingsProgress()}
-            />
-
             {!isPaystubLoading && (
               <div className="w-full bg-white rounded-xl shadow-lg p-4">
                 <IncomeChart data={paystubData || []} />
