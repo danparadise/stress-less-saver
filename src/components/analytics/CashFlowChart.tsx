@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface CashFlowChartProps {
   data: Array<{
@@ -77,11 +77,14 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
                   padding: '0.75rem',
                 }}
               />
-              <Bar 
-                dataKey="amount" 
-                fill="#8B5CF6"
-                radius={[4, 4, 0, 0]}
-              />
+              <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
+                {processedData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`}
+                    fill={entry.amount >= 0 ? "#34D399" : "#F87171"}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
