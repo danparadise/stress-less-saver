@@ -70,11 +70,10 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-8">
         <DashboardHeader isDark={isDark} />
-
-        <div className="space-y-8">
+        
+        <div className="space-y-6">
           <SearchBar onSearch={handleSearch} />
 
-          {/* New layout: Chatbot and Insights side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="lg:col-span-1">
               <FinancialChatbot />
@@ -84,7 +83,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <StatsCard
               title="Monthly Savings"
               value={`+$${mockData.savings.toLocaleString()}`}
@@ -94,13 +93,11 @@ const Dashboard = () => {
               valueColor="text-sage-500"
               progress={calculateSavingsProgress()}
             />
-          </div>
 
-          <div className="w-full">
-            {isPaystubLoading ? (
-              <div className="w-full h-[300px] bg-card rounded-lg animate-pulse" />
-            ) : (
-              <IncomeChart data={paystubData || []} />
+            {!isPaystubLoading && (
+              <div className="w-full bg-white rounded-xl shadow-lg p-4">
+                <IncomeChart data={paystubData || []} />
+              </div>
             )}
           </div>
         </div>

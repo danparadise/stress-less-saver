@@ -77,7 +77,7 @@ const FinancialChatbot = () => {
   };
 
   return (
-    <Card className="p-4 space-y-4">
+    <Card className="bg-white p-4 space-y-4 rounded-xl shadow-lg">
       <div className="space-y-4">
         <div className="h-[300px] overflow-y-auto space-y-4 p-4">
           {messages.map((message, index) => (
@@ -105,7 +105,7 @@ const FinancialChatbot = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your finances..."
-            className="resize-none"
+            className="resize-none bg-purple-900/10 text-purple-900 placeholder:text-purple-900/50 rounded-xl"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -116,7 +116,7 @@ const FinancialChatbot = () => {
           <Button
             onClick={sendMessage}
             disabled={isLoading || !input.trim()}
-            className="px-3"
+            className="px-3 bg-purple-900 hover:bg-purple-800 rounded-xl"
           >
             <Send className="h-4 w-4" />
           </Button>
