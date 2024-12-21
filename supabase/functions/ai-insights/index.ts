@@ -24,15 +24,13 @@ serve(async (req) => {
 
     console.log('Fetching latest financial summary for user:', userId);
 
-    // Fetch the latest monthly summary with non-empty data
+    // Fetch the latest monthly summary with non-empty transactions
     const { data: latestSummary, error: summaryError } = await supabase
       .from('monthly_financial_summaries')
       .select('*')
       .eq('user_id', userId)
       .order('month_year', { ascending: false })
       .not('transactions', 'eq', '[]')
-      .not('transaction_categories', 'eq', '{}')
-      .gt('total_income', 0)
       .limit(1)
       .single();
 
@@ -41,11 +39,23 @@ serve(async (req) => {
       throw new Error('Failed to fetch financial data');
     }
 
-    if (!latestSummary) {
-      throw new Error('No valid financial summary found');
+    if (!latestSummary || !latestSummary.transactions) {
+      throw new Error('No transaction data available');
     }
 
     console.log('Found latest summary:', latestSummary);
+
+    // Process transactions for analysis
+    const transactions = latestSummary.transactions;
+    
+    // Calculate category totals
+    const categoryTotals = transactions.reduce((acc: Record<string, number>, transaction: any) => {
+      if (transaction.amount < 0) { // Only consider expenses
+        const category = (transaction.category || 'Uncategorized').toLowerCase();
+        acc[category] = (acc[category] || 0) + Math.abs(transaction.amount);
+      }
+      return acc;
+    }, {});
 
     // Prepare financial metrics
     const metrics = {
@@ -54,10 +64,12 @@ serve(async (req) => {
       savingsRate: latestSummary.total_income > 0 
         ? ((latestSummary.total_income - latestSummary.total_expenses) / latestSummary.total_income) * 100 
         : 0,
-      topExpenseCategories: Object.entries(latestSummary.transaction_categories)
-        .map(([category, amount]) => ({ category, amount: Number(amount) }))
+      transactions: transactions,
+      topExpenseCategories: Object.entries(categoryTotals)
+        .map(([category, amount]) => ({ category, amount }))
         .sort((a, b) => b.amount - a.amount)
-        .slice(0, 5)
+        .slice(0, 5),
+      transactionCategories: latestSummary.transaction_categories || {}
     };
 
     // Generate system prompt
@@ -72,7 +84,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
