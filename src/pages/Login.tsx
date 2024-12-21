@@ -74,17 +74,17 @@ const Login = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-purple-800 dark:text-white">
+          <h2 className="text-4xl font-bold text-purple-900">
             Welcome to PayGuard AI
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-base text-purple-600">
             Sign in to access your account
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
+        <div className="bg-white shadow-xl rounded-2xl p-8 border border-purple-100">
           <Auth
             supabaseClient={supabase}
             appearance={{
@@ -94,7 +94,57 @@ const Login = () => {
                   colors: {
                     brand: '#7c3aed',
                     brandAccent: '#6d28d9',
+                    brandButtonText: 'white',
+                    defaultButtonBackground: 'white',
+                    defaultButtonBackgroundHover: '#f5f3ff',
+                    defaultButtonBorder: '#e9d5ff',
+                    defaultButtonText: '#6d28d9',
+                    dividerBackground: '#f3f4f6',
+                    inputBackground: 'white',
+                    inputBorder: '#e9d5ff',
+                    inputBorderHover: '#7c3aed',
+                    inputBorderFocus: '#7c3aed',
+                    inputText: '#1f2937',
+                    inputLabelText: '#4b5563',
+                    inputPlaceholder: '#9ca3af',
                   },
+                  space: {
+                    inputPadding: '1rem',
+                    buttonPadding: '1rem',
+                  },
+                  borderWidths: {
+                    buttonBorderWidth: '1px',
+                    inputBorderWidth: '1px',
+                  },
+                  radii: {
+                    borderRadiusButton: '0.5rem',
+                    buttonBorderRadius: '0.5rem',
+                    inputBorderRadius: '0.5rem',
+                  },
+                  fontSizes: {
+                    baseInputSize: '1rem',
+                    baseButtonSize: '1rem',
+                  },
+                },
+              },
+              style: {
+                button: {
+                  fontSize: '1rem',
+                  padding: '0.75rem 1rem',
+                  fontWeight: '500',
+                },
+                input: {
+                  fontSize: '1rem',
+                },
+                label: {
+                  fontSize: '0.875rem',
+                  color: '#4b5563',
+                  fontWeight: '500',
+                },
+                anchor: {
+                  color: '#7c3aed',
+                  fontWeight: '500',
+                  textDecoration: 'none',
                 },
               },
             }}
@@ -108,6 +158,9 @@ const Login = () => {
                   email_input_placeholder: 'Your email address',
                   password_input_placeholder: 'Your password',
                   button_label: 'Sign up',
+                  loading_button_label: 'Signing up...',
+                  social_provider_text: 'Sign up with {{provider}}',
+                  link_text: "Don't have an account? Sign up",
                 },
                 sign_in: {
                   email_label: 'Email',
@@ -115,6 +168,9 @@ const Login = () => {
                   email_input_placeholder: 'Your email address',
                   password_input_placeholder: 'Your password',
                   button_label: 'Sign in',
+                  loading_button_label: 'Signing in...',
+                  social_provider_text: 'Sign in with {{provider}}',
+                  link_text: 'Already have an account? Sign in',
                 },
               },
             }}
