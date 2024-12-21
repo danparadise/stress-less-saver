@@ -32,6 +32,81 @@ export const generateInsights = (summaries: MonthlyData[]): Insight[] => {
   const currentMonth = summaries[0];
   const previousMonth = summaries[1];
 
+  // Analyze recurring transactions
+  if (currentMonth.transactions && Array.isArray(currentMonth.transactions)) {
+    const merchantFrequency = new Map<string, { count: number; totalSpent: number }>();
+    
+    currentMonth.transactions.forEach(transaction => {
+      if (transaction.amount < 0) { // Only analyze expenses
+        const merchant = transaction.description;
+        const current = merchantFrequency.get(merchant) || { count: 0, totalSpent: 0 };
+        merchantFrequency.set(merchant, {
+          count: current.count + 1,
+          totalSpent: current.totalSpent + Math.abs(transaction.amount)
+        });
+      }
+    });
+
+    // Find most frequent merchant
+    const mostFrequent = Array.from(merchantFrequency.entries())
+      .sort((a, b) => b[1].count - a[1].count)[0];
+
+    if (mostFrequent) {
+      insights.push({
+        id: 'frequent-merchant-' + Date.now(),
+        tip: `Your most frequent transaction was at ${mostFrequent[0]}, visiting ${mostFrequent[1].count} times and spending ${formatCurrency(mostFrequent[1].totalSpent)}.`,
+        category: 'spending',
+        type: 'suggestion'
+      });
+    }
+
+    // Analyze credit card payments
+    const creditPayments = currentMonth.transactions
+      .filter(t => 
+        t.amount < 0 && 
+        (t.category === 'Credit Card Payment' || 
+         t.description.toLowerCase().includes('credit') ||
+         t.description.toLowerCase().includes('affirm') ||
+         t.description.toLowerCase().includes('klarna'))
+      )
+      .reduce((total, t) => total + Math.abs(t.amount), 0);
+
+    if (creditPayments > 0) {
+      insights.push({
+        id: 'credit-payments-' + Date.now(),
+        tip: `Your total credit-related payments this month were ${formatCurrency(creditPayments)}.`,
+        category: 'credit',
+        type: creditPayments > currentMonth.total_income * 0.3 ? 'warning' : 'suggestion'
+      });
+    }
+  }
+
+  // Savings potential analysis
+  if (currentMonth.transaction_categories) {
+    const discretionaryCategories = [
+      'Entertainment', 'Shopping', 'Restaurants', 'Fast Food',
+      'Electronics & Software', 'Clothing'
+    ];
+    
+    const discretionarySpending = Object.entries(currentMonth.transaction_categories)
+      .filter(([category]) => 
+        discretionaryCategories.some(c => 
+          category.toLowerCase().includes(c.toLowerCase())
+        )
+      )
+      .reduce((total, [_, amount]) => total + Number(amount), 0);
+
+    if (discretionarySpending > 0) {
+      const potentialSavings = Math.round(discretionarySpending * 0.2); // Suggest saving 20% of discretionary spending
+      insights.push({
+        id: 'savings-potential-' + Date.now(),
+        tip: `Based on your discretionary spending of ${formatCurrency(discretionarySpending)}, you could potentially save ${formatCurrency(potentialSavings)} by reducing non-essential purchases.`,
+        category: 'savings',
+        type: 'suggestion'
+      });
+    }
+  }
+
   // Monthly Spending Analysis
   if (currentMonth.total_expenses > 0) {
     const monthName = format(parseISO(currentMonth.month_year), 'MMMM');
@@ -41,22 +116,6 @@ export const generateInsights = (summaries: MonthlyData[]): Insight[] => {
       category: 'spending',
       type: 'suggestion'
     });
-  }
-
-  // Month-over-Month Spending Comparison
-  if (previousMonth && currentMonth.total_expenses > 0 && previousMonth.total_expenses > 0) {
-    const spendingChange = ((currentMonth.total_expenses - previousMonth.total_expenses) / previousMonth.total_expenses) * 100;
-    const currentMonthName = format(parseISO(currentMonth.month_year), 'MMMM');
-    const previousMonthName = format(parseISO(previousMonth.month_year), 'MMMM');
-    
-    if (!isNaN(spendingChange)) {
-      insights.push({
-        id: 'spending-trend-' + Date.now(),
-        tip: `Your spending in ${currentMonthName} ${spendingChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(spendingChange).toFixed(1)}% compared to ${previousMonthName}.`,
-        category: 'spending',
-        type: spendingChange > 10 ? 'warning' : 'positive'
-      });
-    }
   }
 
   // Category Analysis
@@ -94,39 +153,9 @@ export const generateInsights = (summaries: MonthlyData[]): Insight[] => {
     }
   }
 
-  // Income Analysis
-  if (currentMonth.total_income > 0 && previousMonth && previousMonth.total_income > 0) {
-    const incomeChange = ((currentMonth.total_income - previousMonth.total_income) / previousMonth.total_income) * 100;
-    if (!isNaN(incomeChange) && Math.abs(incomeChange) > 5) {
-      insights.push({
-        id: 'income-change-' + Date.now(),
-        tip: `Your income has ${incomeChange > 0 ? 'increased' : 'decreased'} by ${Math.abs(incomeChange).toFixed(1)}% compared to last month.`,
-        category: 'income',
-        type: incomeChange > 0 ? 'positive' : 'warning'
-      });
-    }
-  }
-
-  // Savings Rate Analysis
-  if (currentMonth.total_income > 0 && currentMonth.total_expenses > 0) {
-    const savingsRate = ((currentMonth.total_income - currentMonth.total_expenses) / currentMonth.total_income) * 100;
-    if (!isNaN(savingsRate) && savingsRate !== Infinity) {
-      const monthName = format(parseISO(currentMonth.month_year), 'MMMM');
-      insights.push({
-        id: 'savings-rate-' + Date.now(),
-        tip: `Your savings rate for ${monthName} is ${savingsRate.toFixed(1)}%. ${
-          savingsRate >= 20 ? "Great job maintaining a healthy savings rate!" : 
-          savingsRate > 0 ? "Consider setting a goal to save 20% of your income." :
-          "Consider reviewing your expenses to improve your savings rate."
-        }`,
-        category: 'savings',
-        type: savingsRate >= 20 ? 'positive' : savingsRate > 0 ? 'suggestion' : 'warning'
-      });
-    }
-  }
-
+  // Return a random selection of insights
   return insights
     .filter(insight => !insight.tip.includes('NaN') && !insight.tip.includes('Infinity'))
     .sort(() => Math.random() - 0.5)
-    .slice(0, Math.max(3, insights.length));
+    .slice(0, Math.min(4, insights.length));
 };
