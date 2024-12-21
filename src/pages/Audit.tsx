@@ -31,7 +31,9 @@ const Audit = () => {
     return (
       <div className="min-h-screen bg-background p-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Loading audit data...</h1>
+          <div className="flex items-center justify-center h-[500px]">
+            <p className="text-muted-foreground animate-pulse">Loading audit data...</p>
+          </div>
         </div>
       </div>
     );
@@ -40,8 +42,10 @@ const Audit = () => {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Financial Audit</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+            Financial Audit
+          </h1>
           <MonthSelector
             statements={statements || []}
             selectedMonth={selectedMonth}
@@ -49,29 +53,29 @@ const Audit = () => {
           />
         </div>
 
-        <div className="grid gap-8">
-          <Card>
+        <div className="grid gap-6">
+          <Card className="backdrop-blur-lg bg-card/50 border-purple-200/20">
             <CardHeader>
-              <CardTitle>Summary</CardTitle>
+              <CardTitle className="text-xl text-purple-800 dark:text-purple-100">Summary</CardTitle>
             </CardHeader>
             <CardContent>
               <AuditSummary selectedMonth={selectedMonth} />
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card>
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="backdrop-blur-lg bg-card/50 border-purple-200/20">
               <CardHeader>
-                <CardTitle>Key Insights</CardTitle>
+                <CardTitle className="text-xl text-purple-800 dark:text-purple-100">Key Insights</CardTitle>
               </CardHeader>
               <CardContent>
                 <AuditInsights selectedMonth={selectedMonth} />
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="backdrop-blur-lg bg-card/50 border-purple-200/20">
               <CardHeader>
-                <CardTitle>Alerts</CardTitle>
+                <CardTitle className="text-xl text-purple-800 dark:text-purple-100">Alerts</CardTitle>
               </CardHeader>
               <CardContent>
                 <AuditAlerts selectedMonth={selectedMonth} />
@@ -79,18 +83,18 @@ const Audit = () => {
             </Card>
           </div>
 
-          <Card>
+          <Card className="backdrop-blur-lg bg-card/50 border-purple-200/20">
             <CardHeader>
-              <CardTitle>Analytics</CardTitle>
+              <CardTitle className="text-xl text-purple-800 dark:text-purple-100">Analytics</CardTitle>
             </CardHeader>
             <CardContent>
               <AuditCharts selectedMonth={selectedMonth} />
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="backdrop-blur-lg bg-card/50 border-purple-200/20">
             <CardHeader>
-              <CardTitle>Documents</CardTitle>
+              <CardTitle className="text-xl text-purple-800 dark:text-purple-100">Documents</CardTitle>
             </CardHeader>
             <CardContent>
               <AuditDocuments selectedMonth={selectedMonth} />

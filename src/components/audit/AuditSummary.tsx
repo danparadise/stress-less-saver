@@ -32,24 +32,34 @@ const AuditSummary = ({ selectedMonth }: AuditSummaryProps) => {
   };
 
   if (!summary) {
-    return <div className="text-muted-foreground">No financial data available for the selected month</div>;
+    return (
+      <div className="text-muted-foreground text-center py-4">
+        No financial data available for the selected month
+      </div>
+    );
   }
 
   return (
     <div className="grid md:grid-cols-3 gap-4">
-      <div className="p-4 rounded-lg bg-primary/10">
-        <h3 className="text-sm font-medium text-muted-foreground">Total Income</h3>
-        <p className="text-2xl font-bold">{formatCurrency(summary.total_income)}</p>
+      <div className="p-6 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Income</h3>
+        <p className="text-2xl font-bold text-purple-800 dark:text-purple-100">
+          {formatCurrency(summary.total_income)}
+        </p>
       </div>
       
-      <div className="p-4 rounded-lg bg-primary/10">
-        <h3 className="text-sm font-medium text-muted-foreground">Total Expenses</h3>
-        <p className="text-2xl font-bold">{formatCurrency(summary.total_expenses)}</p>
+      <div className="p-6 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Expenses</h3>
+        <p className="text-2xl font-bold text-purple-800 dark:text-purple-100">
+          {formatCurrency(summary.total_expenses)}
+        </p>
       </div>
       
-      <div className="p-4 rounded-lg bg-primary/10">
-        <h3 className="text-sm font-medium text-muted-foreground">Net Balance</h3>
-        <p className="text-2xl font-bold">{formatCurrency(summary.ending_balance)}</p>
+      <div className="p-6 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">Net Balance</h3>
+        <p className="text-2xl font-bold text-purple-800 dark:text-purple-100">
+          {formatCurrency(summary.ending_balance)}
+        </p>
       </div>
     </div>
   );
