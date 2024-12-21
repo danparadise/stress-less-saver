@@ -29,13 +29,13 @@ const Landing = () => {
 
   // Sample data for cash flow
   const cashFlowData = [
-    { date: 'Nov 30', amount: -320 },
-    { date: 'Dec 02', amount: -120 },
-    { date: 'Dec 04', amount: 280 },
-    { date: 'Dec 06', amount: -180 },
-    { date: 'Dec 08', amount: -80 },
-    { date: 'Dec 10', amount: 380 },
-    { date: 'Dec 12', amount: -280 }
+    { date: 'Nov 30', amount: -320, type: 'expense' },
+    { date: 'Dec 02', amount: -120, type: 'expense' },
+    { date: 'Dec 04', amount: 280, type: 'income' },
+    { date: 'Dec 06', amount: -180, type: 'expense' },
+    { date: 'Dec 08', amount: -80, type: 'expense' },
+    { date: 'Dec 10', amount: 380, type: 'income' },
+    { date: 'Dec 12', amount: -280, type: 'expense' }
   ];
 
   const COLORS = ['#8B5CF6', '#34D399', '#F472B6', '#0EA5E9', '#D946EF'];
@@ -108,9 +108,15 @@ const Landing = () => {
                       domain={[-400, 400]}
                     />
                     <Bar 
-                      dataKey="amount" 
-                      fill={(data: any) => data.amount >= 0 ? '#34D399' : '#F87171'}
-                    />
+                      dataKey="amount"
+                    >
+                      {cashFlowData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`}
+                          fill={entry.amount >= 0 ? '#34D399' : '#F87171'}
+                        />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
