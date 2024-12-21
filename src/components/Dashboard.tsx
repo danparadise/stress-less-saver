@@ -4,6 +4,7 @@ import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import FinancialChatbot from "./dashboard/FinancialChatbot";
+import SubscriptionButton from "./dashboard/SubscriptionButton";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -52,7 +53,10 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-8">
-        <DashboardHeader isDark={isDark} />
+        <div className="flex justify-between items-center mb-6">
+          <DashboardHeader isDark={isDark} />
+          <SubscriptionButton />
+        </div>
         
         <div className="space-y-6">
           <SearchBar onSearch={handleSearch} />
