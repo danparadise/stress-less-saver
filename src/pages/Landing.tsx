@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { OnboardingDialog } from "@/components/onboarding/OnboardingDialog";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Force light mode on the landing page
   useEffect(() => {
     const root = window.document.documentElement;
     const originalTheme = root.classList.contains('dark') ? 'dark' : 'light';
@@ -65,13 +66,26 @@ const Landing = () => {
           
           <div className="flex justify-center gap-4 animate-fadeIn delay-300">
             <Button
-              onClick={() => navigate("/login")}
+              onClick={() => setShowOnboarding(true)}
               size="lg"
               className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-6 text-lg"
             >
               Get Started Free
             </Button>
+            <Button
+              onClick={() => navigate("/login")}
+              size="lg"
+              variant="outline"
+              className="px-8 py-6 text-lg border-purple-600 text-purple-600 hover:bg-purple-50"
+            >
+              Sign In
+            </Button>
           </div>
+
+          <OnboardingDialog 
+            open={showOnboarding} 
+            onOpenChange={setShowOnboarding}
+          />
 
           {/* Analytics Preview Section */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn delay-400">
