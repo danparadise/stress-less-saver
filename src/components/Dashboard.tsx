@@ -1,23 +1,11 @@
-import { useEffect, useState } from "react";
-import { ArrowDownRight, PiggyBank, List, BarChart2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { useState } from "react";
+import { PiggyBank } from "lucide-react";
 import SearchBar from "./dashboard/SearchBar";
 import StatsCard from "./dashboard/StatsCard";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
 import DashboardHeader from "./dashboard/DashboardHeader";
 import FinancialChatbot from "./dashboard/FinancialChatbot";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import { useBankStatementData } from "@/hooks/useBankStatementData";
 import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 
@@ -44,27 +32,9 @@ const mockData = {
 };
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const [isDark, setIsDark] = useState(false);
-  const [monthlyExpenses, setMonthlyExpenses] = useState(0);
-
   const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
   const { data: paystubData, isLoading: isPaystubLoading, error } = usePaystubTrends();
-
-  // Update monthly expenses when financial data changes
-  useEffect(() => {
-    if (financialData) {
-      console.log('Processing financial data:', financialData);
-      setMonthlyExpenses(Math.abs(financialData.total_withdrawals || 0));
-    }
-  }, [financialData]);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("Searching:", e.target.value);
@@ -72,17 +42,6 @@ const Dashboard = () => {
 
   const calculateSavingsProgress = () => {
     return (mockData.savings / mockData.savingsGoal) * 100;
-  };
-
-  const handleAnalyticsClick = () => {
-    navigate('/analytics');
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
   };
 
   if (error) {
@@ -116,73 +75,6 @@ const Dashboard = () => {
           <SearchBar onSearch={handleSearch} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-4">
-              <div className="bg-card rounded-lg p-6">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-lg font-medium">Monthly Expenses</h3>
-                    <p className="text-2xl font-bold text-destructive">
-                      -{formatCurrency(monthlyExpenses)}
-                    </p>
-                  </div>
-                  <div className="bg-destructive/10 p-2 rounded-full">
-                    <ArrowDownRight className="h-5 w-5 text-destructive" />
-                  </div>
-                </div>
-
-                <ScrollArea className="h-[300px] w-full rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="text-right">Balance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {financialData?.transactions && financialData.transactions.length > 0 ? (
-                        financialData.transactions.map((transaction, index) => (
-                          <TableRow key={index}>
-                            <TableCell>
-                              {format(new Date(transaction.date), "MMM d, yyyy")}
-                            </TableCell>
-                            <TableCell>{transaction.description}</TableCell>
-                            <TableCell>{transaction.category}</TableCell>
-                            <TableCell className={`text-right ${
-                              transaction.amount < 0 ? 'text-destructive' : 'text-sage-500'
-                            }`}>
-                              {formatCurrency(transaction.amount)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {formatCurrency(transaction.balance)}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-4">
-                            No transactions found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-
-                <div className="mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={handleAnalyticsClick}
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <BarChart2 className="h-4 w-4" />
-                    View Analytics
-                  </Button>
-                </div>
-              </div>
-            </div>
             <StatsCard
               title="Monthly Savings"
               value={`+$${mockData.savings.toLocaleString()}`}
