@@ -47,7 +47,7 @@ const Dashboard = () => {
     );
   }
 
-  const showUploadPrompt = !financialData || financialData.length === 0;
+  const showUploadPrompt = !financialData;
 
   return (
     <div className="min-h-screen bg-background">
