@@ -74,6 +74,16 @@ const Dashboard = () => {
         <div className="space-y-8">
           <SearchBar onSearch={handleSearch} />
 
+          {/* New layout: Chatbot and Insights side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="lg:col-span-1">
+              <FinancialChatbot />
+            </div>
+            <div className="lg:col-span-1">
+              <AiInsights suggestions={mockData.aiSuggestions} />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatsCard
               title="Monthly Savings"
@@ -86,21 +96,12 @@ const Dashboard = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              {isPaystubLoading ? (
-                <div className="w-full h-[300px] bg-card rounded-lg animate-pulse" />
-              ) : (
-                <IncomeChart data={paystubData || []} />
-              )}
-            </div>
-            <div className="lg:col-span-1">
-              <AiInsights suggestions={mockData.aiSuggestions} />
-            </div>
-          </div>
-
           <div className="w-full">
-            <FinancialChatbot />
+            {isPaystubLoading ? (
+              <div className="w-full h-[300px] bg-card rounded-lg animate-pulse" />
+            ) : (
+              <IncomeChart data={paystubData || []} />
+            )}
           </div>
         </div>
       </main>
