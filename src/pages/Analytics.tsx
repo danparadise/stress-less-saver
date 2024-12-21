@@ -5,6 +5,7 @@ import { Transaction } from "@/types/bankStatement";
 import TransactionsPopup from "@/components/analytics/TransactionsPopup";
 import MonthSelector from "@/components/analytics/MonthSelector";
 import SpendingDistributionChart from "@/components/analytics/SpendingDistributionChart";
+import CashFlowChart from "@/components/analytics/CashFlowChart";
 
 const Analytics = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -25,7 +26,7 @@ const Analytics = () => {
           )
         `)
         .not('transactions', 'is', null)
-        .neq('transactions', '[]') // Changed to use neq instead of @@ operator
+        .neq('transactions', '[]')
         .order('statement_month', { ascending: false });
 
       if (error) throw error;
@@ -63,6 +64,27 @@ const Analytics = () => {
       .sort((a, b) => b.value - a.value);
   };
 
+  const processCashFlowData = () => {
+    if (!bankStatements || bankStatements.length === 0) return [];
+
+    const selectedStatement = selectedMonth 
+      ? bankStatements.find(statement => statement.statement_month === selectedMonth)
+      : bankStatements[0];
+
+    if (!selectedStatement) return [];
+
+    const transactions = selectedStatement.transactions as unknown as Transaction[] || [];
+
+    return transactions
+      .map(transaction => ({
+        date: transaction.date,
+        amount: transaction.amount,
+        type: transaction.amount > 0 ? 'income' as const : 'expense' as const,
+        description: transaction.description
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
       'Transportation': '#60A5FA',
@@ -86,6 +108,7 @@ const Analytics = () => {
   };
 
   const data = processTransactionsData();
+  const cashFlowData = processCashFlowData();
   const selectedData = data.find(item => item.name === selectedCategory);
   const totalSpending = data.reduce((sum, item) => sum + item.value, 0);
 
@@ -129,6 +152,11 @@ const Analytics = () => {
           totalSpending={totalSpending}
           currentMonth={currentStatement?.statement_month || null}
           onCategoryClick={setSelectedCategory}
+        />
+
+        <CashFlowChart
+          data={cashFlowData}
+          currentMonth={currentStatement?.statement_month || null}
         />
       </div>
 

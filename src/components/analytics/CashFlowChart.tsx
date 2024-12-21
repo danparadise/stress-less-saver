@@ -1,0 +1,93 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+interface CashFlowChartProps {
+  data: Array<{
+    date: string;
+    amount: number;
+    type: 'income' | 'expense';
+    description: string;
+  }>;
+  currentMonth: string | null;
+}
+
+const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  // Process data to show daily net cash flow
+  const processedData = data.reduce((acc: any[], transaction) => {
+    const date = format(new Date(transaction.date), 'MMM dd');
+    const existingDay = acc.find(item => item.date === date);
+
+    if (existingDay) {
+      existingDay.amount += transaction.amount;
+    } else {
+      acc.push({
+        date,
+        amount: transaction.amount,
+      });
+    }
+
+    return acc;
+  }, []);
+
+  return (
+    <Card className="dark:bg-purple-800/10 backdrop-blur-lg border-purple-300/20">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+            Cash Flow
+          </span>
+          {currentMonth && (
+            <span className="text-sm font-normal text-purple-300">
+              for {format(new Date(currentMonth), "MMMM yyyy")}
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[400px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={processedData}>
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+              <XAxis 
+                dataKey="date" 
+                stroke="#A78BFA"
+                className="text-xs"
+              />
+              <YAxis 
+                stroke="#A78BFA"
+                tickFormatter={formatCurrency}
+                className="text-xs"
+              />
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), "Net Flow"]}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '0.5rem',
+                  padding: '0.75rem',
+                }}
+              />
+              <Bar 
+                dataKey="amount" 
+                fill="#8B5CF6"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default CashFlowChart;
