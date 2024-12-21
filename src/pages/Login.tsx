@@ -46,7 +46,6 @@ const Login = () => {
           navigate("/dashboard");
         } else {
           toast.info('Please complete your subscription to continue');
-          // Create checkout session and redirect to payment
           try {
             const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
               method: 'POST',
@@ -108,53 +107,21 @@ const Login = () => {
                     inputLabelText: '#4b5563',
                     inputPlaceholder: '#9ca3af',
                   },
-                  space: {
-                    inputPadding: '1rem',
-                    buttonPadding: '1rem',
-                  },
-                  borderWidths: {
-                    buttonBorderWidth: '1px',
-                    inputBorderWidth: '1px',
-                  },
-                  radii: {
-                    borderRadiusButton: '0.5rem',
-                    buttonBorderRadius: '0.5rem',
-                    inputBorderRadius: '0.5rem',
-                  },
-                  fontSizes: {
-                    baseInputSize: '1rem',
-                    baseButtonSize: '1rem',
-                  },
-                },
-              },
-              style: {
-                button: {
-                  fontSize: '1rem',
-                  padding: '0.75rem 1rem',
-                  fontWeight: '500',
-                },
-                input: {
-                  fontSize: '1rem',
-                },
-                label: {
-                  fontSize: '0.875rem',
-                  color: '#4b5563',
-                  fontWeight: '500',
-                },
-                anchor: {
-                  color: '#7c3aed',
-                  fontWeight: '500',
-                  textDecoration: 'none',
                 },
               },
             }}
             theme="default"
             providers={[]}
+            additionalData={{
+              username: true
+            }}
             localization={{
               variables: {
                 sign_up: {
                   email_label: 'Email',
                   password_label: 'Password',
+                  username_label: 'Display Name',
+                  username_input_placeholder: 'Your display name',
                   email_input_placeholder: 'Your email address',
                   password_input_placeholder: 'Your password',
                   button_label: 'Sign up',

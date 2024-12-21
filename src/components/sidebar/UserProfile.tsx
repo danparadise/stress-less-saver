@@ -11,13 +11,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Settings, User } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 const UserProfile = () => {
   const navigate = useNavigate();
-  const [showNamePrompt, setShowNamePrompt] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -34,27 +31,6 @@ const UserProfile = () => {
       return profile;
     },
   });
-
-  useEffect(() => {
-    const checkFirstLogin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile?.username) {
-        setShowNamePrompt(true);
-        navigate("/profile");
-        toast.info("Please set your display name");
-      }
-    };
-
-    checkFirstLogin();
-  }, [navigate]);
 
   return (
     <div className="p-4">
