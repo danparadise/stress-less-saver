@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { MonthlyFinancialSummary, Transaction } from "@/types/bankStatement";
 
 interface AuditAlertsProps {
   selectedMonth: string | null;
@@ -54,9 +55,10 @@ const AuditAlerts = ({ selectedMonth }: AuditAlertsProps) => {
       }
 
       // Check for high-value transactions
-      const highValueTransactions = (currentMonth.transactions || [])
-        .filter((t: any) => Math.abs(t.amount) > 500)
-        .map((t: any) => ({
+      const transactions = currentMonth.transactions as Transaction[];
+      const highValueTransactions = transactions
+        .filter(t => Math.abs(t.amount) > 500)
+        .map(t => ({
           type: "info",
           title: "Large Transaction",
           description: `${t.description}: ${new Intl.NumberFormat('en-US', {

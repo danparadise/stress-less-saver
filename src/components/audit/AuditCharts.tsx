@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { MonthlyFinancialSummary, Transaction } from "@/types/bankStatement";
 
 interface AuditChartsProps {
   selectedMonth: string | null;
@@ -23,7 +24,7 @@ const AuditCharts = ({ selectedMonth }: AuditChartsProps) => {
       if (error) throw error;
 
       // Prepare category data for pie chart
-      const categoryData = Object.entries(data.transaction_categories || {})
+      const categoryData = Object.entries(data.transaction_categories as Record<string, number>)
         .map(([name, value]) => ({
           name,
           value: Number(value)
@@ -32,9 +33,10 @@ const AuditCharts = ({ selectedMonth }: AuditChartsProps) => {
         .slice(0, 5);
 
       // Prepare daily balance data
-      const balanceData = (data.transactions || [])
-        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .map((t: any) => ({
+      const transactions = data.transactions as Transaction[];
+      const balanceData = transactions
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map(t => ({
           date: new Date(t.date).toLocaleDateString(),
           balance: t.balance
         }));

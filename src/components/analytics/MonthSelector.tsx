@@ -8,14 +8,14 @@ import {
 } from "@/components/ui/select";
 
 interface MonthSelectorProps {
-  statements: Array<{ statement_month: string }>;
+  statements: Array<{ month_year: string }>;
   selectedMonth: string | null;
   onMonthSelect: (month: string) => void;
 }
 
 const MonthSelector = ({ statements, selectedMonth, onMonthSelect }: MonthSelectorProps) => {
   // Remove duplicate months and sort them from newest to oldest
-  const uniqueMonths = Array.from(new Set(statements.map(s => s.statement_month)))
+  const uniqueMonths = Array.from(new Set(statements.map(s => s.month_year)))
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
   return (
