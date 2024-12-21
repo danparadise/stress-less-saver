@@ -6,6 +6,8 @@ import { Loader2, RefreshCw } from "lucide-react";
 import InsightCard from "./InsightCard";
 import { generateInsights } from "@/utils/insightGenerator";
 import { Json } from "@/integrations/supabase/types";
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 // Helper function to convert Json to Record<string, number>
 const convertCategories = (categories: Json): Record<string, number> => {
@@ -19,6 +21,9 @@ const convertCategories = (categories: Json): Record<string, number> => {
 };
 
 const AiInsights = () => {
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const { data: summary, isLoading, refetch } = useQuery({
     queryKey: ["latest-monthly-summary"],
     queryFn: async () => {
@@ -52,7 +57,23 @@ const AiInsights = () => {
   const displayInsights = insights.slice(0, Math.max(3, insights.length));
 
   const handleRefresh = async () => {
-    await refetch();
+    try {
+      setIsRefreshing(true);
+      await refetch();
+      toast({
+        title: "Insights Updated",
+        description: "Your financial insights have been refreshed with the latest data.",
+      });
+    } catch (error) {
+      console.error('Error refreshing insights:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to refresh insights. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   if (isLoading) {
@@ -73,10 +94,11 @@ const AiInsights = () => {
           variant="outline"
           size="sm"
           onClick={handleRefresh}
+          disabled={isRefreshing}
           className="flex items-center gap-2"
         >
-          <RefreshCw className="h-4 w-4" />
-          Update Insights
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Updating...' : 'Update Insights'}
         </Button>
       </div>
       {displayInsights.length > 0 ? (
