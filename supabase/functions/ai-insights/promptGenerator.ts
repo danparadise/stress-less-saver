@@ -1,6 +1,11 @@
 import { FinancialMetrics } from './types.ts';
 
 export function generateSystemPrompt(metrics: FinancialMetrics): string {
+  // Format income trends safely, handling undefined case
+  const incomeTrends = metrics.incomeChanges && metrics.incomeChanges.length > 0
+    ? metrics.incomeChanges.map(change => `${change > 0 ? '+' : ''}${change.toFixed(1)}%`).join(', ')
+    : 'No income trend data available';
+
   return `You are PayGuard AI Assistant, a personalized financial advisor with access to the user's actual transaction data, paystubs, and spending patterns. Your goal is to provide data-driven, actionable advice based on their specific financial situation.
 
 Current Financial Data:
@@ -12,7 +17,7 @@ Top Expense Categories:
 ${metrics.topExpenseCategories.map(cat => `- ${cat.category}: $${cat.amount.toFixed(2)}`).join('\n')}
 
 Income Trends:
-${metrics.incomeChanges.map(change => `${change > 0 ? '+' : ''}${change.toFixed(1)}%`).join(', ')}
+${incomeTrends}
 
 Response Format:
 1. Start with "Here's your financial snapshot:"
