@@ -18,13 +18,61 @@ const FinancialChatbot = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Add initial welcome message when component mounts
     const welcomeMessage: Message = {
       role: 'assistant',
-      content: "Hello! I'm your financial assistant. I can help you analyze your spending, track your savings, or answer any questions about your financial data. How can I assist you today?"
+      content: "Here's your financial snapshot:\nI'm your AI financial assistant, ready to analyze your data and provide personalized advice. Let's take action!\n\nStep 1: Get Started\n- What to do: Share your financial concerns or ask about specific aspects of your finances\n- Why: To receive tailored guidance based on your situation\n- How: Type your question below or ask about spending, savings, or budgeting\n\nWould you like to explore your finances together?"
     };
     setMessages([welcomeMessage]);
   }, []);
+
+  const formatMessageContent = (content: string) => {
+    // Split content into sections
+    const sections = content.split('\n');
+    
+    return sections.map((section, index) => {
+      if (section.startsWith('Step')) {
+        // Style step headers
+        return (
+          <div key={index} className="mt-4 mb-2">
+            <h3 className="font-semibold text-purple-900">{section}</h3>
+          </div>
+        );
+      } else if (section.startsWith('-')) {
+        // Style bullet points
+        return (
+          <div key={index} className="ml-4 my-1 flex items-start">
+            <span className="mr-2 text-purple-600">•</span>
+            <span>{section.substring(2)}</span>
+          </div>
+        );
+      } else if (section.startsWith("Here's your financial snapshot:")) {
+        // Style the snapshot header
+        return (
+          <div key={index} className="font-semibold text-lg text-purple-900 mb-2">
+            {section}
+          </div>
+        );
+      } else if (section.startsWith("Let's take action:")) {
+        // Style the action header
+        return (
+          <div key={index} className="font-semibold text-lg text-purple-900 my-2">
+            {section}
+          </div>
+        );
+      } else if (section.startsWith("Would you like")) {
+        // Style the closing question
+        return (
+          <div key={index} className="mt-4 text-purple-900 font-medium">
+            {section}
+          </div>
+        );
+      } else if (section.trim() !== '') {
+        // Style regular text
+        return <p key={index} className="my-2">{section}</p>;
+      }
+      return null;
+    });
+  };
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -99,7 +147,9 @@ const FinancialChatbot = () => {
                     : 'bg-gray-100 text-gray-900 mr-4'
                 }`}
               >
-                {message.content}
+                {message.role === 'assistant' 
+                  ? formatMessageContent(message.content)
+                  : message.content}
               </div>
             </div>
           ))}
