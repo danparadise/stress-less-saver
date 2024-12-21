@@ -24,10 +24,11 @@ const Index = () => {
   });
 
   return (
-    <div className="p-8">
+    <div className="p-8 space-y-8">
       <DashboardHeader />
-      <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-white/50 backdrop-blur-sm border-neutral-200 dark:border-neutral-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Documents Uploaded</CardTitle>
           </CardHeader>
@@ -39,7 +40,7 @@ const Index = () => {
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/50 backdrop-blur-sm border-neutral-200 dark:border-neutral-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Subscription Status</CardTitle>
           </CardHeader>
@@ -52,12 +53,9 @@ const Index = () => {
           </CardContent>
         </Card>
       </div>
-      <div className="mt-8">
-        <SubscribeButton />
-      </div>
-      <div className="mt-8">
-        <Dashboard />
-      </div>
+
+      <SubscribeButton />
+      <Dashboard />
     </div>
   );
 };
