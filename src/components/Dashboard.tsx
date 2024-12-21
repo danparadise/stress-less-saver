@@ -74,11 +74,11 @@ const Dashboard = () => {
         <div className="space-y-6">
           <SearchBar onSearch={handleSearch} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="lg:col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="lg:col-span-1 h-[500px]">
               <FinancialChatbot />
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 h-[500px]">
               <AiInsights suggestions={mockData.aiSuggestions} />
             </div>
           </div>

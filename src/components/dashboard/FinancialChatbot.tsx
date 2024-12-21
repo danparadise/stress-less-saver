@@ -23,7 +23,6 @@ const FinancialChatbot = () => {
     try {
       setIsLoading(true);
       
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -34,12 +33,10 @@ const FinancialChatbot = () => {
         return;
       }
 
-      // Add user message to chat
       const userMessage: Message = { role: 'user', content: input };
       setMessages(prev => [...prev, userMessage]);
       setInput('');
 
-      // Call AI insights function
       const response = await fetch(
         `https://dfwiszjyvkfmpejsqvbf.functions.supabase.co/ai-insights`,
         {
@@ -61,7 +58,6 @@ const FinancialChatbot = () => {
         throw new Error(data.error);
       }
 
-      // Add AI response to chat
       const aiMessage: Message = { role: 'assistant', content: data.response };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
@@ -77,9 +73,9 @@ const FinancialChatbot = () => {
   };
 
   return (
-    <Card className="bg-white p-4 space-y-4 rounded-xl shadow-lg">
-      <div className="space-y-4">
-        <div className="h-[300px] overflow-y-auto space-y-4 p-4">
+    <Card className="bg-white h-full p-6 rounded-xl shadow-md">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.map((message, index) => (
             <div
               key={index}
@@ -88,10 +84,10 @@ const FinancialChatbot = () => {
               }`}
             >
               <div
-                className={`max-w-[80%] p-3 rounded-lg ${
+                className={`max-w-[80%] p-4 rounded-2xl ${
                   message.role === 'user'
-                    ? 'bg-purple-100 text-purple-900'
-                    : 'bg-gray-100 text-gray-900'
+                    ? 'bg-purple-100 text-purple-900 ml-4'
+                    : 'bg-gray-100 text-gray-900 mr-4'
                 }`}
               >
                 {message.content}
@@ -100,12 +96,12 @@ const FinancialChatbot = () => {
           ))}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3 mt-auto">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about your finances..."
-            className="resize-none bg-purple-900/10 text-purple-900 placeholder:text-purple-900/50 rounded-xl"
+            className="resize-none bg-gray-50 text-gray-900 placeholder:text-gray-500 rounded-xl border-gray-200"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -116,7 +112,7 @@ const FinancialChatbot = () => {
           <Button
             onClick={sendMessage}
             disabled={isLoading || !input.trim()}
-            className="px-3 bg-purple-900 hover:bg-purple-800 rounded-xl"
+            className="px-4 bg-purple-600 hover:bg-purple-700 rounded-xl"
           >
             <Send className="h-4 w-4" />
           </Button>
