@@ -20,14 +20,32 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
-    const { data } = await supabaseClient.auth.getUser(token)
-    const user = data.user
+    const { data: userData } = await supabaseClient.auth.getUser(token)
+    const user = userData.user
     const email = user?.email
 
     if (!email) {
       throw new Error('No email found')
     }
 
+    // First check if user has pro status in profiles
+    const { data: profileData } = await supabaseClient
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', user.id)
+      .single()
+
+    if (profileData?.subscription_status === 'pro') {
+      return new Response(
+        JSON.stringify({ subscribed: true }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
+    }
+
+    // If not marked as pro in profiles, check Stripe subscription
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     })
