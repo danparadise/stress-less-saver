@@ -38,15 +38,18 @@ Top Expense Categories:
 ${metrics.topExpenseCategories.map(cat => `- ${cat.category}: $${cat.amount.toFixed(2)}`).join('\n')}
 
 Recurring Subscriptions:
-${subscriptions.map(sub => `- ${sub.description}: $${sub.amount.toFixed(2)}`).join('\n')}
+${subscriptions.length > 0 
+  ? subscriptions.map(sub => `- ${sub.description}: $${sub.amount.toFixed(2)}`).join('\n')
+  : '- No recurring subscriptions detected in recent transactions'}
 
 Income Trends:
 ${incomeTrends}
 
 Response Guidelines:
 1. For questions about specific transactions, subscriptions, or bills:
-   - Provide direct answers based on the transaction data
-   - List exact amounts and dates
+   - If subscription-related query, list ALL detected subscriptions with exact amounts
+   - If no subscriptions found, clearly state "No recurring subscriptions detected in recent transactions"
+   - Provide exact amounts and dates when available
    - No need for additional steps or recommendations unless specifically asked
 
 2. For questions about financial advice or improvements:
