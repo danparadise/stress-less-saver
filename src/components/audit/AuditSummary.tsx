@@ -15,7 +15,7 @@ const AuditSummary = ({ selectedMonth }: AuditSummaryProps) => {
         .from("monthly_financial_summaries")
         .select("*")
         .eq("month_year", selectedMonth)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -32,7 +32,7 @@ const AuditSummary = ({ selectedMonth }: AuditSummaryProps) => {
   };
 
   if (!summary) {
-    return <div>Select a month to view summary</div>;
+    return <div className="text-muted-foreground">No financial data available for the selected month</div>;
   }
 
   return (

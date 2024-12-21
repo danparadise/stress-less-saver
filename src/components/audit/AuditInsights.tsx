@@ -18,9 +18,10 @@ const AuditInsights = ({ selectedMonth }: AuditInsightsProps) => {
         .from("monthly_financial_summaries")
         .select("*")
         .eq("month_year", selectedMonth)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return null;
 
       // Process transactions to find patterns
       const rawTransactions = Array.isArray(data.transactions) ? data.transactions : [];
@@ -71,7 +72,7 @@ const AuditInsights = ({ selectedMonth }: AuditInsightsProps) => {
   };
 
   if (!insights) {
-    return <div>Select a month to view insights</div>;
+    return <div className="text-muted-foreground">No insights available for the selected month</div>;
   }
 
   return (

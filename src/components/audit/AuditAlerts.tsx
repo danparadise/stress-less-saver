@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MonthlyFinancialSummary, Transaction } from "@/types/bankStatement";
+import { Transaction } from "@/types/bankStatement";
 import { convertJsonToTransaction } from "@/utils/transactionUtils";
 
 interface AuditAlertsProps {
@@ -21,9 +21,10 @@ const AuditAlerts = ({ selectedMonth }: AuditAlertsProps) => {
         .from("monthly_financial_summaries")
         .select("*")
         .eq("month_year", selectedMonth)
-        .single();
+        .maybeSingle();
 
       if (currentError) throw currentError;
+      if (!currentMonth) return null;
 
       // Get previous month's data for comparison
       const previousMonth = new Date(selectedMonth);
@@ -33,7 +34,7 @@ const AuditAlerts = ({ selectedMonth }: AuditAlertsProps) => {
         .from("monthly_financial_summaries")
         .select("*")
         .eq("month_year", previousMonth.toISOString().split('T')[0])
-        .single();
+        .maybeSingle();
 
       const alerts = [];
 
@@ -77,8 +78,8 @@ const AuditAlerts = ({ selectedMonth }: AuditAlertsProps) => {
     enabled: !!selectedMonth
   });
 
-  if (!alerts) {
-    return <div>Select a month to view alerts</div>;
+  if (!alerts || alerts.length === 0) {
+    return <div className="text-muted-foreground">No alerts for the selected month</div>;
   }
 
   return (
