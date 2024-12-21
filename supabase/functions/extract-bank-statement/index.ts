@@ -51,7 +51,7 @@ serve(async (req) => {
     const pdfInfo = await pdfInfoResponse.json()
     console.log('PDF info:', pdfInfo)
 
-    // 2. Convert PDF to PNG
+    // 2. Convert PDF to PNG - all pages
     console.log('Converting PDF pages to PNG')
     const pdfCoResponse = await fetch('https://api.pdf.co/v1/pdf/convert/to/png', {
       method: 'POST',
@@ -61,7 +61,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: pdfUrl,
-        pages: `1-${pdfInfo.pageCount}`,
+        pages: `1-${pdfInfo.pageCount}`, // Convert all pages
         async: false
       })
     })
@@ -88,43 +88,49 @@ serve(async (req) => {
     let successfulPages = 0
     let errors: string[] = []
 
-    for (let i = 0; i < pdfCoData.urls.length; i++) {
-      console.log(`Processing page ${i + 1} of ${pdfCoData.urls.length}`)
+    // Process pages in parallel for better performance
+    const pagePromises = pdfCoData.urls.map(async (pageUrl: string, index: number) => {
+      console.log(`Processing page ${index + 1} of ${pdfCoData.urls.length}`)
       try {
-        const openAiResponse = await extractDataFromImage(pdfCoData.urls[i])
+        const openAiResponse = await extractDataFromImage(pageUrl)
         const aiResult = await openAiResponse.json()
         
         if (!aiResult.choices?.[0]?.message?.content) {
-          console.error(`No content in OpenAI response for page ${i + 1}`)
-          errors.push(`Page ${i + 1}: No content in OpenAI response`)
-          continue
+          console.error(`No content in OpenAI response for page ${index + 1}`)
+          throw new Error(`No content in OpenAI response`)
         }
 
-        console.log(`Raw OpenAI response for page ${i + 1}:`, aiResult.choices[0].message.content)
+        console.log(`Raw OpenAI response for page ${index + 1}:`, aiResult.choices[0].message.content)
         
         const extractedData = parseOpenAIResponse(aiResult.choices[0].message.content)
-        console.log(`Extracted data from page ${i + 1}:`, extractedData)
+        console.log(`Extracted data from page ${index + 1}:`, extractedData)
 
-        if (extractedData.transactions && extractedData.transactions.length > 0) {
-          successfulPages++
-          if (!statementMonth && extractedData.statement_month) {
-            statementMonth = extractedData.statement_month
-          }
-
-          allTransactions = [...allTransactions, ...extractedData.transactions]
-
-          if (extractedData.total_deposits) totalDeposits += extractedData.total_deposits
-          if (extractedData.total_withdrawals) totalWithdrawals += extractedData.total_withdrawals
-          if (extractedData.ending_balance) endingBalance = extractedData.ending_balance
-        } else {
-          errors.push(`Page ${i + 1}: No transactions found`)
-        }
+        return extractedData
       } catch (error) {
-        console.error(`Error processing page ${i + 1}:`, error)
-        errors.push(`Page ${i + 1}: ${error.message}`)
-        continue
+        console.error(`Error processing page ${index + 1}:`, error)
+        errors.push(`Page ${index + 1}: ${error.message}`)
+        return null
       }
-    }
+    })
+
+    const pageResults = await Promise.all(pagePromises)
+    
+    // Combine results from all pages
+    pageResults.forEach((result, index) => {
+      if (result) {
+        successfulPages++
+        if (!statementMonth && result.statement_month) {
+          statementMonth = result.statement_month
+        }
+
+        if (result.transactions && result.transactions.length > 0) {
+          allTransactions = [...allTransactions, ...result.transactions]
+          if (result.total_deposits) totalDeposits += result.total_deposits
+          if (result.total_withdrawals) totalWithdrawals += result.total_withdrawals
+          if (result.ending_balance) endingBalance = result.ending_balance // Use the last valid balance
+        }
+      }
+    })
 
     console.log('Processing complete. Successful pages:', successfulPages)
     console.log('Total transactions extracted:', allTransactions.length)
@@ -174,7 +180,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        data: finalData
+        data: finalData,
+        pages_processed: successfulPages,
+        total_pages: pdfCoData.urls.length
       }),
       { 
         headers: { 
