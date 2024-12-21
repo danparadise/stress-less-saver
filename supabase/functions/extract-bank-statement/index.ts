@@ -5,7 +5,7 @@ import { extractDataFromImage } from './openaiService.ts'
 import { parseOpenAIResponse } from './openaiParser.ts'
 import { processPDFPages } from './pdfProcessor.ts'
 import { aggregatePageResults } from './dataAggregator.ts'
-import { FinalData, ProcessingResult } from './types'
+import { FinalData, ProcessingResult } from './types.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

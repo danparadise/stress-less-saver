@@ -1,18 +1,4 @@
-interface Transaction {
-  date: string;
-  description: string;
-  category: string;
-  amount: number;
-  balance: number;
-}
-
-interface ExtractedData {
-  statement_month: string;
-  total_deposits: number;
-  total_withdrawals: number;
-  ending_balance: number;
-  transactions: Transaction[];
-}
+import { ExtractedData, Transaction } from './types.ts';
 
 export function parseOpenAIResponse(content: string): ExtractedData {
   console.log('Parsing OpenAI response content:', content);

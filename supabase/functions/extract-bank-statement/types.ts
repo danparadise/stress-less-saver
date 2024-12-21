@@ -8,20 +8,20 @@ export interface PDFPageData {
   pageCount: number;
 }
 
-export interface ExtractedData {
-  statement_month: string;
-  total_deposits: number;
-  total_withdrawals: number;
-  ending_balance: number;
-  transactions: Transaction[];
-}
-
 export interface Transaction {
   date: string;
   description: string;
   category: string;
   amount: number;
   balance: number;
+}
+
+export interface ExtractedData {
+  statement_month: string;
+  total_deposits: number;
+  total_withdrawals: number;
+  ending_balance: number;
+  transactions: Transaction[];
 }
 
 export interface ProcessingResult {
