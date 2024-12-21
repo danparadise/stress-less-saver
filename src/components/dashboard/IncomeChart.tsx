@@ -1,12 +1,17 @@
 import { Card } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, isValid, parseISO } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface IncomeChartProps {
   data: Array<{ date: string; amount: number }>;
 }
 
 const IncomeChart = ({ data }: IncomeChartProps) => {
+  const navigate = useNavigate();
+  
   const formatDate = (dateStr: string) => {
     try {
       const parsedDate = parseISO(dateStr);
@@ -46,6 +51,28 @@ const IncomeChart = ({ data }: IncomeChartProps) => {
     const dateB = new Date(b.date).getTime();
     return dateA - dateB;
   });
+
+  if (sortedData.length === 0) {
+    return (
+      <Card className="col-span-2 p-6 glass-card">
+        <div className="flex flex-col items-center justify-center space-y-4 py-8">
+          <h3 className="text-xl font-semibold text-purple-800">
+            No Income Data Available
+          </h3>
+          <p className="text-center text-purple-600 max-w-md">
+            Upload your paystubs to see your income trends and get personalized financial insights.
+          </p>
+          <Button 
+            onClick={() => navigate("/paystubs")}
+            className="mt-4 bg-purple-600 hover:bg-purple-700"
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Paystub
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="col-span-2 p-6 glass-card">
