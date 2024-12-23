@@ -2,74 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { BrowserRouter, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import AppSidebar from "@/components/AppSidebar";
-import Landing from "./pages/Landing";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Paystubs from "./pages/Paystubs";
-import Analytics from "./pages/Analytics";
-import BankStatements from "./pages/BankStatements";
-import BankStatementAnalytics from "./pages/BankStatementAnalytics";
-import Audit from "./pages/Audit";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
-
-// Legal Pages
-import Privacy from "./pages/legal/Privacy";
-import Terms from "./pages/legal/Terms";
-import CCPA from "./pages/legal/CCPA";
-import Accessibility from "./pages/legal/Accessibility";
-import Security from "./pages/legal/Security";
-import DataProcessing from "./pages/legal/DataProcessing";
+import { AuthRoutes } from "./routes/AuthRoutes";
+import { ProtectedRoutes } from "./routes/ProtectedRoutes";
 
 const queryClient = new QueryClient();
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check initial session
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setIsAuthenticated(!!session);
-      } catch (error) {
-        console.error('Session check error:', error);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setIsAuthenticated(!!session);
-      setIsLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-      </div>
-    );
-  }
-
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -79,138 +17,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            
-            {/* Legal Routes */}
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/ccpa" element={<CCPA />} />
-            <Route path="/accessibility" element={<Accessibility />} />
-            <Route path="/security" element={<Security />} />
-            <Route path="/data-processing" element={<DataProcessing />} />
-            
-            {/* Protected Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <Index />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <Settings />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <Profile />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <Analytics />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/audit"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <Audit />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/paystubs"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <Paystubs />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bank-statements"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <BankStatements />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bank-statements/:id/analytics"
-              element={
-                <ProtectedRoute>
-                  <SidebarProvider>
-                    <div className="min-h-screen flex w-full">
-                      <AppSidebar />
-                      <main className="flex-1">
-                        <BankStatementAnalytics />
-                      </main>
-                    </div>
-                  </SidebarProvider>
-                </ProtectedRoute>
-              }
-            />
+            {AuthRoutes}
+            {ProtectedRoutes}
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
