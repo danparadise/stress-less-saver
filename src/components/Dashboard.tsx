@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SearchBar from "./dashboard/SearchBar";
 import IncomeChart from "./dashboard/IncomeChart";
 import AiInsights from "./dashboard/AiInsights";
@@ -10,15 +10,27 @@ import { usePaystubTrends } from "@/hooks/usePaystubTrends";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Upload } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
   const { data: paystubData, isLoading: isPaystubLoading, error } = usePaystubTrends();
-  const { data: profile } = useSubscriptionStatus();
+  const { data: profile, refetch: refetchProfile } = useSubscriptionStatus();
+
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success === 'true') {
+      toast.success('Welcome to PayGuard Pro!');
+      refetchProfile(); // Refresh subscription status
+    } else if (success === 'false') {
+      toast.error('Subscription process was cancelled');
+    }
+  }, [searchParams, refetchProfile]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("Searching:", e.target.value);

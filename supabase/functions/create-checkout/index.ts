@@ -64,8 +64,9 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
+      allow_promotion_codes: true, // Enable promo code input
       subscription_data: {
-        trial_period_days: 7, // Add 7-day free trial
+        trial_period_days: 7,
       },
       success_url: `${req.headers.get('origin')}/dashboard?success=true`,
       cancel_url: `${req.headers.get('origin')}/dashboard?success=false`,
