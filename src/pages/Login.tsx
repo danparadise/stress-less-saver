@@ -75,12 +75,13 @@ const Login = () => {
         // Handle user updates if needed
       } else if (event === 'SIGNED_OUT') {
         navigate('/login');
-      } else if (event === 'AUTH_ERROR') {
-        // Handle auth errors here
-        const error = session as unknown as { error: { message: string; email?: string } };
-        if (error?.error) {
-          handleAuthError(error.error);
-        }
+      } else if (event === 'PASSWORD_RECOVERY') {
+        toast.info('Please check your email to reset your password');
+      }
+
+      // Handle any errors that occur during authentication
+      if (session?.error) {
+        handleAuthError(session.error);
       }
     });
 
