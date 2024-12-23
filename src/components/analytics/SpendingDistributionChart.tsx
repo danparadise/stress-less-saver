@@ -76,6 +76,12 @@ const SpendingDistributionChart = ({
                   borderRadius: '0.5rem',
                   padding: '0.75rem',
                 }}
+                itemStyle={{
+                  color: '#FFFFFF',
+                }}
+                labelStyle={{
+                  color: '#FFFFFF',
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
