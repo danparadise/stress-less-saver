@@ -3,28 +3,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 
 const SubscriptionButton = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  // Query to get user's subscription status
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
-      
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("subscription_status")
-        .eq("id", user.id)
-        .single();
-      
-      return profile;
-    },
-  });
+  const { data: profile } = useSubscriptionStatus();
 
   const handleCancelSubscription = async () => {
     try {
