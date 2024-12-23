@@ -46,37 +46,6 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
         }
       } else if (event === 'SIGNED_OUT') {
         navigate('/login');
-      } else if (event === 'SIGNED_UP') {
-        // Handle the case where a user tries to sign up with an existing email
-        const error = session?.error;
-        if (error?.message?.includes('User already registered')) {
-          toast.error(
-            <div className="space-y-2">
-              <p>This email is already registered.</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => window.location.reload()}
-                  className="text-purple-600 hover:text-purple-700 font-medium"
-                >
-                  Sign in
-                </button>
-                <span>or</span>
-                <button
-                  onClick={() => {
-                    const email = (document.querySelector('input[type="email"]') as HTMLInputElement)?.value;
-                    if (email) {
-                      supabase.auth.resetPasswordForEmail(email);
-                      toast.info('Password reset instructions sent to your email');
-                    }
-                  }}
-                  className="text-purple-600 hover:text-purple-700 font-medium"
-                >
-                  Reset password
-                </button>
-              </div>
-            </div>
-          );
-        }
       } else if (event === 'PASSWORD_RECOVERY') {
         toast.info('Please check your email to reset your password');
       }
