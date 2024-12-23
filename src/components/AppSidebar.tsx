@@ -51,31 +51,33 @@ const AppSidebar = () => {
 
   return (
     <Sidebar variant="inset" className="sidebar-gradient">
-      <SidebarContent>
-        <UserProfile />
-        <SidebarNavigation />
-        <SidebarMenu>
-          <DocumentUploadButton />
-          {profile?.subscription_status === 'pro' && (
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={handleManageSubscription}
-            >
-              <CreditCard className="mr-2 h-4 w-4" />
-              Manage Subscription
-            </Button>
-          )}
-        </SidebarMenu>
-      </SidebarContent>
+      <SidebarContent className="flex flex-col h-full">
+        <div className="flex-grow">
+          <UserProfile />
+          <SidebarNavigation />
+          <SidebarMenu>
+            <DocumentUploadButton />
+            {profile?.subscription_status === 'pro' && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start px-4 py-2.5 text-base hover:bg-purple-500/10 transition-colors"
+                onClick={handleManageSubscription}
+              >
+                <CreditCard className="h-5 w-5 mr-3" />
+                <span>Manage Subscription</span>
+              </Button>
+            )}
+          </SidebarMenu>
+        </div>
 
-      <SidebarFooter className="p-4 space-y-2">
-        <SidebarMenu>
-          <DiscordLink variant="ghost" className="w-full justify-start" />
-          <ThemeToggle />
-          <LogoutButton />
-        </SidebarMenu>
-      </SidebarFooter>
+        <SidebarFooter className="mt-auto p-4 space-y-2">
+          <SidebarMenu>
+            <DiscordLink variant="ghost" className="w-full justify-start px-4 py-2.5 text-base hover:bg-purple-500/10 transition-colors" />
+            <ThemeToggle />
+            <LogoutButton />
+          </SidebarMenu>
+        </SidebarFooter>
+      </SidebarContent>
     </Sidebar>
   );
 };
