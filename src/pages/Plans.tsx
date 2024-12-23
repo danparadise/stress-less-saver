@@ -10,30 +10,17 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 const Plans = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { data: profile } = useSubscriptionStatus();
+  const { data: profile, isLoading: profileLoading } = useSubscriptionStatus();
   const isPro = profile?.subscription_status === 'pro';
+
+  console.log('Subscription status:', profile?.subscription_status); // Debug log
 
   const handleCancelSubscription = async () => {
     try {
       setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error("Please sign in to manage your subscription");
-        return;
-      }
-
-      const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
-      }
-
+      const { error } = await supabase.functions.invoke('cancel-subscription');
+      if (error) throw error;
+      
       toast.success("Subscription cancelled successfully");
       navigate("/dashboard");
     } catch (error) {
@@ -53,22 +40,14 @@ const Plans = () => {
         return;
       }
 
-      const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {},
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session');
-      }
+      if (error) throw error;
+      if (!data?.url) throw new Error('No checkout URL received');
 
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
-      }
+      window.location.href = data.url;
     } catch (error) {
       console.error('Error:', error);
       toast.error("Failed to start subscription process");
@@ -76,6 +55,10 @@ const Plans = () => {
       setIsLoading(false);
     }
   };
+
+  if (profileLoading) {
+    return <div className="container mx-auto p-6">Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-5xl">
@@ -85,22 +68,26 @@ const Plans = () => {
         {isPro && (
           <Card className="relative border-purple-200 dark:border-purple-800">
             <CardHeader>
-              <CardTitle>Cancel Subscription</CardTitle>
+              <CardTitle>Current Plan: Pro</CardTitle>
               <CardDescription>Manage your current subscription</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p>You are currently on the Pro plan</p>
-              <div className="mt-6">
-                <Button 
-                  variant="destructive"
-                  className="w-full" 
-                  onClick={handleCancelSubscription}
-                  disabled={isLoading}
-                >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Cancel Subscription
-                </Button>
-              </div>
+              <Button 
+                variant="destructive"
+                className="w-full" 
+                onClick={handleCancelSubscription}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Cancel Subscription'
+                )}
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -127,16 +114,20 @@ const Plans = () => {
               </li>
             </ul>
             {!isPro && (
-              <div className="mt-6">
-                <Button 
-                  className="w-full bg-purple-600 hover:bg-purple-700" 
-                  onClick={handleUpgradeSubscription}
-                  disabled={isLoading}
-                >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Upgrade to Pro
-                </Button>
-              </div>
+              <Button 
+                className="w-full bg-purple-600 hover:bg-purple-700" 
+                onClick={handleUpgradeSubscription}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Upgrade to Pro'
+                )}
+              </Button>
             )}
           </CardContent>
         </Card>
