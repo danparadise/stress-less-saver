@@ -11,12 +11,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(false);
   const navigate = useNavigate();
   const { data: financialData, isLoading: isFinancialDataLoading } = useBankStatementData();
   const { data: paystubData, isLoading: isPaystubLoading, error } = usePaystubTrends();
+
+  // Query to get user's subscription status
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+      
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("subscription_status")
+        .eq("id", user.id)
+        .single();
+      
+      return profile;
+    },
+  });
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("Searching:", e.target.value);
@@ -48,7 +67,7 @@ const Dashboard = () => {
     );
   }
 
-  const showUploadPrompt = !financialData;
+  const showUploadPrompt = !financialData && profile?.subscription_status !== 'pro';
 
   return (
     <div className="min-h-screen bg-background">
