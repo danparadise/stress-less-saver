@@ -20,11 +20,17 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
       if (event === 'SIGNED_IN' && session) {
         try {
           // First check profiles table as it's our source of truth
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('subscription_status')
             .eq('id', session.user.id)
             .single();
+
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            toast.error('Error checking subscription status');
+            return;
+          }
 
           if (profile?.subscription_status === 'pro' || profile?.subscription_status === 'trial') {
             toast.success('Welcome back!');
@@ -36,16 +42,27 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
           const { subscribed, isTrialing } = await checkSubscription(session.access_token, session.user.email || '');
           
           if (subscribed || isTrialing) {
-            // Update profile status based on subscription type
-            await supabase
-              .from('profiles')
-              .update({ 
-                subscription_status: isTrialing ? 'trial' : 'pro' 
-              })
-              .eq('id', session.user.id);
-            
-            toast.success('Welcome back!');
-            navigate("/dashboard");
+            try {
+              // Update profile status based on subscription type
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ 
+                  subscription_status: isTrialing ? 'trial' : 'pro' 
+                })
+                .eq('id', session.user.id);
+
+              if (updateError) {
+                console.error('Error updating profile:', updateError);
+                toast.error('Error updating subscription status');
+                return;
+              }
+              
+              toast.success('Welcome back!');
+              navigate("/dashboard");
+            } catch (updateError) {
+              console.error('Error updating profile:', updateError);
+              toast.error('Error updating subscription status');
+            }
           } else {
             toast.info('Please complete your subscription to continue');
             try {
@@ -68,11 +85,13 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             } catch (error) {
               console.error('Error creating checkout session:', error);
               toast.error('Failed to process subscription. Please try again.');
+              navigate('/login');
             }
           }
         } catch (error) {
           console.error('Error checking subscription:', error);
           toast.error('Error checking subscription status. Please try again.');
+          navigate('/login');
         }
       } else if (event === 'SIGNED_OUT') {
         navigate('/login');
