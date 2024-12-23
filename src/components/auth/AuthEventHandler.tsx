@@ -16,46 +16,53 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         try {
-          // Check if user is subscribed
+          // First check profiles table as it's our source of truth
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('subscription_status')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile?.subscription_status === 'pro') {
+            toast.success('Welcome back!');
+            navigate("/dashboard");
+            return;
+          }
+
+          // If not marked as pro in profiles, verify with Stripe
           const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
           
           if (isSubscribed) {
+            // Update profile status if Stripe shows active subscription
+            await supabase
+              .from('profiles')
+              .update({ subscription_status: 'pro' })
+              .eq('id', session.user.id);
+            
             toast.success('Welcome back!');
             navigate("/dashboard");
           } else {
-            // Check profiles table for subscription status as backup
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('subscription_status')
-              .eq('id', session.user.id)
-              .single();
+            toast.info('Please complete your subscription to continue');
+            try {
+              const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
 
-            if (profile?.subscription_status === 'pro') {
-              toast.success('Welcome back!');
-              navigate("/dashboard");
-            } else {
-              toast.info('Please complete your subscription to continue');
-              try {
-                const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                  },
-                });
-
-                if (!response.ok) {
-                  throw new Error('Failed to create checkout session');
-                }
-
-                const { url } = await response.json();
-                if (url) {
-                  window.location.href = url;
-                }
-              } catch (error) {
-                console.error('Error creating checkout session:', error);
-                toast.error('Failed to process subscription. Please try again.');
+              if (!response.ok) {
+                throw new Error('Failed to create checkout session');
               }
+
+              const { url } = await response.json();
+              if (url) {
+                window.location.href = url;
+              }
+            } catch (error) {
+              console.error('Error creating checkout session:', error);
+              toast.error('Failed to process subscription. Please try again.');
             }
           }
         } catch (error) {
