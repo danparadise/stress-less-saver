@@ -1,16 +1,15 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import AppSidebar from "@/components/AppSidebar";
+import { Outlet } from "react-router-dom";
 
-interface ProtectedLayoutProps {
-  children: React.ReactNode;
-}
-
-const ProtectedLayout = ({ children }: ProtectedLayoutProps) => {
+const ProtectedLayout = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          <Outlet />
+        </main>
       </div>
     </SidebarProvider>
   );
