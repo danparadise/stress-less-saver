@@ -5,34 +5,35 @@ import { LoginHeader } from "@/components/auth/LoginHeader";
 import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
 import { AuthEventHandler } from "@/components/auth/AuthEventHandler";
 
+const checkSubscription = async (token: string, email: string) => {
+  try {
+    const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/check-subscription', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to check subscription status');
+    }
+
+    const data = await response.json();
+    return {
+      subscribed: data.subscribed,
+      isTrialing: data.isTrialing,
+    };
+  } catch (error) {
+    console.error('Error checking subscription:', error);
+    return {
+      subscribed: false,
+      isTrialing: false,
+    };
+  }
+};
+
 const Login = () => {
-  const checkSubscription = async (token: string, email: string) => {
-    // Special handling for admin email
-    if (email === 'dannielparadise@gmail.com') {
-      return true;
-    }
-
-    try {
-      const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/check-subscription', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to check subscription status');
-      }
-
-      const data = await response.json();
-      return data.subscribed;
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-      return false;
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md space-y-8">
@@ -40,6 +41,7 @@ const Login = () => {
         <div className="bg-white shadow-xl rounded-2xl p-8 border border-purple-100">
           <Auth
             supabaseClient={supabase}
+            view="sign_in"
             appearance={{
               theme: ThemeSupa,
               variables: {
@@ -71,8 +73,6 @@ const Login = () => {
                 message: 'text-red-600 text-sm mt-1',
               },
             }}
-            theme="default"
-            providers={[]}
             localization={{
               variables: {
                 sign_up: {
@@ -108,7 +108,6 @@ const Login = () => {
             }}
             redirectTo={window.location.origin}
             showLinks={true}
-            view="sign_up"
           />
         </div>
         <PasswordRequirements />
