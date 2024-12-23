@@ -65,33 +65,6 @@ const Plans = () => {
       <h1 className="text-3xl font-bold mb-8">Subscription Management</h1>
       
       <div className="grid md:grid-cols-2 gap-6">
-        {isPro && (
-          <Card className="relative border-purple-200 dark:border-purple-800">
-            <CardHeader>
-              <CardTitle>Current Plan: Pro</CardTitle>
-              <CardDescription>Manage your current subscription</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p>You are currently on the Pro plan</p>
-              <Button 
-                variant="destructive"
-                className="w-full" 
-                onClick={handleCancelSubscription}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  'Cancel Subscription'
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         <Card className="relative border-purple-200 dark:border-purple-800">
           <CardHeader>
             <CardTitle>Pro Plan</CardTitle>
@@ -113,7 +86,23 @@ const Plans = () => {
                 <span>Priority support</span>
               </li>
             </ul>
-            {!isPro && (
+            {isPro ? (
+              <Button 
+                variant="destructive"
+                className="w-full" 
+                onClick={handleCancelSubscription}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Cancel Subscription'
+                )}
+              </Button>
+            ) : (
               <Button 
                 className="w-full bg-purple-600 hover:bg-purple-700" 
                 onClick={handleUpgradeSubscription}
