@@ -33,34 +33,7 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             return;
           }
 
-          // First check profiles table
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('subscription_status, founder_code')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-            toast.error('Error checking subscription status');
-            return;
-          }
-
-          console.log('Profile data:', profile);
-
-          // Check for pro status, trial, or founder code
-          if (
-            profile?.subscription_status === 'pro' || 
-            profile?.subscription_status === 'trial' ||
-            profile?.founder_code === 'FOUNDER'
-          ) {
-            console.log('User has valid subscription or founder status');
-            toast.success('Welcome back!');
-            navigate("/dashboard");
-            return;
-          }
-
-          // If not marked as pro/trial/founder in profiles, verify with Stripe
+          // Check subscription status with Stripe
           console.log('Verifying subscription with Stripe...');
           const { subscribed, isTrialing } = await checkSubscription(
             session.access_token, 
@@ -86,26 +59,28 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             toast.success('Welcome back!');
             navigate("/dashboard");
           } else {
+            // Check if user has founder code
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('founder_code')
+              .eq('id', session.user.id)
+              .single();
+
+            if (profile?.founder_code === 'FOUNDER') {
+              toast.success('Welcome back, Founder!');
+              navigate("/dashboard");
+              return;
+            }
+
             // User needs to complete subscription
             try {
-              const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${session.access_token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (!response.ok) {
-                throw new Error('Failed to create checkout session');
-              }
-
-              const { url } = await response.json();
-              if (url) {
-                window.location.href = url;
-              } else {
+              const response = await supabase.functions.invoke('create-checkout');
+              
+              if (!response.data?.url) {
                 throw new Error('No checkout URL received');
               }
+
+              window.location.href = response.data.url;
             } catch (error) {
               console.error('Error creating checkout session:', error);
               toast.error('Failed to process subscription. Please try again.');
