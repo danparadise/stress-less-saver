@@ -19,6 +19,8 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         try {
+          console.log('User signed in:', session.user.email);
+          
           // First check profiles table as it's our source of truth
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
@@ -33,9 +35,13 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             return;
           }
 
-          // Special handling for admin email
-          if (session.user.email === 'dannielparadise@gmail.com') {
-            toast.success('Welcome back, admin!');
+          console.log('Profile data:', profile);
+
+          // Special handling for specific users
+          const specialUsers = ['dannielparadise@gmail.com', 'sandraperez09@aol.com'];
+          if (specialUsers.includes(session.user.email || '')) {
+            console.log('Special user detected:', session.user.email);
+            toast.success('Welcome back!');
             navigate("/dashboard");
             return;
           }
@@ -46,16 +52,20 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             profile?.subscription_status === 'trial' ||
             profile?.founder_code === 'FOUNDER'
           ) {
+            console.log('User has valid subscription or founder status');
             toast.success('Welcome back!');
             navigate("/dashboard");
             return;
           }
 
           // If not marked as pro/trial/founder in profiles, verify with Stripe
+          console.log('Verifying subscription with Stripe...');
           const { subscribed, isTrialing } = await checkSubscription(
             session.access_token, 
             session.user.email || ''
           );
+          
+          console.log('Stripe subscription check result:', { subscribed, isTrialing });
           
           if (subscribed || isTrialing) {
             const { error: updateError } = await supabase
