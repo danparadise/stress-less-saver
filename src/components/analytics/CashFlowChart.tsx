@@ -77,7 +77,11 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
 
   // Handle bar click
   const handleBarClick = (data: any) => {
-    setSelectedDate(data.date);
+    console.log('Bar clicked:', data);
+    if (data && data.activePayload && data.activePayload.length > 0) {
+      const clickedData = data.activePayload[0].payload;
+      setSelectedDate(clickedData.date);
+    }
   };
 
   // Get transactions for selected date
@@ -109,7 +113,11 @@ const CashFlowChart = ({ data, currentMonth }: CashFlowChartProps) => {
         <CardContent>
           <div className="h-[400px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={processedData} onClick={handleBarClick}>
+              <BarChart 
+                data={processedData} 
+                onClick={handleBarClick}
+                className="cursor-pointer"
+              >
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date" 
