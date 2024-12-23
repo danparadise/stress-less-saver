@@ -4,7 +4,10 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthEventHandlerProps {
-  checkSubscription: (token: string, email: string) => Promise<boolean>;
+  checkSubscription: (token: string, email: string) => Promise<{
+    subscribed: boolean;
+    isTrialing: boolean;
+  }>;
 }
 
 export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) => {
@@ -23,20 +26,22 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             .eq('id', session.user.id)
             .single();
 
-          if (profile?.subscription_status === 'pro') {
+          if (profile?.subscription_status === 'pro' || profile?.subscription_status === 'trial') {
             toast.success('Welcome back!');
             navigate("/dashboard");
             return;
           }
 
-          // If not marked as pro in profiles, verify with Stripe
-          const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
+          // If not marked as pro/trial in profiles, verify with Stripe
+          const { subscribed, isTrialing } = await checkSubscription(session.access_token, session.user.email || '');
           
-          if (isSubscribed) {
-            // Update profile status if Stripe shows active subscription
+          if (subscribed || isTrialing) {
+            // Update profile status based on subscription type
             await supabase
               .from('profiles')
-              .update({ subscription_status: 'pro' })
+              .update({ 
+                subscription_status: isTrialing ? 'trial' : 'pro' 
+              })
               .eq('id', session.user.id);
             
             toast.success('Welcome back!');
