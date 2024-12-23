@@ -22,7 +22,7 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
           // First check profiles table as it's our source of truth
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('subscription_status')
+            .select('subscription_status, founder_code')
             .eq('id', session.user.id)
             .single();
 
@@ -40,13 +40,18 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             return;
           }
 
-          if (profile?.subscription_status === 'pro' || profile?.subscription_status === 'trial') {
+          // Check for pro status or founder code
+          if (
+            profile?.subscription_status === 'pro' || 
+            profile?.subscription_status === 'trial' ||
+            profile?.founder_code === 'FOUNDER'
+          ) {
             toast.success('Welcome back!');
             navigate("/dashboard");
             return;
           }
 
-          // If not marked as pro/trial in profiles, verify with Stripe
+          // If not marked as pro/trial/founder in profiles, verify with Stripe
           const { subscribed, isTrialing } = await checkSubscription(
             session.access_token, 
             session.user.email || ''
