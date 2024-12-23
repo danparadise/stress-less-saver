@@ -11,7 +11,7 @@ import Settings from "@/pages/Settings";
 import Plans from "@/pages/Plans";
 
 export const ProtectedRoutes = (
-  <Route element={<ProtectedLayout>
+  <Route element={<ProtectedLayout />}>
     <Route path="/dashboard" element={<Index />} />
     <Route path="/analytics" element={<Analytics />} />
     <Route path="/audit" element={<Audit />} />
@@ -21,6 +21,5 @@ export const ProtectedRoutes = (
     <Route path="/profile" element={<Profile />} />
     <Route path="/settings" element={<Settings />} />
     <Route path="/plans" element={<Plans />} />
-  </ProtectedLayout>}>
   </Route>
 );
