@@ -1,17 +1,13 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { AuthHeader } from "@/components/auth/AuthHeader";
+import { LoginHeader } from "@/components/auth/LoginHeader";
 import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
-import { handleAuthError } from "@/components/auth/AuthErrorHandler";
+import { AuthEventHandler } from "@/components/auth/AuthEventHandler";
 
 const Login = () => {
-  const navigate = useNavigate();
-
   const checkSubscription = async (token: string, email: string) => {
+    // Special handling for admin email
     if (email === 'dannielparadise@gmail.com') {
       return true;
     }
@@ -37,63 +33,10 @@ const Login = () => {
     }
   };
 
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
-        
-        if (isSubscribed) {
-          toast.success('Welcome back!');
-          navigate("/dashboard");
-        } else {
-          toast.info('Please complete your subscription to continue');
-          try {
-            const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (!response.ok) {
-              throw new Error('Failed to create checkout session');
-            }
-
-            const { url } = await response.json();
-            if (url) {
-              window.location.href = url;
-            }
-          } catch (error) {
-            console.error('Error creating checkout session:', error);
-            toast.error('Failed to process subscription. Please try again.');
-          }
-        }
-      } else if (event === 'USER_UPDATED') {
-        // Handle user updates if needed
-      } else if (event === 'SIGNED_OUT') {
-        navigate('/login');
-      } else if (event === 'PASSWORD_RECOVERY') {
-        toast.info('Please check your email to reset your password');
-      }
-
-      // Handle any errors that occur during authentication
-      if (session?.error) {
-        handleAuthError(session.error);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md space-y-8">
-        <AuthHeader />
+        <LoginHeader />
         <div className="bg-white shadow-xl rounded-2xl p-8 border border-purple-100">
           <Auth
             supabaseClient={supabase}
@@ -165,11 +108,12 @@ const Login = () => {
             }}
             redirectTo={window.location.origin}
             showLinks={true}
-            view="sign_in"
+            view="sign_up"
           />
         </div>
         <PasswordRequirements />
       </div>
+      <AuthEventHandler checkSubscription={checkSubscription} />
     </div>
   );
 };
