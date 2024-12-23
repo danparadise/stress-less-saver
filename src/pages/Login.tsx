@@ -36,6 +36,7 @@ const Login = () => {
   };
 
   useEffect(() => {
+    // Listen for auth state changes
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
@@ -67,8 +68,25 @@ const Login = () => {
             toast.error('Failed to process subscription. Please try again.');
           }
         }
+      } else if (event === 'USER_UPDATED') {
+        // Handle user updates if needed
+      } else if (event === 'SIGNED_OUT') {
+        navigate('/login');
       }
     });
+
+    // Listen for auth errors
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        toast.info('Please check your email to reset your password');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return (
@@ -105,8 +123,15 @@ const Login = () => {
                     inputText: '#1f2937',
                     inputLabelText: '#4b5563',
                     inputPlaceholder: '#9ca3af',
+                    messageText: '#dc2626',
+                    anchorTextColor: '#7c3aed',
+                    anchorTextHoverColor: '#6d28d9',
                   },
                 },
+              },
+              className: {
+                anchor: 'text-purple-600 hover:text-purple-700 font-medium',
+                message: 'text-red-600 text-sm mt-1',
               },
             }}
             theme="default"
@@ -134,11 +159,48 @@ const Login = () => {
                   social_provider_text: 'Sign in with {{provider}}',
                   link_text: 'Already have an account? Sign in',
                 },
+                forgotten_password: {
+                  email_label: 'Email',
+                  password_label: 'Password',
+                  email_input_placeholder: 'Your email address',
+                  button_label: 'Send reset instructions',
+                  loading_button_label: 'Sending reset instructions...',
+                  link_text: 'Forgot your password?',
+                },
               },
             }}
             redirectTo={window.location.origin}
             showLinks={true}
             view="sign_up"
+            onError={(error) => {
+              if (error.message.includes('already registered')) {
+                toast.error(
+                  <div className="space-y-2">
+                    <p>This email is already registered.</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        Sign in
+                      </button>
+                      <span>or</span>
+                      <button
+                        onClick={() => {
+                          supabase.auth.resetPasswordForEmail(error.email || '');
+                          toast.info('Password reset instructions sent to your email');
+                        }}
+                        className="text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        Reset password
+                      </button>
+                    </div>
+                  </div>
+                );
+              } else {
+                toast.error(error.message);
+              }
+            }}
           />
         </div>
         <div className="text-center text-sm text-purple-600">
