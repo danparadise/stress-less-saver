@@ -63,36 +63,36 @@ const TransactionsPopup = ({
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-white/10">
-                  <TableHead className="text-lg font-medium text-white">Date</TableHead>
-                  <TableHead className="text-lg font-medium text-white">Description</TableHead>
-                  <TableHead className="text-lg font-medium text-white">Category</TableHead>
-                  <TableHead className="text-lg font-medium text-white text-right">Amount</TableHead>
-                  <TableHead className="text-lg font-medium text-white text-right">Balance</TableHead>
+                  <TableHead className="text-lg font-medium text-white sticky top-0 bg-[#1E1533] z-10">Date</TableHead>
+                  <TableHead className="text-lg font-medium text-white sticky top-0 bg-[#1E1533] z-10">Description</TableHead>
+                  <TableHead className="text-lg font-medium text-white sticky top-0 bg-[#1E1533] z-10">Category</TableHead>
+                  <TableHead className="text-lg font-medium text-white text-right sticky top-0 bg-[#1E1533] z-10">Amount</TableHead>
+                  <TableHead className="text-lg font-medium text-white text-right sticky top-0 bg-[#1E1533] z-10">Balance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {transactions.map((transaction, index) => (
                   <TableRow 
                     key={index} 
-                    className="border-b border-white/10 hover:bg-white/5"
+                    className="border-b border-white/10 hover:bg-white/5 transition-colors"
                   >
-                    <TableCell className="text-white">
+                    <TableCell className="text-white font-medium">
                       {format(new Date(transaction.date), "MMM d, yyyy")}
                     </TableCell>
-                    <TableCell className="text-white">
+                    <TableCell className="text-white font-medium">
                       {transaction.description}
                     </TableCell>
-                    <TableCell className="text-white">
+                    <TableCell className="text-white font-medium">
                       {transaction.category}
                     </TableCell>
-                    <TableCell className={`text-right ${
+                    <TableCell className={`text-right font-medium ${
                       transaction.amount < 0 
-                        ? 'text-red-400' 
-                        : 'text-green-400'
+                        ? 'text-red-400 hover:text-red-300' 
+                        : 'text-green-400 hover:text-green-300'
                     }`}>
                       {formatCurrency(transaction.amount)}
                     </TableCell>
-                    <TableCell className="text-right text-white">
+                    <TableCell className="text-right text-white font-medium">
                       {formatCurrency(transaction.balance)}
                     </TableCell>
                   </TableRow>
