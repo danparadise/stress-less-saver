@@ -48,9 +48,12 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
         // Handle user updates if needed
       } else if (event === 'SIGNED_OUT') {
         navigate('/login');
-      } else if (event === 'PASSWORD_RECOVERY') {
-        toast.info('Please check your email to reset your password');
-      } else if (event === 'USER_EXISTS') {
+      }
+    });
+
+    // Handle auth errors separately
+    const { data: { subscription: errorSubscription } } = supabase.auth.onError((error) => {
+      if (error.message.includes('User already registered')) {
         toast.error(
           <div className="space-y-2">
             <p>This email is already registered.</p>
@@ -77,11 +80,14 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             </div>
           </div>
         );
+      } else if (error.message.includes('Password recovery')) {
+        toast.info('Please check your email to reset your password');
       }
     });
 
     return () => {
       authSubscription.unsubscribe();
+      errorSubscription.unsubscribe();
     };
   }, [navigate, checkSubscription]);
 
