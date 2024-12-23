@@ -21,9 +21,9 @@ const LogoutButton = () => {
     <SidebarMenuItem>
       <SidebarMenuButton 
         onClick={handleLogout}
-        className="text-red-500 hover:text-red-600"
+        className="w-full flex items-center gap-3 px-6 py-2.5 text-base font-medium hover:bg-purple-500/10 transition-colors text-red-500 hover:text-red-600"
       >
-        <LogOut className="h-4 w-4" />
+        <LogOut className="h-5 w-5" />
         <span>Log out</span>
       </SidebarMenuButton>
     </SidebarMenuItem>

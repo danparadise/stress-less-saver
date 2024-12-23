@@ -9,16 +9,16 @@ const ThemeToggle = () => {
     <SidebarMenuItem>
       <SidebarMenuButton 
         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        className="text-purple-800 dark:text-white hover:text-purple-600 dark:hover:text-purple-300"
+        className="w-full flex items-center gap-3 px-6 py-2.5 text-base font-medium hover:bg-purple-500/10 transition-colors"
       >
         {theme === "dark" ? (
           <>
-            <Sun className="h-4 w-4" />
+            <Sun className="h-5 w-5" />
             <span>Light Mode</span>
           </>
         ) : (
           <>
-            <Moon className="h-4 w-4" />
+            <Moon className="h-5 w-5" />
             <span>Dark Mode</span>
           </>
         )}

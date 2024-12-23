@@ -1,8 +1,7 @@
-import { Grid, BarChart2, FileText, ClipboardCheck } from "lucide-react";
+import { Grid, BarChart2, FileText, Upload, CreditCard } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu as Menu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -12,9 +11,10 @@ import { useNavigate } from "react-router-dom";
 const menuItems = [
   { title: "Dashboard", icon: Grid, path: "/dashboard" },
   { title: "Analytics", icon: BarChart2, path: "/analytics" },
-  { title: "Financial Audit", icon: ClipboardCheck, path: "/audit" },
-  { title: "Paystubs", icon: FileText, path: "/paystubs" },
   { title: "Bank Statements", icon: FileText, path: "/bank-statements" },
+  { title: "Pay Stubs", icon: FileText, path: "/paystubs" },
+  { title: "Upload Document", icon: Upload, path: "/upload" },
+  { title: "Manage Plan", icon: CreditCard, path: "/plans" },
 ];
 
 const SidebarMenu = () => {
@@ -22,7 +22,6 @@ const SidebarMenu = () => {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="px-6 text-base font-semibold mb-2">Menu</SidebarGroupLabel>
       <SidebarGroupContent>
         <Menu>
           {menuItems.map((item) => (
