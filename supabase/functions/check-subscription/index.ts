@@ -35,12 +35,9 @@ serve(async (req) => {
       .eq('id', user.id)
       .single()
 
-    if (profileData?.subscription_status === 'pro' || profileData?.subscription_status === 'trial') {
+    if (profileData?.subscription_status === 'pro') {
       return new Response(
-        JSON.stringify({ 
-          subscribed: true,
-          isTrialing: profileData.subscription_status === 'trial'
-        }),
+        JSON.stringify({ subscribed: true }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -60,7 +57,7 @@ serve(async (req) => {
 
     if (customers.data.length === 0) {
       return new Response(
-        JSON.stringify({ subscribed: false, isTrialing: false }),
+        JSON.stringify({ subscribed: false }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -75,14 +72,8 @@ serve(async (req) => {
       limit: 1
     })
 
-    const subscription = subscriptions.data[0];
-    const isTrialing = subscription?.status === 'trialing';
-
     return new Response(
-      JSON.stringify({ 
-        subscribed: subscriptions.data.length > 0,
-        isTrialing
-      }),
+      JSON.stringify({ subscribed: subscriptions.data.length > 0 }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

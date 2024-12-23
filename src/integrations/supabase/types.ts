@@ -180,7 +180,6 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           first_name: string | null
-          founder_code: string | null
           id: string
           last_name: string | null
           subscription_status: string | null
@@ -190,7 +189,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           first_name?: string | null
-          founder_code?: string | null
           id: string
           last_name?: string | null
           subscription_status?: string | null
@@ -200,7 +198,6 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           first_name?: string | null
-          founder_code?: string | null
           id?: string
           last_name?: string | null
           subscription_status?: string | null
