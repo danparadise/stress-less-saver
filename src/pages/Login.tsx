@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { AuthHeader } from "@/components/auth/AuthHeader";
+import { PasswordRequirements } from "@/components/auth/PasswordRequirements";
+import { handleAuthError } from "@/components/auth/AuthErrorHandler";
 
 const Login = () => {
   const navigate = useNavigate();
 
   const checkSubscription = async (token: string, email: string) => {
-    // Special handling for admin email
     if (email === 'dannielparadise@gmail.com') {
       return true;
     }
@@ -36,7 +38,6 @@ const Login = () => {
   };
 
   useEffect(() => {
-    // Listen for auth state changes
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
@@ -92,14 +93,7 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold text-purple-900">
-            Welcome to PayGuard AI
-          </h2>
-          <p className="mt-2 text-base text-purple-600">
-            Sign in to access your account
-          </p>
-        </div>
+        <AuthHeader />
         <div className="bg-white shadow-xl rounded-2xl p-8 border border-purple-100">
           <Auth
             supabaseClient={supabase}
@@ -171,47 +165,11 @@ const Login = () => {
             }}
             redirectTo={window.location.origin}
             showLinks={true}
-            view="sign_up"
-            onError={(error) => {
-              if (error.message.includes('already registered')) {
-                toast.error(
-                  <div className="space-y-2">
-                    <p>This email is already registered.</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => window.location.reload()}
-                        className="text-purple-600 hover:text-purple-700 font-medium"
-                      >
-                        Sign in
-                      </button>
-                      <span>or</span>
-                      <button
-                        onClick={() => {
-                          supabase.auth.resetPasswordForEmail(error.email || '');
-                          toast.info('Password reset instructions sent to your email');
-                        }}
-                        className="text-purple-600 hover:text-purple-700 font-medium"
-                      >
-                        Reset password
-                      </button>
-                    </div>
-                  </div>
-                );
-              } else {
-                toast.error(error.message);
-              }
-            }}
+            view="sign_in"
+            onError={handleAuthError}
           />
         </div>
-        <div className="text-center text-sm text-purple-600">
-          <p>Password requirements:</p>
-          <ul className="mt-2 space-y-1">
-            <li>• Minimum 8 characters</li>
-            <li>• At least one uppercase letter</li>
-            <li>• At least one number</li>
-            <li>• At least one special character (!@#$%^&*)</li>
-          </ul>
-        </div>
+        <PasswordRequirements />
       </div>
     </div>
   );
