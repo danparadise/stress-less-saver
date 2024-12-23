@@ -166,7 +166,7 @@ const Login = () => {
             redirectTo={window.location.origin}
             showLinks={true}
             view="sign_in"
-            onAuthError={handleAuthError}
+            onError={handleAuthError}
           />
         </div>
         <PasswordRequirements />
