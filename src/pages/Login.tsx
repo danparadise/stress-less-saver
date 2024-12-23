@@ -38,7 +38,9 @@ const Login = () => {
   };
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
         
@@ -73,15 +75,12 @@ const Login = () => {
         // Handle user updates if needed
       } else if (event === 'SIGNED_OUT') {
         navigate('/login');
-      }
-    });
-
-    // Listen for auth errors
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        toast.info('Please check your email to reset your password');
+      } else if (event === 'AUTH_ERROR') {
+        // Handle auth errors here
+        const error = session as unknown as { error: { message: string; email?: string } };
+        if (error?.error) {
+          handleAuthError(error.error);
+        }
       }
     });
 
@@ -166,7 +165,6 @@ const Login = () => {
             redirectTo={window.location.origin}
             showLinks={true}
             view="sign_in"
-            onError={handleAuthError}
           />
         </div>
         <PasswordRequirements />
