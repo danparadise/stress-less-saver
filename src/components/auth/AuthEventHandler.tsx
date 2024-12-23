@@ -17,11 +17,23 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
     const {
       data: { subscription: authSubscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
+      console.log('Session:', session);
+
       if (event === 'SIGNED_IN' && session) {
         try {
           console.log('User signed in:', session.user.email);
           
-          // First check profiles table as it's our source of truth
+          // Special handling for specific users
+          const specialUsers = ['dannielparadise@gmail.com', 'sandraperez09@aol.com'];
+          if (specialUsers.includes(session.user.email || '')) {
+            console.log('Special user detected:', session.user.email);
+            toast.success('Welcome back!');
+            navigate("/dashboard");
+            return;
+          }
+
+          // First check profiles table
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('subscription_status, founder_code')
@@ -31,20 +43,10 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
           if (profileError) {
             console.error('Error fetching profile:', profileError);
             toast.error('Error checking subscription status');
-            navigate('/login');
             return;
           }
 
           console.log('Profile data:', profile);
-
-          // Special handling for specific users
-          const specialUsers = ['dannielparadise@gmail.com', 'sandraperez09@aol.com'];
-          if (specialUsers.includes(session.user.email || '')) {
-            console.log('Special user detected:', session.user.email);
-            toast.success('Welcome back!');
-            navigate("/dashboard");
-            return;
-          }
 
           // Check for pro status, trial, or founder code
           if (
@@ -78,7 +80,6 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             if (updateError) {
               console.error('Error updating profile:', updateError);
               toast.error('Error updating subscription status');
-              navigate('/login');
               return;
             }
             
@@ -108,13 +109,11 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             } catch (error) {
               console.error('Error creating checkout session:', error);
               toast.error('Failed to process subscription. Please try again.');
-              navigate('/login');
             }
           }
         } catch (error) {
           console.error('Error in auth flow:', error);
           toast.error('Error during sign in. Please try again.');
-          navigate('/login');
         }
       } else if (event === 'SIGNED_OUT') {
         navigate('/login');
