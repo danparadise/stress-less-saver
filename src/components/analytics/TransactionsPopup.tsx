@@ -14,8 +14,6 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface Transaction {
   date: string;
@@ -55,15 +53,7 @@ const TransactionsPopup = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] bg-[#1E1533] border-none text-white">
-        <DialogHeader className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-2 rounded-full hover:bg-white/10"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4 text-white" />
-          </Button>
+        <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-white">
             Transactions for {getMonthYear()}
           </DialogTitle>
