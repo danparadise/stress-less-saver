@@ -82,7 +82,7 @@ const Plans = () => {
       <h1 className="text-3xl font-bold mb-8">Subscription Management</h1>
       
       <div className="grid md:grid-cols-2 gap-6">
-        {isPro ? (
+        {isPro && (
           <Card className="relative border-purple-200 dark:border-purple-800">
             <CardHeader>
               <CardTitle>Cancel Subscription</CardTitle>
@@ -103,7 +103,7 @@ const Plans = () => {
               </div>
             </CardContent>
           </Card>
-        ) : null}
+        )}
 
         <Card className="relative border-purple-200 dark:border-purple-800">
           <CardHeader>
