@@ -82,25 +82,34 @@ const AppSidebar = () => {
   return (
     <Sidebar variant="inset" className="sidebar-gradient">
       <SidebarContent className="flex flex-col h-full">
-        <div className="flex-grow">
-          <UserProfile />
-          <SidebarNavigation />
-          <SidebarMenu>
+        <div className="flex-grow space-y-6">
+          <div className="px-4 py-4">
+            <UserProfile />
+          </div>
+          
+          <div className="space-y-1">
+            <SidebarNavigation />
+          </div>
+
+          <div className="px-2 space-y-1">
             <DocumentUploadButton />
             <Button
               variant="ghost"
-              className="w-full justify-start px-4 py-2.5 text-base hover:bg-purple-500/10 transition-colors"
+              className="w-full justify-start px-4 py-2.5 text-base font-medium hover:bg-purple-500/10 transition-colors"
               onClick={profile?.subscription_status === 'pro' ? handleManageSubscription : handleUpgradeSubscription}
             >
               <CreditCard className="h-5 w-5 mr-3" />
               <span>{profile?.subscription_status === 'pro' ? 'Manage Subscription' : 'Upgrade to Pro'}</span>
             </Button>
-          </SidebarMenu>
+          </div>
         </div>
 
-        <SidebarFooter className="mt-auto p-4 space-y-2">
+        <SidebarFooter className="p-4 space-y-2">
           <SidebarMenu>
-            <DiscordLink variant="ghost" className="w-full justify-start px-4 py-2.5 text-base hover:bg-purple-500/10 transition-colors" />
+            <DiscordLink 
+              variant="ghost" 
+              className="w-full justify-start px-4 py-2.5 text-base font-medium hover:bg-purple-500/10 transition-colors" 
+            />
             <ThemeToggle />
             <LogoutButton />
           </SidebarMenu>
