@@ -29,6 +29,14 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
           if (profileError) {
             console.error('Error fetching profile:', profileError);
             toast.error('Error checking subscription status');
+            navigate('/login');
+            return;
+          }
+
+          // Special handling for admin email
+          if (session.user.email === 'dannielparadise@gmail.com') {
+            toast.success('Welcome back, admin!');
+            navigate("/dashboard");
             return;
           }
 
@@ -39,32 +47,30 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
           }
 
           // If not marked as pro/trial in profiles, verify with Stripe
-          const { subscribed, isTrialing } = await checkSubscription(session.access_token, session.user.email || '');
+          const { subscribed, isTrialing } = await checkSubscription(
+            session.access_token, 
+            session.user.email || ''
+          );
           
           if (subscribed || isTrialing) {
-            try {
-              // Update profile status based on subscription type
-              const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ 
-                  subscription_status: isTrialing ? 'trial' : 'pro' 
-                })
-                .eq('id', session.user.id);
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ 
+                subscription_status: isTrialing ? 'trial' : 'pro' 
+              })
+              .eq('id', session.user.id);
 
-              if (updateError) {
-                console.error('Error updating profile:', updateError);
-                toast.error('Error updating subscription status');
-                return;
-              }
-              
-              toast.success('Welcome back!');
-              navigate("/dashboard");
-            } catch (updateError) {
+            if (updateError) {
               console.error('Error updating profile:', updateError);
               toast.error('Error updating subscription status');
+              navigate('/login');
+              return;
             }
+            
+            toast.success('Welcome back!');
+            navigate("/dashboard");
           } else {
-            toast.info('Please complete your subscription to continue');
+            // User needs to complete subscription
             try {
               const response = await fetch('https://dfwiszjyvkfmpejsqvbf.supabase.co/functions/v1/create-checkout', {
                 method: 'POST',
@@ -81,6 +87,8 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
               const { url } = await response.json();
               if (url) {
                 window.location.href = url;
+              } else {
+                throw new Error('No checkout URL received');
               }
             } catch (error) {
               console.error('Error creating checkout session:', error);
@@ -89,8 +97,8 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             }
           }
         } catch (error) {
-          console.error('Error checking subscription:', error);
-          toast.error('Error checking subscription status. Please try again.');
+          console.error('Error in auth flow:', error);
+          toast.error('Error during sign in. Please try again.');
           navigate('/login');
         }
       } else if (event === 'SIGNED_OUT') {
