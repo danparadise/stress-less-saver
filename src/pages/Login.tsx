@@ -38,7 +38,6 @@ const Login = () => {
   useEffect(() => {
     supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Check if user has an active subscription or is admin
         const isSubscribed = await checkSubscription(session.access_token, session.user.email || '');
         
         if (isSubscribed) {
@@ -118,11 +117,14 @@ const Login = () => {
                   email_label: 'Email',
                   password_label: 'Password',
                   email_input_placeholder: 'Your email address',
-                  password_input_placeholder: 'Your password',
+                  password_input_placeholder: 'Create a strong password',
+                  confirm_password_label: 'Confirm Password',
+                  confirm_password_input_placeholder: 'Confirm your password',
                   button_label: 'Sign up',
                   loading_button_label: 'Signing up...',
                   social_provider_text: 'Sign up with {{provider}}',
                   link_text: "Don't have an account? Sign up",
+                  confirmation_text: 'Password must contain at least 8 characters, including one uppercase letter, one number, and one special character.',
                 },
                 sign_in: {
                   email_label: 'Email',
@@ -136,7 +138,19 @@ const Login = () => {
                 },
               },
             }}
+            redirectTo={window.location.origin}
+            showLinks={true}
+            view="sign_up"
           />
+        </div>
+        <div className="text-center text-sm text-purple-600">
+          <p>Password requirements:</p>
+          <ul className="mt-2 space-y-1">
+            <li>• Minimum 8 characters</li>
+            <li>• At least one uppercase letter</li>
+            <li>• At least one number</li>
+            <li>• At least one special character (!@#$%^&*)</li>
+          </ul>
         </div>
       </div>
     </div>
