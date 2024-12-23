@@ -40,7 +40,7 @@ export const AuthEventHandler = ({ checkSubscription }: AuthEventHandlerProps) =
             return;
           }
 
-          // Check for pro status or founder code
+          // Check for pro status, trial, or founder code
           if (
             profile?.subscription_status === 'pro' || 
             profile?.subscription_status === 'trial' ||
