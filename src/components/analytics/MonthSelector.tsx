@@ -54,12 +54,12 @@ const MonthSelector = ({ statements, selectedMonth, onMonthSelect }: MonthSelect
   if (uniqueMonths.length === 0) {
     return (
       <div className="w-[200px]">
-        <Select disabled value="">
+        <Select disabled>
           <SelectTrigger>
             <SelectValue placeholder="No data available" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No months available</SelectItem>
+            <SelectItem value="no-data">No months available</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -69,7 +69,7 @@ const MonthSelector = ({ statements, selectedMonth, onMonthSelect }: MonthSelect
   return (
     <div className="w-[200px]">
       <Select
-        value={selectedMonth || ""}
+        value={selectedMonth || uniqueMonths[0]}
         onValueChange={onMonthSelect}
       >
         <SelectTrigger>
